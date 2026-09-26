@@ -1,0 +1,270 @@
+# OpenAPI 3 cho MỌI endpoint mới/đổi của REQ-001. Cầu nối FE-BE: BE phải expose đúng, FE phải gọi đúng.
+# REQ-001 chỉ THÊM field `phone` (request POST và schema Customer của cả ba endpoint); path, method,
+# mã trạng thái và format lỗi (RFC 9457) giữ nguyên như aiws/knowledge/api-inventory.md.
+openapi: 3.0.3
+info:
+  title: REQ-001 API contract
+  version: 1.0.0
+  description: >-
+    CRM customers API (source-be, CustomerHandler). REQ-001 thêm số điện thoại khách hàng.
+    Quy tắc chuẩn hoá / hợp lệ / trùng số port từ source-legacy/lib/phone.php và
+    source-legacy/customer_save.php (xem 02-design.md D2, D3).
+paths:
+  /api/customers:
+    get:
+      operationId: listCustomers
+      summary: Danh sách khách hàng (mỗi phần tử có thêm `phone`)
+      description: Trả toàn bộ khách hàng, tăng dần theo `id`. Không phân trang, không lọc.
+      responses:
+        "200":
+          description: Danh sách khách hàng.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+              example:
+                - id: 1
+                  name: "Nguyen Van An"
+                  email: "an.nguyen@example.com"
+                  phone: "0912345678"
+                  status: "ACTIVE"
+                - id: 2
+                  name: "Tran Thi Binh"
+                  email: "binh.tran@example.com"
+                  phone: null
+                  status: "ACTIVE"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: createCustomer
+      summary: Thêm khách hàng (thêm field tuỳ chọn `phone`)
+      description: >-
+        Mọi lỗi validation (name, email, phone) được gom vào một Problem 400 duy nhất.
+        Field lạ trong body bị bỏ qua.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomerRequest"
+            examples:
+              mobile:
+                summary: Số di động hợp lệ -> lưu "0912345678"
+                value:
+                  name: "Nguyen Van An"
+                  email: "an@example.com"
+                  phone: "0912345678"
+              separators:
+                summary: Có khoảng trắng và ký tự phân cách -> lưu "0912345678"
+                value:
+                  name: "Nguyen Van An"
+                  email: "an@example.com"
+                  phone: " 0912.345-678 "
+              countryCode:
+                summary: Mã quốc gia +84 -> lưu "02438251234"
+                value:
+                  name: "Nguyen Van An"
+                  email: "an@example.com"
+                  phone: "+84 24 3825 1234"
+              noPhone:
+                summary: Không nhập số (null, thiếu field hoặc chỉ gồm khoảng trắng) -> phone null
+                value:
+                  name: "Nguyen Van An"
+                  email: "an@example.com"
+                  phone: "   "
+      responses:
+        "201":
+          description: Đã tạo. Body là khách hàng vừa tạo, `status` luôn là `ACTIVE`, `phone` ở dạng chuẩn hoá hoặc `null`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+              examples:
+                withPhone:
+                  value:
+                    id: 3
+                    name: "Nguyen Van An"
+                    email: "an@example.com"
+                    phone: "0912345678"
+                    status: "ACTIVE"
+                withoutPhone:
+                  value:
+                    id: 4
+                    name: "Nguyen Van An"
+                    email: "an2@example.com"
+                    phone: null
+                    status: "ACTIVE"
+        "400":
+          description: >-
+            Validation lỗi (`title` "Validation failed", có `errors` theo field) hoặc body không phải JSON hợp lệ
+            (`title` "Malformed JSON", không có `errors`). Thứ tự key trong `errors` không cố định.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                invalidPhone:
+                  summary: Số sai đầu số / sai độ dài / chứa ký tự lạ / chỉ gồm ký tự phân cách
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      phone: "must be a valid phone number"
+                duplicatePhone:
+                  summary: Số (sau chuẩn hoá) đang được một khách hàng ACTIVE khác dùng
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      phone: "is already used by another customer"
+                multipleFields:
+                  summary: Lỗi của mọi field được gom trong một response
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      name: "must not be blank"
+                      email: "must be a valid email address"
+                      phone: "is already used by another customer"
+                malformedJson:
+                  summary: Body không phải JSON hợp lệ
+                  value:
+                    type: "about:blank"
+                    title: "Malformed JSON"
+                    status: 400
+                    detail: "The request body is not valid JSON"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/customers/{id}:
+    get:
+      operationId: getCustomer
+      summary: Một khách hàng theo id (có thêm `phone`)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Chỉ gồm chữ số (`\d+`). Giá trị không phải số rơi vào route fallback và trả 404.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+      responses:
+        "200":
+          description: Khách hàng.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+              example:
+                id: 5
+                name: "Le Van Cuong"
+                email: "cuong@example.com"
+                phone: "02438251234"
+                status: "ACTIVE"
+        "404":
+          description: Không có khách hàng với id này.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              example:
+                type: "about:blank"
+                title: "Not Found"
+                status: 404
+                detail: "Customer 42 not found"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  responses:
+    InternalError:
+      description: Lỗi không mong đợi (RuntimeException khác).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: "about:blank"
+            title: "Internal Server Error"
+            status: 500
+            detail: "Unexpected error"
+  schemas:
+    CustomerStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    Customer:
+      type: object
+      description: Khách hàng (record source-be domain/Customer.java). Mọi field luôn có mặt trong JSON.
+      required: [id, name, email, phone, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+          description: >-
+            MỚI (REQ-001). Số điện thoại ở dạng đã chuẩn hoá, chưa định dạng hiển thị: chỉ gồm chữ số,
+            bắt đầu bằng 0 (vd. "0912345678", "02438251234"). `null` khi khách hàng không có số.
+            Khách hàng tạo qua API luôn khớp ^(0[35789][0-9]{8}|02[0-9]{9})$; không đặt `pattern` vì dữ liệu
+            migrate từ legacy có thể theo quy tắc cũ (vd. "01234567890"). FE định dạng khi hiển thị
+            (10 ký tự -> 4-3-3, 11 ký tự -> 3-4-4, khác -> nguyên văn; trống -> "—").
+          example: "0912345678"
+        status:
+          $ref: "#/components/schemas/CustomerStatus"
+    CreateCustomerRequest:
+      type: object
+      description: Body của POST /api/customers. Field lạ bị bỏ qua.
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          description: Được trim; không rỗng, tối đa 100 ký tự.
+        email:
+          type: string
+          description: Được trim; phải là email hợp lệ và chưa được khách hàng khác dùng (không phân biệt hoa thường).
+        phone:
+          type: string
+          nullable: true
+          description: >-
+            MỚI (REQ-001), tuỳ chọn. Giá trị thô người dùng nhập; FE gửi nguyên văn, BE chuẩn hoá theo legacy
+            phone_normalize (bỏ khoảng trắng ASCII, ".", "-", "(", ")"; "+84" -> "0"; "84" -> "0" khi dài 11 ký tự).
+            Thiếu field, null, hoặc rỗng sau trim (kiểu PHP) = không có số. Sau chuẩn hoá phải là di động
+            10 chữ số đầu 03/05/07/08/09 hoặc cố định 11 chữ số đầu 02, và không trùng số của khách hàng
+            ACTIVE khác; nếu không trả 400 với errors.phone.
+          example: "+84 912 345 678"
+    Problem:
+      type: object
+      description: RFC 9457 problem details (source-be api/Problem.java), Content-Type application/problem+json.
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          description: Luôn "about:blank".
+          example: "about:blank"
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        errors:
+          type: object
+          description: >-
+            Chỉ có khi validation lỗi. Map field -> message (key có thể là name, email, phone).
+            Thứ tự key không cố định.
+          additionalProperties:
+            type: string
