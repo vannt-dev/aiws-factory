@@ -1,0 +1,25 @@
+phase: discover
+agent: discovery
+skills: [legacy-analysis]
+tools: [read, write, edit]
+reads:
+  - source-fe/
+  - source-be/
+  - source-legacy/
+outputs:
+  - path: aiws/knowledge/system-map.md
+    template: knowledge/system-map.md
+    required_headings: [Tổng quan, Thành phần, Luồng chính, Phụ thuộc ngoài]
+  - path: aiws/knowledge/api-inventory.md
+    template: knowledge/api-inventory.md
+    required_headings: [Endpoints]
+  - path: aiws/knowledge/db-schema.md
+    template: knowledge/db-schema.md
+    required_headings: [Bảng]
+  - path: aiws/knowledge/glossary.md
+    template: knowledge/glossary.md
+    required_headings: [Thuật ngữ]
+  - path: aiws/knowledge/conventions.md
+    template: knowledge/conventions.md
+    required_headings: [Frontend, Backend, Test]
+max_attempts: 2

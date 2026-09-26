@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Read(./**/secrets/**)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Edit(./source-legacy/**)",
+      "Edit(./requirements/**)",
+      "Edit(./aiws/work/*/state.yaml)",
+      "Edit(./aiws/work/*/approvals/**)",
+      "Bash(aiws approve)",
+      "Bash(aiws approve *)",
+      "Bash(aiws reject)",
+      "Bash(aiws reject *)",
+      "Bash(aiws answer)",
+      "Bash(aiws answer *)",
+      "Bash(aiws redesign)",
+      "Bash(aiws redesign *)",
+      "Bash(aiws resume)",
+      "Bash(aiws resume *)",
+      "Bash(aiws unlock)",
+      "Bash(aiws unlock *)",
+      "Bash(aiws new)",
+      "Bash(aiws new *)",
+      "Bash(aiws run)",
+      "Bash(aiws run *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/aiws/adapters/cli/bin/aiws.js\" guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/aiws/adapters/cli/bin/aiws.js\" guard --bash"
+          }
+        ]
+      }
+    ]
+  }
+}

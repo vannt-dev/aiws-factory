@@ -1,0 +1,16 @@
+phase: planning
+agent: planner
+skills: []
+tools: [read, write, edit]
+reads:
+  - aiws/work/{req}/02-design.md
+  - aiws/work/{req}/03-test-spec.md
+  - aiws/work/{req}/api-contract.yaml
+  - aiws/knowledge/conventions.md
+outputs:
+  - path: aiws/work/{req}/04-plan.yaml
+    template: 04-plan.yaml
+    format: yaml
+rules:
+  - plan_valid     # mỗi task <= max_files_per_task, mọi TC thuộc 1 task, depends_on hợp lệ
+max_attempts: 3

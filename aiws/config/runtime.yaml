@@ -1,0 +1,20 @@
+# Chọn adapter/AI theo phase. V1: claude. V2: codex, gemini (review chéo bằng model khác).
+default_adapter: claude
+
+phases: {}
+#  review: {adapter: gemini}   # V2
+
+claude:
+  command: claude
+  permission_mode: dontAsk      # headless: chỉ các tool trong --allowedTools được chạy
+  timeout_minutes: 30
+  # guard_command: 'node "${CLAUDE_PROJECT_DIR}/aiws/adapters/cli/bin/aiws.js" guard'   # mặc định
+  models:                       # model_hint trong aiws/agents/*.md -> model của Claude Code
+    strong-reasoning: opus
+    strong-coding: opus
+    fast: sonnet
+  extra_args: []
+
+# Adapter tất định để demo/test không tốn token: chạy node <dir>/<agent>.js thay cho AI.
+scripted:
+  dir: aiws/adapters/cli/test/fixtures/scripted

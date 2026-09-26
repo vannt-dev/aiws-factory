@@ -1,0 +1,17 @@
+phase: implementation
+agent: developer
+skills: [coding-standards, fe-conventions, be-conventions, unit-testing]
+tools: [read, edit, write, bash]
+# Lệnh Bash được phép khi chạy headless: suy ra từ policies.commands ({side} = mọi side), cộng policies.bash_allow_extra.
+# Không phụ thuộc ngôn ngữ: dự án .NET sẽ được phép `dotnet test`, dự án Go được `go`, v.v.
+bash_allow: ["{side}_build", "{side}_test"]
+reads:
+  - aiws/work/{req}/02-design.md
+  - aiws/work/{req}/03-test-spec.md
+  - aiws/work/{req}/api-contract.yaml
+  - aiws/work/{req}/04-plan.yaml
+  - aiws/knowledge/conventions.md
+# Orchestrator tự chạy sau developer (diff-scope luôn chạy trước). {side} = các side mà task chạm tới.
+checks:
+  - {command: "{side}_build", optional: true}
+max_attempts: 3

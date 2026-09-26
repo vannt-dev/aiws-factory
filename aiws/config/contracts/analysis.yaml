@@ -1,0 +1,15 @@
+phase: analysis
+agent: analyst
+skills: [requirement-analysis]
+tools: [read, write, edit]
+reads:
+  - "{requirement}"
+  - aiws/knowledge/
+outputs:
+  - path: aiws/work/{req}/01-analysis.md
+    template: 01-analysis.md
+    required_headings: [Mục tiêu, Acceptance criteria, Impact, Reuse, Câu hỏi mở]
+rules:
+  - ac_numbered            # AC-1..n đúng thứ tự
+  - no_blocking_questions  # còn [blocking] -> dừng chờ `aiws answer`
+max_attempts: 3

@@ -1,0 +1,15 @@
+phase: knowledge_update
+agent: discovery
+skills: [legacy-analysis]
+tools: [read, write, edit]
+reads:
+  - aiws/knowledge/
+  - aiws/work/{req}/02-design.md
+  - aiws/work/{req}/api-contract.yaml
+outputs:
+  - path: aiws/knowledge/system-map.md
+  - path: aiws/knowledge/api-inventory.md
+  - path: aiws/knowledge/db-schema.md
+  - path: aiws/knowledge/glossary.md
+  - path: aiws/knowledge/conventions.md
+max_attempts: 2

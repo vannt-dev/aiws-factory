@@ -1,0 +1,17 @@
+phase: review
+agent: reviewer
+skills: [coding-standards, fe-conventions, be-conventions, api-design, unit-testing]
+tools: [read, write]
+reads:
+  - aiws/work/{req}/02-design.md
+  - aiws/work/{req}/03-test-spec.md
+  - aiws/work/{req}/api-contract.yaml
+  - aiws/work/{req}/04-plan.yaml
+  - aiws/work/{req}/trace.md
+outputs:
+  - path: aiws/work/{req}/05-review.md
+    template: 05-review.md
+    required_headings: [Tóm tắt, Findings, Đối chiếu design, Đối chiếu api-contract]
+rules:
+  - review_no_open_critical   # còn [critical] chưa [resolved] -> quay lại planning thêm task sửa
+max_attempts: 2

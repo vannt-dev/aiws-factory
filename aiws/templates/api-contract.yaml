@@ -1,0 +1,25 @@
+# OpenAPI 3 cho MỌI endpoint mới/đổi của {req}. Cầu nối FE-BE: BE phải expose đúng, FE phải gọi đúng.
+# Nếu REQ không đổi API: giữ `paths: {}`.
+openapi: 3.0.3
+info:
+  title: {req} API contract
+  version: 1.0.0
+paths:
+  /example/{id}:
+    get:
+      summary: ...
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Example"}
+components:
+  schemas:
+    Example:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}

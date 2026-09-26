@@ -1,0 +1,79 @@
+# Nguồn sự thật duy nhất về thứ tự phase và gate. Orchestrator (aiws CLI) đọc file này; AI không đọc.
+# Muốn bỏ/đổi phase phải sửa file này qua review - không có lệnh "skip phase".
+version: 1
+name: software-project-mvp
+base_branch: main
+
+prerequisites:
+  - aiws/knowledge/system-map.md   # phải chạy `aiws discover` trước
+
+concurrency:
+  source_lock: true                # 1 REQ ở implementation -> pr_approval tại 1 thời điểm
+
+phases:
+  - id: analysis
+    agent: analyst
+    contract: contracts/analysis.yaml
+    next: design
+
+  - id: design
+    keep_feedback: true            # feedback của MỌI vòng reject được đưa vào prompt
+    steps:                         # chạy tuần tự trong 1 phase
+      - agent: architect
+        contract: contracts/design.yaml
+      - agent: test-designer
+        contract: contracts/test-spec.yaml
+    next: design_approval
+
+  - id: design_approval
+    type: human_gate
+    gate: design
+    artifacts: [02-design.md, 03-test-spec.md, api-contract.yaml]
+    on_approve: planning
+    on_reject: design
+
+  - id: planning
+    agent: planner
+    contract: contracts/plan.yaml  # re-plan giữ task done không bị ảnh hưởng
+    next: implementation
+
+  - id: implementation
+    type: loop                     # lần lượt từng task theo depends_on
+    requires_lock: source
+    steps:
+      - agent: developer
+        contract: contracts/implementation.yaml
+      - builtin: unit_test         # orchestrator tự chạy test (không tin lời AI), ghi evidence
+    on_fail: {retry: 3, then: blocked}
+    on_question: design_change_requested
+    next: review
+
+  - id: design_change_requested
+    type: human_gate
+    gate: question
+    on_design_change: design       # `aiws redesign` - phải approve lại
+    on_answer: implementation      # `aiws answer` - design giữ nguyên
+
+  - id: review
+    agent: reviewer
+    contract: contracts/review.yaml
+    require_trace: true            # AC -> TC -> task -> commit phải đủ trước khi review
+    checks:                        # lỗi ở đây = finding critical
+      - {command: api_contract_be, optional: true}
+      - {command: api_contract_fe, optional: true}
+    on_critical: planning          # planner thêm task sửa lỗi
+    next: pr_approval
+
+  - id: pr_approval
+    type: human_gate
+    gate: pr
+    via: git_host
+    on_approve: knowledge_update
+    on_changes_requested: planning
+    release_lock: source           # nhả lock ngay khi PR code đã merge
+
+  - id: knowledge_update
+    agent: discovery
+    mode: incremental              # chỉ trên diff của REQ
+    contract: contracts/knowledge-update.yaml
+    next: done

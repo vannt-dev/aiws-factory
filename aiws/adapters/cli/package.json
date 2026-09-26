@@ -1,0 +1,25 @@
+{
+  "name": "aiws",
+  "version": "0.1.0",
+  "description": "AI Software Factory - deterministic orchestrator that turns a requirement into tested code through gated phases (Claude Code first).",
+  "type": "module",
+  "bin": {
+    "aiws": "bin/aiws.js"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 \"test/*.test.js\""
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "picomatch": "^4.0.7",
+    "yaml": "^2.9.1"
+  }
+}

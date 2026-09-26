@@ -1,0 +1,18 @@
+phase: design
+agent: architect
+skills: [api-design, db-design, fe-conventions, be-conventions, coding-standards]
+tools: [read, write, edit]
+reads:
+  - aiws/work/{req}/01-analysis.md
+  - aiws/knowledge/
+  - source-fe/
+  - source-be/
+  - source-legacy/
+outputs:
+  - path: aiws/work/{req}/02-design.md
+    template: 02-design.md
+    required_headings: [Tổng quan, Quyết định chính, API, DB change, FE change, Migration, Rủi ro, Quyết định cần duyệt]
+  - path: aiws/work/{req}/api-contract.yaml
+    template: api-contract.yaml
+    format: openapi
+max_attempts: 3

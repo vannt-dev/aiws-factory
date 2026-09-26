@@ -1,0 +1,105 @@
+# Quyền ghi theo phase, đường dẫn bảo vệ, lệnh build/test thật của dự án.
+# Được enforce bởi: orchestrator (diff-scope sau mỗi lần chạy), hook `aiws guard`, permissions của .claude/settings.json.
+
+# Thư mục chứa code đích; task trong plan chỉ được khai báo file trong đây.
+source_paths:
+  - source-fe/**
+  - source-be/**
+
+# Mỗi "side" có lệnh <side>_build / <side>_test trong `commands`. Thêm side tuỳ ý
+# (vd. mobile: source-mobile/**, worker: source-worker/**) - orchestrator không giả định chỉ có fe/be.
+sides:
+  fe: source-fe/**
+  be: source-be/**
+
+limits:
+  max_files_per_task: 10
+
+protected_paths:            # không agent nào được ghi, ở mọi phase
+  - source-legacy/**
+  - requirements/**
+  - aiws/config/**
+  - aiws/agents/**
+  - aiws/skills/**
+  - aiws/templates/**
+  - aiws/adapters/**
+  - aiws/docs/**
+  - aiws/work/*/state.yaml
+  - aiws/work/*/approvals/**
+  - AGENTS.md
+  - CLAUDE.md
+  - .claude/**
+
+# Người bảo trì AIWS được sửa các path này qua Claude Code KHI KHÔNG ở trong phase nào
+# (không có AIWS_PHASE, không đứng trên nhánh aiws/REQ-*). Trong phase, chúng vẫn bị khoá.
+maintainer_editable:
+  - aiws/config/**
+  - aiws/agents/**
+  - aiws/skills/**
+  - aiws/templates/**
+  - aiws/adapters/**
+  - aiws/docs/**
+  - AGENTS.md
+  - CLAUDE.md
+  - .claude/**
+
+read_deny:                  # không agent nào được đọc
+  - "**/.env"
+  - "**/.env.*"
+  - "**/secrets/**"
+  - "**/*.pem"
+  - "**/*.key"
+
+phase_write_scope:
+  discover:         [aiws/knowledge/**]
+  analysis:         ["aiws/work/{req}/01-analysis.md", "aiws/work/{req}/questions.md"]
+  design:           ["aiws/work/{req}/02-design.md", "aiws/work/{req}/03-test-spec.md",
+                     "aiws/work/{req}/api-contract.yaml"]
+  planning:         ["aiws/work/{req}/04-plan.yaml"]
+  implementation:   ["{task.allowed_files}", "aiws/work/{req}/questions.md"]
+  unit_test:        ["aiws/work/{req}/evidence/**"]
+  review:           ["aiws/work/{req}/05-review.md"]
+  knowledge_update: [aiws/knowledge/**]
+
+# Lệnh build/test thật của từng side: <side>_build, <side>_test. AIWS không phụ thuộc ngôn ngữ:
+# mọi stack đều được, miễn là có lệnh chạy được tại gốc workspace và trả exit code != 0 khi lỗi.
+# Giá trị: chuỗi, hoặc {windows: ..., posix: ...} khi khác nhau theo OS.
+# Điền tự động: `aiws detect --write` (nhận diện Node/Java/.NET/Go/Python/PHP/Ruby/Rust/Dart), rồi NGƯỜI xác nhận.
+# Ví dụ:
+#   be_build: "dotnet build source-be"                  be_test: "dotnet test source-be"
+#   be_build: "mvn -q -f source-be/pom.xml -DskipTests package"   be_test: "mvn -q -f source-be/pom.xml test"
+#   be_build: "go -C source-be build ./..."              be_test: "go -C source-be test ./..."
+#   be_build: "python -m compileall -q source-be"        be_test: "python -m pytest -q source-be"
+#   fe_build: "npm run build --prefix source-fe"         fe_test: "npm test --prefix source-fe"
+#   api_contract_be: "<so OpenAPI sinh từ code BE với api-contract.yaml>"   (tuỳ chọn, chạy ở review)
+#   api_contract_fe: "<sinh client/type từ contract rồi build FE>"          (tuỳ chọn, chạy ở review)
+commands: {}
+
+# Tiền tố lệnh Bash developer được chạy thêm (ngoài lệnh build/test ở trên) khi chạy headless.
+bash_allow_extra: ["ls", "dir", "git status", "git diff", "git log"]
+
+approvals:
+  require_signed: false     # true: `aiws check approvals` đòi commit approval phải có chữ ký
+
+bash_denylist:
+  - "git push"
+  - "git commit"
+  - "git reset"
+  - "git checkout"
+  - "git switch"
+  - "git rebase"
+  - "git merge"
+  - "git stash"
+  - "git clean"
+  - "rm -rf"
+  - "curl"
+  - "wget"
+  - "aiws approve"
+  - "aiws reject"
+  - "aiws answer"
+  - "aiws redesign"
+  - "aiws resume"
+  - "aiws unlock"
+  - "aiws new"
+  - "aiws run"
+  - "cat .env"

@@ -1,0 +1,16 @@
+phase: design
+agent: test-designer
+skills: [unit-testing, coding-standards]
+tools: [read, write, edit]
+reads:
+  - aiws/work/{req}/01-analysis.md
+  - aiws/work/{req}/02-design.md
+  - aiws/work/{req}/api-contract.yaml
+  - aiws/knowledge/conventions.md
+outputs:
+  - path: aiws/work/{req}/03-test-spec.md
+    template: 03-test-spec.md
+    required_headings: [Chiến lược, Test cases, Ma trận AC]
+rules:
+  - every_ac_has_tc
+max_attempts: 3
