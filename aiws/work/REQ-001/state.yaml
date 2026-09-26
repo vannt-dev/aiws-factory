@@ -4,9 +4,8 @@ requirement: requirements/REQ-001-customer-phone.md
 branch: aiws/REQ-001
 base_branch: demo
 base_commit: 8daa5ec1c217523f8ea18eeb264703ba06163a6f
-phase: design_approval
-status: waiting_human
-reason: 'design ready for review: 02-design.md, 03-test-spec.md, api-contract.yaml. Then run `aiws approve REQ-001 design` or `aiws reject REQ-001 design -m "..."`'
+phase: planning
+status: running
 history:
   - phase: new
     result: created
@@ -27,6 +26,11 @@ history:
     result: ok
     run: run-0003
     at: 2026-09-26T14:19:25Z
+  - phase: design_approval
+    result: approved
+    by: Van Nguyen
+    record: design-01.yaml
+    at: 2026-09-26T14:22:42Z
 tasks: []
 feedback: []
 attempts: {}
