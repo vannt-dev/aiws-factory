@@ -1,0 +1,18 @@
+req_id: REQ-001
+title: Số điện thoại khách hàng
+requirement: requirements/REQ-001-customer-phone.md
+branch: aiws/REQ-001
+base_branch: demo
+base_commit: 8daa5ec1c217523f8ea18eeb264703ba06163a6f
+phase: analysis
+status: running
+history:
+  - phase: new
+    result: created
+    by: Van Nguyen
+    at: 2026-09-26T13:51:06Z
+tasks: []
+feedback: []
+attempts: {}
+last_failure: {}
+step_index: 0
