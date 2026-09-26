@@ -1,0 +1,40 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0] - 2026-09-26
+
+### Added
+
+- AIWS workspace layout from spec V1: `requirements/`, `source-fe/`, `source-be/`,
+  `source-legacy/` (read-only) and `aiws/` (config, agents, skills, templates,
+  knowledge, work, adapters).
+- `aiws` orchestrator CLI (Node.js ≥ 22): `init`, `detect`, `sync claude`, `discover`,
+  `new`, `run`, `status`, `prompt`, `approve`, `reject`, `answer`, `redesign`,
+  `resume`, `unlock`, `trace`, `check diff-scope | commit-trailer | approvals`,
+  `guard`, `--version`.
+- Deterministic state machine: analysis → design + test spec → design approval →
+  planning → per-task implementation with unit tests → review → PR approval →
+  knowledge update.
+- Four enforcement layers: orchestrator gates with hashed approvals, per-run tool
+  permissions, `PreToolUse` guard hook (Edit/Write/Read/Bash/PowerShell) and
+  diff-scope with automatic revert.
+- Claude Code adapter (headless `claude -p`) and a scripted adapter for token-free
+  tests and demos.
+- Language-agnostic stack detection (Java, Kotlin, .NET, Node.js, Python, Go, PHP,
+  Ruby, Rust, Dart/Flutter) and any number of sides.
+- Traceability AC → TC → task → commit with Conventional Commits and git trailers
+  (`REQ-ID`, `Task`, `Tests`, `AIWS-Run`).
+- Eight agent roles and eight skills, including `coding-standards` (ISO/IEC/IEEE
+  29119-3 test specifications, Gherkin acceptance criteria, language style guides,
+  OpenAPI 3, RFC 9457, OWASP).
+- Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
+  security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
+
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/vannt-dev/aiws-factory/releases/tag/v0.1.0

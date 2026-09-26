@@ -1,182 +1,188 @@
 # AIWS — AI Software Factory (V1, Claude Code first)
 
-AIWS biến một requirement thành code đã test qua các phase có kiểm soát và có human gate:
+**Language:** English · [Tiếng Việt](README.vi.md)
+
+AIWS turns a requirement into tested code through controlled phases with human gates:
 
 ```
-discover (1 lần) ─► analysis ─► design + test spec ─► [NGƯỜI duyệt design] ─► planning
-   ─► implementation (từng task: developer → build → unit test → commit) ─► review ─► [NGƯỜI merge PR] ─► knowledge update ─► done
+discover (once) ─► analysis ─► design + test spec ─► [HUMAN approves design] ─► planning
+   ─► implementation (per task: developer → build → unit test → commit) ─► review ─► [HUMAN merges PR] ─► knowledge update ─► done
 ```
 
-- **Core** (`aiws/config`, `agents`, `skills`, `templates`) nói *làm gì*: Markdown/YAML, trung lập với AI.
-- **Orchestrator** (`aiws` CLI trong `aiws/adapters/cli`) nói *khi nào được làm*: giữ `state.yaml`, chạy phase, kiểm contract, diff-scope, commit.
-- **Adapter** nói *làm bằng AI nào*: V1 là `claude` (Claude Code headless). `scripted` là adapter tất định để test/demo, không tốn token.
+- **Core** (`aiws/config`, `agents`, `skills`, `templates`) defines *what* to do. It is Markdown/YAML and neutral to any AI tool.
+- **Orchestrator** (the `aiws` CLI in `aiws/adapters/cli`) decides *when* something may run: it owns `state.yaml`, runs phases, validates contracts, enforces diff-scope and commits.
+- **Adapter** decides *which AI* does the work. V1 ships `claude` (headless Claude Code) and `scripted`, a deterministic adapter for tests and demos that costs no tokens.
 
-Đặc tả gốc: [docs/spec-v1.md](docs/spec-v1.md). Quy tắc cho AI: [../AGENTS.md](../AGENTS.md).
+Original specification: [docs/spec-v1.md](docs/spec-v1.md). Rules for AI agents: [../AGENTS.md](../AGENTS.md).
 
 ---
 
-## 1. Cài đặt
+## 1. Installation
 
-Yêu cầu: Node ≥ 20, Git, Claude Code (`claude`) đã đăng nhập.
+Requirements: Node.js ≥ 22, Git, and Claude Code (`claude`) signed in.
 
 ```bash
 cd aiws/adapters/cli
-npm install          # bắt buộc: hook guard chạy từ thư mục này
-npm link             # tuỳ chọn: có lệnh `aiws` toàn cục
+npm install          # required: the guard hook runs from this folder
+npm link             # optional: puts `aiws` on your PATH
 ```
 
-Không muốn `npm link` thì gọi `node aiws/adapters/cli/bin/aiws.js <lệnh>` từ gốc workspace.
+Without `npm link`, run `node aiws/adapters/cli/bin/aiws.js <command>` from the workspace root.
 
-## 2. Bắt đầu với dự án thật
+## 2. Getting started with a real project
 
-1. **Đưa code vào workspace** (ngôn ngữ nào cũng được, xem mục 2a)
-   - `source-fe/`, `source-be/`: repo mới (FE/BE đích). Nên dùng submodule; bỏ file giữ chỗ trước:
-     `git rm -q source-be/.gitkeep && git submodule add <url> source-be` (làm tương tự cho `source-fe`, `source-legacy`).
-     Có thể thêm side khác, ví dụ `source-mobile/` hay `source-worker/`.
-   - `source-legacy/`: hệ thống cũ, chỉ đọc.
-2. **Khai báo lệnh build/test**: chạy `aiws detect` để xem đề xuất, rồi `aiws detect --write` để ghi vào `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Kiểm tra lại. Lệnh chạy tại gốc workspace; có thể viết riêng cho từng OS: `{windows: ..., posix: ...}`.
-3. **Chốt convention**: mở Claude Code tại gốc, trên `main`, và yêu cầu: *"Đọc source-fe/, điền aiws/skills/fe-conventions/SKILL.md bằng convention THẬT, mỗi ý kèm file ví dụ, chỗ không chắc đánh dấu [CẦN XÁC NHẬN]"*. Làm tương tự với `be-conventions`. Người đọc lại và sửa.
-4. **Sinh cấu hình Claude**: `aiws sync claude`. Lệnh này sinh `CLAUDE.md`, `.claude/agents`, `.claude/skills` và `.claude/settings.json` (deny rules + hook guard). Chạy lại mỗi khi sửa `aiws/`.
-5. **Discovery**: `aiws discover`, sau đó review `aiws/knowledge/*` và sửa chỗ sai. Commit.
-6. **Viết requirement**: `requirements/REQ-001-<tên>.md`, rồi commit.
+1. **Bring the code in** (any language, see section 2a).
+   - `source-fe/`, `source-be/`: the new target repositories. Git submodules are recommended; remove the placeholder first:
+     `git rm -q source-be/.gitkeep && git submodule add <url> source-be` (same for `source-fe`, `source-legacy`).
+     You can add more sides, for example `source-mobile/` or `source-worker/`.
+   - `source-legacy/`: the old system, read-only.
+2. **Declare build/test commands**: run `aiws detect` to see the proposal, then `aiws detect --write` to merge it into `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Review the result. Commands run from the workspace root and may differ per OS: `{windows: ..., posix: ...}`.
+3. **Pin down conventions**: open Claude Code at the root, on `main`, and ask: *"Read source-fe/ and fill aiws/skills/fe-conventions/SKILL.md with the REAL conventions in use, each with an example file; mark anything uncertain with [CẦN XÁC NHẬN]"*. Do the same for `be-conventions`, then review and correct them.
+4. **Generate the Claude configuration**: `aiws sync claude` writes `CLAUDE.md`, `.claude/agents`, `.claude/skills` and `.claude/settings.json` (deny rules and the guard hook). Re-run it whenever `aiws/` changes.
+5. **Discovery**: run `aiws discover`, then review and correct `aiws/knowledge/*` and commit.
+6. **Write a requirement** in `requirements/REQ-001-<name>.md` and commit it.
 
-## 2a. Đa ngôn ngữ và chuẩn quốc tế
+## 2a. Any language, international standards
 
-AIWS **không phụ thuộc ngôn ngữ** của FE, BE hay legacy. Orchestrator chỉ cần 3 thứ:
+AIWS does **not** depend on the language of the frontend, backend or legacy code. The orchestrator only needs three things:
 
-1. **Lệnh build/test** của từng side trong `policies.yaml`, trả exit code khác 0 khi lỗi. `aiws detect` nhận ra Java (Maven/Gradle), .NET, Node (npm/pnpm/yarn), Python, Go, PHP, Ruby, Rust và Dart/Flutter. Stack khác thì khai báo tay.
-2. **Thư mục của từng side** (`sides`). Có bao nhiêu side cũng được; check `{side}_build` và quyền Bash headless được suy ra từ đó (dự án .NET được phép `dotnet test`, dự án Go được phép `go`...).
-3. **Mã TC trong test**: orchestrator nhận `TC-3`, `TC_3`, `tc3` (display name, tag, trait, marker, comment), đúng với cách từng framework gắn metadata.
+1. **Build/test commands** for each side in `policies.yaml` that exit non-zero on failure. `aiws detect` recognises Java (Maven/Gradle), .NET, Node.js (npm/pnpm/yarn), Python, Go, PHP, Ruby, Rust and Dart/Flutter; declare anything else by hand.
+2. **The folder of each side** (`sides`). Any number of sides is supported. The `{side}_build` check and the headless Bash permissions are derived from them (a .NET project may run `dotnet test`, a Go project `go`, and so on).
+3. **Test case ids in tests**: the orchestrator recognises `TC-3`, `TC_3` and `tc3` in display names, tags, traits, markers or comments, the way each framework attaches metadata.
 
-Discovery nhận danh sách stack tự nhận diện (kể cả thống kê đuôi file của legacy như `.cbl`, `.frm`) và mô tả mỗi thư mục theo đúng công nghệ của nó (skill `legacy-analysis`).
+Discovery receives the detected stacks (including a file-extension summary of legacy code such as `.cbl` or `.frm`) and describes every folder in terms of its own technology (skill `legacy-analysis`).
 
-Mọi output của AI phải theo **chuẩn quốc tế thông dụng** và **không phá vỡ cấu trúc** (skill `coding-standards`, được nạp cho architect, test-designer, developer và reviewer):
+All AI output must follow **common international standards** and must **not break the existing structure** (skill `coding-standards`, loaded for the architect, test designer, developer and reviewer):
 
-| Hạng mục | Chuẩn |
+| Area | Standard |
 | --- | --- |
-| Acceptance criteria | Given/When/Then (Gherkin); chất lượng yêu cầu theo ISO/IEC/IEEE 29148 |
-| Test spec | ISO/IEC/IEEE 29119-3 (ID, objective, priority, traceability, preconditions, test data, steps, expected result); kỹ thuật thiết kế test ISTQB |
-| Unit test | Arrange-Act-Assert; tên theo quy ước framework; mã TC qua metadata chuẩn (`@DisplayName`/`@Tag`, `[Trait]`, `pytest.mark`, `t.Run`...) |
-| Code | Convention của dự án, sau đó tới style guide chính thống của ngôn ngữ (Google Java Style, .NET conventions, PEP 8, Effective Go, PSR-12, Effective Dart...) |
-| API | OpenAPI 3.x, HTTP semantics RFC 9110; lỗi RFC 9457 nếu dự án chưa có format; thời gian ISO 8601/RFC 3339 |
-| Bảo mật | OWASP Top 10 / ASVS |
-| Commit | Conventional Commits (`feat(REQ-001): T1 …`, `fix(REQ-001): …`, `chore(REQ-001): …`) + git trailer |
-| Cấu trúc | Không đổi tên, di chuyển, xoá hay reformat file, thư mục, public API ngoài design đã duyệt; test đặt đúng vị trí chuẩn của ecosystem. Reviewer coi vi phạm là finding `major`/`critical`. |
+| Acceptance criteria | Given/When/Then (Gherkin); requirement quality per ISO/IEC/IEEE 29148 |
+| Test specification | ISO/IEC/IEEE 29119-3 (id, objective, priority, traceability, preconditions, test data, steps, expected result); ISTQB test design techniques |
+| Unit tests | Arrange-Act-Assert; names follow the framework's convention; TC ids via standard metadata (`@DisplayName`/`@Tag`, `[Trait]`, `pytest.mark`, `t.Run`...) |
+| Code | The project's own conventions first, then the language's official style guide (Google Java Style, .NET conventions, PEP 8, Effective Go, PSR-12, Effective Dart...) |
+| API | OpenAPI 3.x, HTTP semantics per RFC 9110; RFC 9457 problem details when the project has no error format; ISO 8601 / RFC 3339 timestamps |
+| Security | OWASP Top 10 / ASVS |
+| Commits | Conventional Commits (`feat(REQ-001): T1 …`, `fix(REQ-001): …`, `chore(REQ-001): …`) plus git trailers |
+| Structure | No renaming, moving, deleting or reformatting of files, folders or public APIs outside the approved design; tests live where the ecosystem expects them. The reviewer reports violations as `major` or `critical`. |
 
-## 3. Vòng đời một requirement
+## 3. Lifecycle of a requirement
 
 ```bash
-aiws new REQ-001                 # tạo aiws/work/REQ-001 + nhánh aiws/REQ-001
-aiws run REQ-001                 # analysis → design → test spec, dừng ở gate duyệt design
-#   đọc 01-analysis.md, 02-design.md, 03-test-spec.md, api-contract.yaml
-aiws approve REQ-001 design      # hoặc: aiws reject REQ-001 design -m "đổi X vì Y"
-aiws run REQ-001                 # planning → từng task → review, dừng ở gate PR
-git push -u origin aiws/REQ-001  # NGƯỜI push, mở PR, review, merge
-aiws approve REQ-001 pr          # sau khi merge: sang nhánh aiws/REQ-001-knowledge
-aiws run REQ-001                 # cập nhật aiws/knowledge → done; push nhánh knowledge, mở PR nhỏ
-aiws trace REQ-001               # ma trận AC → TC → task → commit → test
+aiws new REQ-001                 # creates aiws/work/REQ-001 and branch aiws/REQ-001
+aiws run REQ-001                 # analysis → design → test spec, stops at the design gate
+#   read 01-analysis.md, 02-design.md, 03-test-spec.md, api-contract.yaml
+aiws approve REQ-001 design      # or: aiws reject REQ-001 design -m "change X because Y"
+aiws run REQ-001                 # planning → every task → review, stops at the PR gate
+git push -u origin aiws/REQ-001  # a HUMAN pushes, opens the PR, reviews and merges
+aiws approve REQ-001 pr          # after the merge: switches to aiws/REQ-001-knowledge
+aiws run REQ-001                 # updates aiws/knowledge → done; push that branch and open a small PR
+aiws trace REQ-001               # AC → TC → task → commit → test matrix
 ```
 
-Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lệnh cần chạy:
+When the orchestrator stops, `aiws status REQ-001` tells you why and what to run next:
 
-| Tình huống | Trạng thái | Người làm gì |
+| Situation | State | What the human does |
 | --- | --- | --- |
-| Analysis có câu hỏi `[blocking]` | `analysis / waiting_human` | `aiws answer REQ-001 -m "..."` rồi `aiws run` |
-| Design sẵn sàng | `design_approval / waiting_human` | `aiws approve … design` hoặc `aiws reject … design -m` |
-| Developer ghi `questions.md` | `design_change_requested` | `aiws answer … -m` (giữ design) hoặc `aiws redesign … -m` (quay lại design, phải duyệt lại) |
-| Task fail 3 lần | `implementation / blocked` | sửa tay hoặc revert, rồi `aiws resume REQ-001`, rồi `aiws run` |
-| Review có `[critical]` | tự quay lại `planning` | không cần làm gì: planner thêm task sửa |
-| Sửa design sau khi đã duyệt | tự quay về `design_approval` | duyệt lại |
+| Analysis has `[blocking]` questions | `analysis / waiting_human` | `aiws answer REQ-001 -m "..."`, then `aiws run` |
+| Design is ready | `design_approval / waiting_human` | `aiws approve … design` or `aiws reject … design -m` |
+| Developer wrote `questions.md` | `design_change_requested` | `aiws answer … -m` (keep the design) or `aiws redesign … -m` (back to design, needs a new approval) |
+| A task failed 3 times | `implementation / blocked` | fix or revert by hand, `aiws resume REQ-001`, then `aiws run` |
+| Review found a `[critical]` issue | back to `planning` automatically | nothing: the planner adds fix tasks |
+| The design changed after approval | back to `design_approval` automatically | approve again |
 
-Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **từ chối chạy trong phiên AI** và đòi gõ lại mã REQ để xác nhận. Trong script CI thì truyền `--yes`.
+Human-only commands (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **refuse to run inside an AI session** and ask you to retype the requirement id. Pass `--yes` in CI scripts.
 
-**Chạy song song:** tại một thời điểm chỉ một REQ được ghi source, từ lúc vào implementation tới khi PR merge (source lock). Các REQ khác vẫn làm analysis/design được, mỗi REQ trong worktree riêng:
+**Parallel work:** only one requirement may write source code at a time, from implementation until its PR is merged (the source lock). Other requirements can still run analysis and design, each in its own worktree:
 
 ```bash
 aiws new REQ-002 --worktree ../ws-REQ-002
 cd ../ws-REQ-002 && aiws run REQ-002
 ```
 
-## 4. Enforcement: 4 lớp, lớp sau vẫn chặn khi lớp trước bị vượt
+## 4. Enforcement: four layers, each one still blocks if the previous one is bypassed
 
-| Lớp | Hiện thực |
+| Layer | Implementation |
 | --- | --- |
-| 1. Orchestrator | Phase bị khoá thì agent không được gọi. Approval gắn hash của 02/03/api-contract; file bị sửa thì approval mất hiệu lực. Có giới hạn retry, vượt thì `blocked`. |
-| 2. Tool permission | Headless: `claude -p --permission-mode dontAsk --allowedTools …` theo contract. Reviewer không có Bash. Developer chỉ được chạy lệnh build/test. |
-| 3. Hook | `aiws guard` (PreToolUse cho Edit/Write/Read/Bash/PowerShell) đọc `AIWS_*` env hoặc nhánh `aiws/REQ-*` + `state.yaml` và chặn ghi ngoài scope. Bash lồng như `bash -c`, `node …/aiws.js approve`, `git -C . push` cũng bị phân tích. |
-| 4. Git + diff-scope | Sau MỌI lần chạy AI, orchestrator so trạng thái git trước và sau: file ngoài scope bị revert và lần chạy bị đánh fail, bất kể được ghi bằng cách nào. Commit có trailer. `aiws check …` dùng cho CI. |
+| 1. Orchestrator | Agents of a locked phase are never called. Approvals carry the hash of 02/03/api-contract; editing those files invalidates the approval. Retries are capped; beyond the cap the requirement is `blocked`. |
+| 2. Tool permissions | Headless: `claude -p --permission-mode dontAsk --allowedTools …` per contract. The reviewer has no Bash; the developer may only run the build/test commands. |
+| 3. Hook | `aiws guard` (PreToolUse for Edit/Write/Read/Bash/PowerShell) reads the `AIWS_*` environment or the `aiws/REQ-*` branch plus `state.yaml` and blocks writes outside the scope. Nested shells such as `bash -c`, `node …/aiws.js approve` or `git -C . push` are analysed too. |
+| 4. Git + diff-scope | After EVERY AI run the orchestrator compares git state before and after: files outside the scope are reverted and the run fails, however they were written. Commits carry trailers; `aiws check …` is meant for CI. |
 
-Diff-scope là đảm bảo thật; hook chỉ giúp chặn sớm. Diff-scope **không thấy file bị `.gitignore`**, vì vậy đừng để build output làm nơi chứa logic.
+Diff-scope is the real guarantee; the hook only blocks earlier. Diff-scope **cannot see files ignored by `.gitignore`**, so never keep logic in build output.
 
-## 5. Cấu hình
+## 5. Configuration
 
-| File | Nội dung |
+| File | Content |
 | --- | --- |
-| `config/workflow.yaml` | Phase, thứ tự, gate, retry, route khi fail/critical. Không có lệnh "skip phase": muốn bỏ thì sửa file này qua review. |
-| `config/policies.yaml` | `protected_paths`, `maintainer_editable`, `read_deny`, `phase_write_scope`, `commands`, `bash_denylist`, `limits`, `approvals.require_signed`. |
-| `config/runtime.yaml` | Adapter theo phase, map `model_hint` sang model (`opus`/`sonnet`), timeout, `guard_command`. |
-| `config/contracts/*.yaml` | Mỗi phase: agent, skills, tools, reads, outputs (heading bắt buộc, template), rules, checks, `max_attempts`. |
-| `agents/*.md` | Vai trò: frontmatter `id`, `description`, `tools`, `skills`, `model_hint` và thân là prompt. `{req}` và `{task}` được thay tự động. |
-| `skills/*/SKILL.md` | Kiến thức dùng chung, được chép sang `.claude/skills` và nhúng vào prompt headless. |
-| `templates/` | Mẫu output, heading và định dạng ID mà validator kiểm tra. |
+| `config/workflow.yaml` | Phases, order, gates, retries, routing on failure or critical findings. There is no "skip phase" command: change this file through review instead. |
+| `config/policies.yaml` | `protected_paths`, `maintainer_editable`, `read_deny`, `phase_write_scope`, `sides`, `commands`, `bash_allow_extra`, `bash_denylist`, `limits`, `approvals.require_signed`. |
+| `config/runtime.yaml` | Adapter per phase, `model_hint` → model mapping (`opus`/`sonnet`), timeout, `guard_command`. |
+| `config/contracts/*.yaml` | Per phase: agent, skills, tools, reads, outputs (required headings, template), rules, checks, `max_attempts`. |
+| `agents/*.md` | Roles: front matter `id`, `description`, `tools`, `skills`, `model_hint`; the body is the prompt. `{req}` and `{task}` are substituted. |
+| `skills/*/SKILL.md` | Shared knowledge, copied to `.claude/skills` and embedded in headless prompts. |
+| `templates/` | Output templates: the headings and id formats that the validator checks. |
 
-Rule validator có sẵn: `ac_numbered`, `no_blocking_questions`, `every_ac_has_tc`, `plan_valid`, `review_no_open_critical`, cùng `format: openapi|yaml` cho output.
+Built-in validator rules: `ac_numbered`, `no_blocking_questions`, `every_ac_has_tc`, `plan_valid`, `review_no_open_critical`, plus `format: openapi|yaml` for outputs.
 
-## 6. Làm việc tương tác
+## 6. Interactive use
 
-Hai chế độ dùng chung một bộ bảo vệ:
+Both modes share the same protection:
 
-- **Tự động:** `aiws run`.
-- **Tương tác:** mở `claude` trên nhánh `aiws/REQ-001` và yêu cầu *"dùng agent architect cho REQ-001"*. Hook suy ra phase từ `state.yaml` và chặn ghi sai phase.
+- **Automatic:** `aiws run`.
+- **Interactive:** open `claude` on branch `aiws/REQ-001` and ask *"use the architect agent for REQ-001"*. The hook infers the phase from `state.yaml` and blocks writes that belong to another phase.
 
-Trên `main`, không ở REQ nào, bạn được dùng Claude để bảo trì chính `aiws/` (agents, skills, config). Riêng `source-legacy/`, `requirements/`, `state.yaml` và `approvals/` luôn bị khoá, và AI không bao giờ được chạy `aiws approve…`.
+On `main`, outside any requirement, you may use Claude to maintain `aiws/` itself (agents, skills, config). `source-legacy/`, `requirements/`, `state.yaml` and `approvals/` stay locked, and an AI can never run `aiws approve…`.
 
-Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
+To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 
-## 7. Evidence, truy vết, CI
+## 7. Evidence, traceability, CI
 
-- `aiws/work/REQ/evidence/runs/run-NNNN.json` + `.prompt.md` ghi: adapter, lệnh, tool được phép, hash prompt, thời gian, số turn, chi phí quy đổi, file đã đổi, vi phạm đã revert, lỗi validate.
-- `evidence/test-results/<task>-attempt-N.yaml` ghi: lệnh test, exit code, log rút gọn, TC của task.
-- Commit của task có các trailer `REQ-ID`, `Task`, `Tests`, `AIWS-Run`. Lệnh `git log --grep "REQ-ID: REQ-001"` liệt kê mọi thay đổi của một REQ.
-- CI chạy `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (bật `require_signed` để bắt buộc approval ký GPG/SSH qua `aiws approve --sign`) và `aiws trace REQ-001`.
+- `aiws/work/REQ/evidence/runs/run-NNNN.json` and `.prompt.md` record the adapter, command, allowed tools, prompt hash, duration, turns, estimated cost, changed files, reverted violations and validation errors.
+- `evidence/test-results/<task>-attempt-N.yaml` records the test command, exit code, a log excerpt and the task's test cases.
+- Task commits carry the trailers `REQ-ID`, `Task`, `Tests` and `AIWS-Run`; `git log --grep "REQ-ID: REQ-001"` lists every change of a requirement.
+- CI runs `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (enable `require_signed` to require GPG/SSH-signed approvals via `aiws approve --sign`) and `aiws trace REQ-001`.
 
-## 8. Chi phí
+## 8. Cost
 
-`cost_usd` trong evidence là **giá quy đổi theo bảng giá API** mà Claude Code báo. Nếu Claude Code đăng nhập bằng gói Claude (Pro/Max) thì con số này chỉ trừ vào hạn mức của gói. Nếu dùng API key hoặc Console thì đó là tiền thật. Bạn gõ `/status` trong Claude Code để biết mình đang dùng loại nào.
+`cost_usd` in the evidence is the **API list-price equivalent** reported by Claude Code. With a Claude subscription (Pro/Max) it only counts against your plan's usage limits; with an API key or Console account it is real spend. Run `/status` in Claude Code to see which applies.
 
-Lần chạy thử thật trên dự án mẫu (sonnet, REQ nhỏ có 2 task) hết khoảng 1,3 USD quy đổi cho 8 lần chạy. Muốn giảm thì đổi `runtime.yaml → claude.models`. `npm test` dùng adapter `scripted` nên không tốn token.
+A real run on the sample project (sonnet, a small requirement with 2 tasks) cost about USD 1.30 equivalent over 8 runs. Change `runtime.yaml → claude.models` to reduce it. `npm test` uses the `scripted` adapter and costs nothing.
 
-## 9. Khác biệt so với Spec V1 (có chủ đích)
+## 9. Intentional differences from spec V1
 
-| Spec | Hiện thực | Lý do |
+| Spec | Implementation | Reason |
 | --- | --- | --- |
-| CLI Python | CLI Node (JS ESM, 2 dependency) | Máy dev không có Python. Hook khởi động nhanh, và interface adapter vẫn là `sync` / `runAgent`. |
-| Developer tự commit | Orchestrator commit khi build + test pass | AI không cần quyền git, trailer luôn đúng, và commit không chứa code fail. |
-| Phase `unit_test` do agent tester | Bước builtin: orchestrator chạy toàn bộ suite của side bị chạm, và kiểm mọi TC của task có xuất hiện trong test | Không tin lời AI về kết quả test. Agent `tester` vẫn có cho chế độ tương tác. |
-| `aiws/work/.source-lock` | `<git-common-dir>/aiws-source-lock.yaml`, không commit | Dùng chung cho mọi worktree, không gây conflict git. |
-| Nhả lock sau knowledge_update | Nhả khi PR merge (`approve pr`) | Knowledge update không ghi source, nên không cần giữ lock lâu thêm. |
-| Critical ở review / PR yêu cầu sửa → implementation | → planning (planner thêm task sửa, giữ task đã xong) | Task sửa cần `allowed_files` rõ ràng. |
-| Song song analysis/design | Qua `aiws new --worktree` | Một thư mục làm việc chỉ checkout được một nhánh. |
-| `permissions.deny` cho mọi `protected_paths` | Deny tĩnh chỉ cho path không ai sửa qua Claude; `maintainer_editable` do hook xử lý theo ngữ cảnh | Để người bảo trì vẫn sửa được `aiws/` bằng Claude trên `main`. |
-| Hook matcher Edit/Write, Bash | Thêm Read và PowerShell | Claude Code trên Windows có tool PowerShell. |
-| — | Hash approval chuẩn hoá CRLF → LF | Tránh approval mất hiệu lực vì `core.autocrlf`. |
-| — | Thêm lệnh `answer`, `redesign`, `unlock`, `prompt`, `trace`, `check …`, `detect` | Cần để vận hành các gate trong state machine và hỗ trợ đa ngôn ngữ. |
-| Lệnh build/test ví dụ npm/Maven | `commands` trống, `aiws detect` đề xuất theo stack; side tuỳ ý | Không phụ thuộc ngôn ngữ. |
+| Python CLI | Node.js CLI (ES modules, 2 dependencies) | No Python on the reference machine; fast hook start-up; the adapter interface is still `sync` / `runAgent`. |
+| Developer commits | Orchestrator commits once build and tests pass | The AI needs no git rights, trailers are always correct and failing code is never committed. |
+| `unit_test` phase run by a tester agent | Built-in step: the orchestrator runs the full suite of every touched side and checks each test case id appears in the tests | Test results are never taken on the AI's word. The `tester` agent remains for interactive use. |
+| `aiws/work/.source-lock` | `<git-common-dir>/aiws-source-lock.yaml`, never committed | Shared by all worktrees, no git conflicts. |
+| Lock released after knowledge_update | Released when the PR is merged (`approve pr`) | The knowledge update does not write source code. |
+| Review criticals / PR change requests → implementation | → planning (the planner adds fix tasks, done tasks stay done) | Fix tasks need explicit `allowed_files`. |
+| Parallel analysis/design | Through `aiws new --worktree` | A working tree can only check out one branch. |
+| `permissions.deny` for every protected path | Static deny only for paths nobody edits through Claude; `maintainer_editable` is handled by the context-aware hook | Maintainers can still edit `aiws/` with Claude on `main`. |
+| Hook matcher Edit/Write, Bash | Also Read and PowerShell | Claude Code on Windows has a PowerShell tool. |
+| — | Approval hashes normalise CRLF → LF | Approvals do not break because of `core.autocrlf`. |
+| — | Extra commands `answer`, `redesign`, `unlock`, `prompt`, `trace`, `check …`, `detect` | Needed to operate the gates and to support any language. |
+| Example npm/Maven build commands | `commands` is empty; `aiws detect` proposes them per stack; any number of sides | Language-agnostic. |
 
-## 10. Phát triển CLI
+## 10. Developing the CLI
 
 ```bash
 cd aiws/adapters/cli
-npm test                         # 22 test: e2e, guard, diff-scope, retry, gate, lock, init/sync, đa ngôn ngữ (~4 phút)
-AIWS_KEEP_TMP=1 npm test         # giữ lại workspace tạm để soi
+npm ci
+npm run check                    # ESLint + Prettier check + all tests
+npm test                         # 22 tests: e2e, guard, diff-scope, retry, gates, lock, init/sync, languages (~4 min)
+AIWS_KEEP_TMP=1 npm test         # keep the temporary workspaces for inspection
 ```
 
-Dự án mẫu dùng cho test nằm ở `test/fixtures/sample`. Các agent giả lập nằm ở `test/fixtures/scripted` (mỗi agent là một script Node ghi output như một AI "ngoan").
+CI (GitHub Actions) runs `lint`, `format:check` and `test` on Windows, Linux and macOS with Node 22 and 24. For pull requests from `aiws/REQ-*` branches, the **AIWS gates** job re-checks commit trailers, approvals and the traceability matrix. See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 
-## 11. Việc còn mở
+The sample project used by the tests lives in `test/fixtures/sample`; the simulated agents live in `test/fixtures/scripted` (each agent is a Node script that writes its outputs like a well-behaved AI).
 
-- [ ] Đưa code thật vào `source-fe/`, `source-be/`, `source-legacy/`; chạy `aiws detect --write` để điền `commands` trong `policies.yaml` (hiện đang trống).
-- [ ] Chốt `fe-conventions` / `be-conventions` (đang là khung `[CẦN XÁC NHẬN]`).
-- [ ] Công cụ kiểm API contract (Spec §13). Thêm `commands.api_contract_be` / `api_contract_fe`; phase review sẽ tự chạy chúng và coi lỗi là finding critical.
-- [ ] Chạy thử DB migration (Spec §13, lựa chọn A/B).
-- [ ] V2: adapter Codex/Gemini (`src/adapters/`), review chéo qua `runtime.yaml → phases.review.adapter`.
+## 11. Open items
+
+- [ ] Put real code into `source-fe/`, `source-be/`, `source-legacy/`; run `aiws detect --write` to fill `commands` in `policies.yaml` (currently empty).
+- [ ] Finalise `fe-conventions` / `be-conventions` (currently skeletons marked `[CẦN XÁC NHẬN]`).
+- [ ] API contract tooling (spec §13): add `commands.api_contract_be` / `api_contract_fe`; the review phase runs them and treats failures as critical findings.
+- [ ] Trial DB migrations (spec §13, option A or B).
+- [ ] V2: Codex/Gemini adapters (`src/adapters/`) and cross-model review via `runtime.yaml → phases.review.adapter`.
