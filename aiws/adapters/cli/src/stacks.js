@@ -38,10 +38,12 @@ const DETECTORS = [
   (d, rel) => {
     if (!has(d, 'pom.xml')) return null;
     if (has(d, 'mvnw')) {
+      // `.\` is required on Windows: with NoDefaultCurrentDirectoryInExePath set (Claude Code sets it),
+      // cmd.exe does not look up bare `mvnw.cmd` in the current directory.
       return {
         stack: 'java-maven',
-        build: { windows: `cd ${rel} && mvnw.cmd -q -DskipTests package`, posix: `cd ${rel} && ./mvnw -q -DskipTests package` },
-        test: { windows: `cd ${rel} && mvnw.cmd -q test`, posix: `cd ${rel} && ./mvnw -q test` },
+        build: { windows: `cd ${rel} && .\\mvnw.cmd -q -DskipTests package`, posix: `cd ${rel} && ./mvnw -q -DskipTests package` },
+        test: { windows: `cd ${rel} && .\\mvnw.cmd -q test`, posix: `cd ${rel} && ./mvnw -q test` },
       };
     }
     return { stack: 'java-maven', build: `mvn -q -f ${rel}/pom.xml -DskipTests package`, test: `mvn -q -f ${rel}/pom.xml test` };

@@ -35,7 +35,7 @@ test('detectStacks recognises many languages and treats legacy as read-only', ()
   const { sides, commands, report } = detectStacks(root);
   assert.deepEqual(Object.keys(sides).sort(), ['api', 'be', 'fe', 'ml', 'mobile', 'portal', 'worker']);
   assert.equal(sides.legacy, undefined);
-  assert.deepEqual(commands.be_test, { windows: 'cd source-be && mvnw.cmd -q test', posix: 'cd source-be && ./mvnw -q test' });
+  assert.deepEqual(commands.be_test, { windows: 'cd source-be && .\\mvnw.cmd -q test', posix: 'cd source-be && ./mvnw -q test' });
   assert.equal(commands.api_test, 'dotnet test source-api/Api.sln');
   assert.equal(commands.worker_test, 'go -C source-worker test ./...');
   assert.equal(commands.ml_test, 'python -m pytest -q source-ml');
@@ -95,6 +95,20 @@ test('headless Bash permissions are derived from the project commands, for any l
   assert.deepEqual(commandPrefixes('mvn -q -f source-be/pom.xml test'), ['mvn']);
   assert.deepEqual(commandPrefixes('go -C source-be test ./...'), ['go']);
   assert.deepEqual(commandPrefixes('cd source-be && ./mvnw -q test'), ['cd source-be', './mvnw']);
+});
+
+test('headless Bash permissions include both OS variants of a command', () => {
+  const ws = {
+    policies: {
+      sides: { be: 'source-be/**' },
+      commands: { be_test: { windows: 'cd source-be && .\\mvnw.cmd -q test', posix: 'cd source-be && ./mvnw -q test' } },
+    },
+  };
+  const tools = allowedTools(ws, { tools: ['read', 'bash'], bash_allow: ['{side}_test'] });
+  // the orchestrator runs the windows form in cmd.exe; the agent types the posix form in Git Bash
+  assert.ok(tools.includes('Bash(.\\mvnw.cmd *)'));
+  assert.ok(tools.includes('Bash(./mvnw *)'));
+  assert.ok(tools.includes('Bash(cd source-be *)'));
 });
 
 test('TC ids are recognised in every language naming style', () => {

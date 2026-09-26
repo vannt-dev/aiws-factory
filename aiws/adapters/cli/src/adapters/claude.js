@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { writeText, fill, osCommand } from '../util.js';
+import { writeText, fill } from '../util.js';
 import { commandPrefixes } from '../stacks.js';
 
 const TOOL_MAP = {
@@ -123,8 +123,11 @@ export function allowedTools(ws, contract) {
     for (const entry of [...(contract.bash_allow ?? []), ...(pol.bash_allow_extra ?? [])]) {
       const keys = entry.includes('{side}') ? sides.map((s) => entry.replace('{side}', s)) : [entry];
       for (const key of keys) {
-        const configured = osCommand(pol.commands?.[key]);
-        if (configured) commandPrefixes(configured).forEach((p) => prefixes.add(p));
+        const configured = pol.commands?.[key];
+        // both OS variants: on Windows the orchestrator runs the `windows` form in cmd.exe,
+        // but Claude Code's Bash tool is Git Bash, where the agent types the `posix` form
+        const variants = typeof configured === 'string' ? [configured] : Object.values(configured ?? {});
+        if (variants.length) variants.forEach((v) => commandPrefixes(v).forEach((p) => prefixes.add(p)));
         else if (!entry.includes('{side}') && !(key in (pol.commands ?? {}))) prefixes.add(key);
       }
     }
