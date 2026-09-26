@@ -88,6 +88,9 @@ test('guard --bash: denylist incl. nested, path-prefixed and option-laden forms'
     'git commit -m "sneaky"',
     'rm -rf source-fe',
     '$(aiws unlock)',
+    // inside a phase an agent may not start or advance the pipeline itself
+    'aiws run REQ-001',
+    'node aiws/adapters/cli/bin/aiws.js new REQ-002',
   ];
   const phaseEnv = inPhase('implementation', { AIWS_TASK: 'T1' });
   for (const command of blocked) assert.equal(hook(root, { tool_name: 'Bash', tool_input: { command } }, phaseEnv).status, 2, command);
@@ -112,12 +115,24 @@ test('guard --bash: denylist incl. nested, path-prefixed and option-laden forms'
   for (const command of allowed) assert.equal(hook(root, { tool_name: 'Bash', tool_input: { command } }, phaseEnv).status, 0, command);
 });
 
-test('guard --bash: a maintainer session on main may commit, but an AI may never approve or read secrets', () => {
+test('guard --bash: a maintainer session may commit and drive aiws, but an AI may never decide a gate or read secrets', () => {
   const root = makeWorkspace();
   const run = (command) => hook(root, { tool_name: 'Bash', tool_input: { command } }).status;
   assert.equal(run('git commit -m "update skills"'), 0);
   assert.equal(run('git push origin main'), 0);
-  assert.equal(run('aiws approve REQ-001 design --yes'), 2);
+  // an assistant may start and advance a requirement; the run still stops at every human gate
+  assert.equal(run('aiws new REQ-001'), 0);
+  assert.equal(run('node aiws/adapters/cli/bin/aiws.js run REQ-001'), 0);
+  for (const gate of [
+    'approve REQ-001 design --yes',
+    'reject REQ-001 design -m x',
+    'answer REQ-001 -m x',
+    'redesign REQ-001 -m x',
+    'resume REQ-001',
+    'unlock',
+  ]) {
+    assert.equal(run(`aiws ${gate}`), 2, gate);
+  }
   assert.equal(run('bash -c "aiws resume REQ-001"'), 2);
   assert.equal(run('cat source-be/.env'), 2);
 });

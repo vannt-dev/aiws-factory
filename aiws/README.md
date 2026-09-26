@@ -131,7 +131,7 @@ Both modes share the same protection:
 - **Automatic:** `aiws run`.
 - **Interactive:** open `claude` on branch `aiws/REQ-001` and ask *"use the architect agent for REQ-001"*. The hook infers the phase from `state.yaml` and blocks writes that belong to another phase.
 
-On `main`, outside any requirement, you may use Claude to maintain `aiws/` itself (agents, skills, config). `source-legacy/`, `requirements/`, `state.yaml` and `approvals/` stay locked, and an AI can never run `aiws approve…`.
+On `main`, outside any requirement, you may use Claude to maintain `aiws/` itself (agents, skills, config). Claude can also coordinate the workflow by running `aiws new`, `aiws run` or `aiws status`; each run still stops at the human gates. `source-legacy/`, `requirements/`, `state.yaml` and `approvals/` stay locked. An AI can never run the gate commands `approve`, `reject`, `answer`, `redesign`, `resume` or `unlock`, and inside a phase it cannot start a nested `aiws run` either.
 
 To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 

@@ -21,11 +21,7 @@
       "Bash(aiws resume)",
       "Bash(aiws resume *)",
       "Bash(aiws unlock)",
-      "Bash(aiws unlock *)",
-      "Bash(aiws new)",
-      "Bash(aiws new *)",
-      "Bash(aiws run)",
-      "Bash(aiws run *)"
+      "Bash(aiws unlock *)"
     ]
   },
   "hooks": {

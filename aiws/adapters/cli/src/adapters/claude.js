@@ -3,6 +3,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { writeText, fill } from '../util.js';
 import { commandPrefixes } from '../stacks.js';
+import { isHumanOnlyEntry } from '../gate.js';
 
 const TOOL_MAP = {
   read: ['Read', 'Grep', 'Glob'],
@@ -81,11 +82,11 @@ export function settings(ws) {
   // Static deny rules cannot tell an AIWS phase from a maintainer editing aiws/ itself,
   // so only paths that nobody edits through Claude go here; the guard hook covers the rest.
   for (const p of hardProtected(pol)) deny.push(`Edit(${rel(p)})`);
-  // Only the human-only `aiws ...` commands are denied statically; the rest of bash_denylist
-  // (git commit/push, curl...) is enforced by the guard hook inside a REQ phase only, so a
-  // maintainer on main can still commit through Claude. Headless runs never allow git anyway.
+  // Only the human-only gate commands (aiws approve, reject, ...) are denied statically; the rest of
+  // bash_denylist (git commit/push, curl, aiws run...) is enforced by the guard hook inside a REQ
+  // phase only, so a maintainer session can still commit and drive `aiws run` through Claude.
   for (const c of pol.bash_denylist ?? []) {
-    if (c.startsWith('aiws ')) deny.push(`Bash(${c})`, `Bash(${c} *)`);
+    if (isHumanOnlyEntry(c)) deny.push(`Bash(${c})`, `Bash(${c} *)`);
   }
   const guard = ws.runtime.claude?.guard_command ?? DEFAULT_GUARD;
   return {

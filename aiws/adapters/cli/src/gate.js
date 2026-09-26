@@ -2,6 +2,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { AiwsError, readYaml, writeYaml, hashFile, nowIso, pad, run } from './util.js';
 
+/** `aiws` subcommands only a human may run (they decide gates). Everything else may be driven by an assistant. */
+export const HUMAN_ONLY_COMMANDS = ['approve', 'reject', 'answer', 'redesign', 'resume', 'unlock'];
+
+/** True when a bash_denylist entry such as "aiws approve" names a human-only command. */
+export function isHumanOnlyEntry(entry) {
+  const m = /^aiws\s+(\S+)/.exec(String(entry).trim());
+  return Boolean(m && HUMAN_ONLY_COMMANDS.includes(m[1]));
+}
+
 const AI_SESSION_VARS = ['AIWS_PHASE', 'CLAUDECODE', 'CLAUDE_CODE_ENTRYPOINT', 'CODEX_SANDBOX', 'GEMINI_CLI'];
 
 /** True when the current process looks like it was started from inside an AI agent session. */

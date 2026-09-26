@@ -5,6 +5,7 @@ import { matcher, writeScope, orchestratorPaths } from './scope.js';
 import { currentBranch } from './git.js';
 import { loadState } from './state.js';
 import { hardProtected } from './adapters/claude.js';
+import { isHumanOnlyEntry } from './gate.js';
 
 const WRITE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 const READ_TOOLS = new Set(['Read']);
@@ -131,8 +132,9 @@ function collapseGitOptions(tokens) {
 }
 
 /**
- * Shell command check. Inside a REQ phase the whole bash_denylist applies; in a plain maintainer
- * session only the human-only `aiws ...` commands stay blocked (an AI must never approve).
+ * Shell command check. Inside a REQ phase the whole bash_denylist applies (so an agent can neither
+ * run git nor start a nested `aiws run`). In a plain maintainer session only the human-only gate
+ * commands stay blocked: an assistant may drive `aiws new` / `aiws run`, but never approve.
  * Secret paths are blocked everywhere.
  */
 export function decideBash(pol, command, { inPhase = true } = {}) {
@@ -140,7 +142,7 @@ export function decideBash(pol, command, { inPhase = true } = {}) {
   for (const entry of pol.bash_denylist ?? []) {
     const e = normalizeCommand(entry);
     if (!e) continue;
-    if (!inPhase && !e.startsWith('aiws ')) continue;
+    if (!inPhase && !isHumanOnlyEntry(e)) continue;
     const re = new RegExp(`(^|\\s|;)${escapeRe(e)}(?=\\s|;|$)`);
     if (re.test(norm)) return deny(`command matches bash_denylist entry '${entry}'`);
   }
