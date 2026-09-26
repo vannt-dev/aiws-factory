@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Headless Bash permissions include the prefixes of both the `windows` and the
   `posix` form of each command, because Claude Code's Bash tool on Windows is
   Git Bash.
+- `aiws detect --write` no longer reformats `policies.yaml`. It rewrites only
+  the `source_paths`, `sides` and `commands` blocks that actually change,
+  writes them in block style, merges with existing values instead of replacing
+  them, and does nothing when the file is already up to date. Comments and
+  alignment elsewhere stay byte-for-byte.
 
 ### Changed
 

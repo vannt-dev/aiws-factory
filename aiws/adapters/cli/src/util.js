@@ -34,6 +34,31 @@ export function writeYaml(file, data) {
   writeText(file, YAML.stringify(data, { lineWidth: 0 }));
 }
 
+/**
+ * Replaces one top-level `key:` block of a YAML text with `value`, leaving every other line
+ * (comments, alignment, flow style) byte-for-byte unchanged. Appends the block if the key is missing.
+ * The block spans the key line and the indented or blank lines after it.
+ */
+export function replaceYamlBlock(text, key, value) {
+  const eol = text.includes('\r\n') ? '\r\n' : '\n';
+  const lines = text.split(/\r?\n/);
+  let rendered = YAML.stringify({ [key]: value }, { lineWidth: 0 })
+    .trimEnd()
+    .split('\n');
+  const start = lines.findIndex((l) => new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`).test(l));
+  if (start === -1) {
+    const body = text.replace(/\s*$/, '');
+    return body + eol + eol + rendered.join(eol) + eol;
+  }
+  let end = start + 1;
+  while (end < lines.length && (lines[end].trim() === '' || /^\s/.test(lines[end]))) end++;
+  while (end > start + 1 && lines[end - 1].trim() === '') end--;
+  // keep a trailing comment of the key line, e.g. `protected_paths:   # ...`
+  const comment = /^[^#"']*:[^#"']*?(\s+#.*)$/.exec(lines[start])?.[1];
+  if (comment) rendered = [rendered[0] + comment, ...rendered.slice(1)];
+  return [...lines.slice(0, start), ...rendered, ...lines.slice(end)].join(eol);
+}
+
 /** sha256 of file content with line endings normalised, so autocrlf never invalidates an approval. */
 export function hashFile(file) {
   const content = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
