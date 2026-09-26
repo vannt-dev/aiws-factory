@@ -1,6 +1,8 @@
 # aiws-factory
 
-Workspace vận hành theo **AIWS — AI Software Factory**: requirement → phân tích → design + test spec → người duyệt → code theo task + unit test → review → người merge PR. V1 chạy trên Claude Code.
+Workspace vận hành theo **AIWS — AI Software Factory**: requirement → phân tích → design + test spec → người duyệt → code theo task + unit test → review → người merge PR. V1 chạy trên Claude Code, không phụ thuộc ngôn ngữ của FE/BE/legacy.
+
+**Landing page:** https://vannt-dev.github.io/aiws-factory/
 
 ```
 requirements/     requirement đầu vào (người viết)
