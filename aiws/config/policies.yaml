@@ -24,11 +24,20 @@ protected_paths:            # không agent nào được ghi, ở mọi phase
   - aiws/templates/**
   - aiws/adapters/**
   - aiws/docs/**
+  - aiws/README*.md
   - aiws/work/*/state.yaml
   - aiws/work/*/approvals/**
   - AGENTS.md
   - CLAUDE.md
   - .claude/**
+  - .github/**            # CI, templates, community files
+  - LICENSE
+  - README.md
+  - README.vi.md
+  - CHANGELOG.md
+  - .editorconfig
+  - .gitattributes
+  - .gitignore
 
 # Người bảo trì AIWS được sửa các path này qua Claude Code KHI KHÔNG ở trong phase nào
 # (không có AIWS_PHASE, không đứng trên nhánh aiws/REQ-*). Trong phase, chúng vẫn bị khoá.
@@ -39,9 +48,18 @@ maintainer_editable:
   - aiws/templates/**
   - aiws/adapters/**
   - aiws/docs/**
+  - aiws/README*.md
   - AGENTS.md
   - CLAUDE.md
   - .claude/**
+  - .github/**
+  - LICENSE
+  - README.md
+  - README.vi.md
+  - CHANGELOG.md
+  - .editorconfig
+  - .gitattributes
+  - .gitignore
 
 read_deny:                  # không agent nào được đọc
   - "**/.env"

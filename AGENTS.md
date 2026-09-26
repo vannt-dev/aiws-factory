@@ -14,9 +14,10 @@ Workspace này vận hành theo **AIWS (AI Software Factory)**: requirement -> a
 | `aiws/work/REQ-xxx/` | Output từng phase, state, approval, evidence | AI (output) / orchestrator (state) / người (approval) |
 | `aiws/adapters/cli/` | Orchestrator `aiws` (Node) | Người |
 | `CLAUDE.md`, `.claude/` | Sinh bởi `aiws sync claude` | Không sửa tay |
+| `README*.md`, `CHANGELOG.md`, `LICENSE`, `.github/`, `.editorconfig`, `.gitattributes`, `.gitignore` | Tài liệu, CI, cấu hình repo | Người |
 
 ## Quy tắc bắt buộc cho mọi AI
-1. **Không sửa** `source-legacy/`, `requirements/`, `aiws/config/`, `aiws/agents/`, `aiws/skills/`, `aiws/templates/`, `aiws/adapters/`, `aiws/work/*/state.yaml`, `aiws/work/*/approvals/`, `AGENTS.md`, `CLAUDE.md`, `.claude/` khi đang làm việc cho một REQ.
+1. **Không sửa** `source-legacy/`, `requirements/`, `aiws/config/`, `aiws/agents/`, `aiws/skills/`, `aiws/templates/`, `aiws/adapters/`, `aiws/work/*/state.yaml`, `aiws/work/*/approvals/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.github/`, `README*.md`, `CHANGELOG.md`, `LICENSE` khi đang làm việc cho một REQ.
 2. **Không tự chuyển phase, không tự approve.** Chỉ orchestrator (`aiws`) đổi state; chỉ người chạy `aiws approve/reject/answer/redesign/resume`.
 3. **Chỉ ghi trong phạm vi phase/task hiện tại** (`aiws/config/policies.yaml` -> `phase_write_scope`). Ghi ngoài phạm vi bị hook chặn hoặc bị diff-scope revert và đánh fail.
 4. **Không đổi thiết kế khi đang code.** Thiết kế sai/thiếu -> ghi câu hỏi vào `aiws/work/<REQ>/questions.md` và dừng.
