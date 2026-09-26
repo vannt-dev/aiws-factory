@@ -1,20 +1,26 @@
 version: 2
+# One grouped pull request per ecosystem per week instead of one per package, so CI runs once per batch.
 updates:
   - package-ecosystem: npm
     directory: /aiws/adapters/cli
     schedule:
       interval: weekly
+    open-pull-requests-limit: 2
     commit-message:
       prefix: build
       include: scope
     groups:
-      dev-dependencies:
-        dependency-type: development
+      npm-dependencies:
+        patterns: ["*"]
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 2
     commit-message:
       prefix: ci
       include: scope
+    groups:
+      github-actions:
+        patterns: ["*"]

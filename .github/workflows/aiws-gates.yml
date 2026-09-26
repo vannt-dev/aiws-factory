@@ -1,0 +1,45 @@
+name: AIWS gates
+
+# Re-checks the AIWS gates on pull requests opened from aiws/REQ-* branches by the orchestrator:
+# commit trailers, signed/valid approvals and the AC -> TC -> task -> commit trace.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aiws-gates-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: AIWS gates
+    if: startsWith(github.head_ref, 'aiws/REQ-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HEAD_REF: ${{ github.head_ref }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: aiws/adapters/cli/package-lock.json
+      - run: npm ci --omit=dev
+        working-directory: aiws/adapters/cli
+      - name: Resolve requirement id
+        run: |
+          req="${HEAD_REF#aiws/}"
+          echo "REQ=${req%-knowledge}" >> "$GITHUB_ENV"
+      - name: Commit trailers
+        run: node aiws/adapters/cli/bin/aiws.js check commit-trailer --req "$REQ"
+      - name: Approvals
+        run: node aiws/adapters/cli/bin/aiws.js check approvals --req "$REQ"
+      - name: Traceability
+        run: node aiws/adapters/cli/bin/aiws.js trace "$REQ"

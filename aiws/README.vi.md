@@ -175,7 +175,14 @@ npm test                         # 22 test: e2e, guard, diff-scope, retry, gate,
 AIWS_KEEP_TMP=1 npm test         # giữ lại workspace tạm để soi
 ```
 
-CI (GitHub Actions) chạy `lint`, `format:check` và `test` trên Windows, Linux và macOS với Node 22 và 24. Với PR từ nhánh `aiws/REQ-*`, job **AIWS gates** kiểm lại trailer commit, approval và ma trận truy vết. Cách đóng góp: [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
+CI (GitHub Actions) là pipeline nhiều bước; bước sau chỉ chạy khi bước trước đạt:
+
+1. **Lint và định dạng**: ESLint và Prettier, chạy một lần.
+2. **Test trên Linux** với Node 22, phiên bản tối thiểu được hỗ trợ.
+3. **Test trên Windows và macOS** với Node 22, kèm Linux với Node 24.
+4. **CI result**: một trạng thái duy nhất để dùng cho branch protection.
+
+CI chỉ chạy khi CLI, bộ kit `aiws/` hoặc `AGENTS.md` thay đổi; sửa tài liệu thuần thì bỏ qua. Workflow riêng **AIWS gates** kiểm lại trailer commit, approval và ma trận truy vết cho PR từ nhánh `aiws/REQ-*`. Cách đóng góp: [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 
 Dự án mẫu dùng cho test nằm ở `test/fixtures/sample`. Các agent giả lập nằm ở `test/fixtures/scripted` (mỗi agent là một script Node ghi output như một AI "ngoan").
 

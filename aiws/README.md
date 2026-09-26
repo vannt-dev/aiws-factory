@@ -175,7 +175,14 @@ npm test                         # 22 tests: e2e, guard, diff-scope, retry, gate
 AIWS_KEEP_TMP=1 npm test         # keep the temporary workspaces for inspection
 ```
 
-CI (GitHub Actions) runs `lint`, `format:check` and `test` on Windows, Linux and macOS with Node 22 and 24. For pull requests from `aiws/REQ-*` branches, the **AIWS gates** job re-checks commit trailers, approvals and the traceability matrix. See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
+CI (GitHub Actions) is a staged pipeline; each stage runs only if the previous one passed:
+
+1. **Lint and format**: ESLint and Prettier, once.
+2. **Test on Linux** with Node 22, the minimum supported version.
+3. **Test on Windows and macOS** with Node 22, plus Linux with Node 24.
+4. **CI result**: a single status for branch protection.
+
+It starts only when the CLI, the `aiws/` kit or `AGENTS.md` change; docs-only changes skip it. A separate **AIWS gates** workflow re-checks commit trailers, approvals and the traceability matrix on pull requests from `aiws/REQ-*` branches. See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 
 The sample project used by the tests lives in `test/fixtures/sample`; the simulated agents live in `test/fixtures/scripted` (each agent is a Node script that writes its outputs like a well-behaved AI).
 

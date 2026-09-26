@@ -49,7 +49,7 @@ Every behaviour change needs a test. End-to-end scenarios use the scripted adapt
 - Keep the subject at 72 characters or fewer, in the imperative mood; explain the *why* in the body.
 - Add a line under **Unreleased** in [CHANGELOG.md](../CHANGELOG.md) for user-visible changes.
 - Update both [aiws/README.md](../aiws/README.md) and [aiws/README.vi.md](../aiws/README.vi.md) when behaviour changes.
-- CI must be green on Windows, Linux and macOS.
+- CI must be green. It runs in stages: lint → Linux tests → Windows, macOS and Node 24 tests, and each stage runs only after the previous one passes. Run `npm run check` locally first so the cheap stage never fails in CI.
 
 ## Reporting security issues
 
