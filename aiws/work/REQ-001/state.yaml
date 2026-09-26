@@ -4,7 +4,7 @@ requirement: requirements/REQ-001-customer-phone.md
 branch: aiws/REQ-001
 base_branch: demo
 base_commit: 8daa5ec1c217523f8ea18eeb264703ba06163a6f
-phase: planning
+phase: implementation
 status: running
 history:
   - phase: new
@@ -31,9 +31,116 @@ history:
     by: Van Nguyen
     record: design-01.yaml
     at: 2026-09-26T14:22:42Z
-tasks: []
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0004
+    at: 2026-09-26T14:26:47Z
+tasks:
+  - id: T1
+    title: be - thêm PhoneNumbers port quy tắc chuẩn hoá và hợp lệ số điện thoại của legacy
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/PhoneNumbers.java
+      - source-be/src/test/java/com/example/crm/service/PhoneNumbersTest.java
+    tests:
+      - TC-1
+      - TC-2
+      - TC-3
+      - TC-4
+      - TC-5
+      - TC-6
+      - TC-7
+      - TC-8
+      - TC-9
+      - TC-10
+    depends_on: []
+    status: pending
+  - id: T2
+    title: be - lưu phone và status trong repository, thêm existsByPhoneAndStatus
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/domain/Customer.java
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests:
+      - TC-11
+      - TC-12
+    depends_on: []
+    status: pending
+  - id: T3
+    title: be - nhận, kiểm tra và trả phone khi tạo khách hàng qua service và POST /api/customers
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/main/java/com/example/crm/api/CreateCustomerRequest.java
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/main/java/com/example/crm/App.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests:
+      - TC-13
+      - TC-14
+      - TC-15
+      - TC-16
+      - TC-17
+      - TC-18
+      - TC-19
+      - TC-20
+      - TC-21
+      - TC-22
+      - TC-23
+      - TC-24
+      - TC-25
+      - TC-26
+      - TC-27
+      - TC-28
+      - TC-29
+      - TC-30
+      - TC-31
+      - TC-32
+    depends_on:
+      - T1
+      - T2
+    status: pending
+  - id: T4
+    title: fe - thêm formatPhone và cột Điện thoại trong bảng khách hàng
+    type: feat
+    allowed_files:
+      - source-fe/src/utils/formatPhone.js
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/formatPhone.test.js
+      - source-fe/test/customerTable.test.js
+    tests:
+      - TC-33
+      - TC-34
+      - TC-35
+      - TC-36
+      - TC-37
+      - TC-38
+      - TC-39
+      - TC-40
+      - TC-41
+    depends_on:
+      - T3
+    status: pending
+  - id: T5
+    title: fe - thêm ô nhập số điện thoại và gửi phone khi tạo khách hàng
+    type: feat
+    allowed_files:
+      - source-fe/index.html
+      - source-fe/src/main.js
+      - source-fe/test/customerApi.test.js
+    tests:
+      - TC-42
+      - TC-43
+    depends_on:
+      - T3
+    status: pending
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 3
+run_seq: 4
