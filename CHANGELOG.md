@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `aiws detect` now proposes `.\mvnw.cmd` on Windows. A bare `mvnw.cmd` is not
+  found by cmd.exe when `NoDefaultCurrentDirectoryInExePath` is set, which
+  Claude Code does.
+- Headless Bash permissions include the prefixes of both the `windows` and the
+  `posix` form of each command, because Claude Code's Bash tool on Windows is
+  Git Bash.
+
 ### Changed
 
 - CI runs as a staged pipeline: change detection → lint and format → Linux tests
