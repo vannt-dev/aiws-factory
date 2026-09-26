@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AiwsError, log, writeText, readTextIfExists, copyDir, nowIso } from './util.js';
+import { AiwsError, log, writeText, readTextIfExists, copyDir, nowIso, replaceYamlBlock } from './util.js';
 import { Workspace, KIT_DIR, assertReqId, findRoot } from './workspace.js';
 import * as G from './git.js';
 import * as Lock from './lock.js';
@@ -452,21 +452,51 @@ export function detect({ write = false, force = false } = {}) {
   }
   if (inAiSession()) throw new AiwsError('`aiws detect --write` changes human-owned config and refuses to run inside an AI session.', 3);
   const file = path.join(ws.configDir, 'policies.yaml');
-  const doc = YAML.parseDocument(fs.readFileSync(file, 'utf8'));
-  if (Object.keys(sides).length) {
-    doc.set('source_paths', proposal.source_paths);
-    doc.set('sides', sides);
-  }
-  const current = doc.get('commands', true);
-  const existing = current?.toJSON?.() ?? {};
+  const original = fs.readFileSync(file, 'utf8');
+  const current = YAML.parse(original) ?? {};
+
+  // Merge, never drop: existing sides, paths and commands stay (commands are replaced only with --force).
+  const merged = {
+    source_paths: [...new Set([...(current.source_paths ?? []), ...proposal.source_paths])],
+    sides: { ...(current.sides ?? {}), ...sides },
+    commands: { ...(current.commands ?? {}) },
+  };
   for (const [k, v] of Object.entries(commands)) {
-    if (existing[k] !== undefined && !force) continue;
-    doc.setIn(['commands', k], v);
+    if (merged.commands[k] === undefined || force) merged.commands[k] = v;
   }
-  fs.writeFileSync(file, doc.toString({ lineWidth: 0 }));
+
+  // Rewrite only the blocks that really change; the rest of the file keeps its comments and layout.
+  let text = original;
+  const changed = [];
+  for (const key of ['source_paths', 'sides', 'commands']) {
+    if (sameValue(current[key], merged[key])) continue;
+    text = replaceYamlBlock(text, key, merged[key]);
+    changed.push(key);
+  }
+  if (!changed.length) {
+    log('\naiws/config/policies.yaml already up to date; nothing written.');
+    return;
+  }
+  fs.writeFileSync(file, text);
   log(
-    `\nUpdated aiws/config/policies.yaml${force ? '' : ' (kept existing commands; --force to overwrite)'}. Review it, then \`aiws sync claude\`.`
+    `\nUpdated ${changed.join(', ')} in aiws/config/policies.yaml${force ? '' : ' (kept existing commands; --force to overwrite)'}. ` +
+      'Review it, then `aiws sync claude`.'
   );
+}
+
+/** Deep equality for YAML values; array order and object key order are ignored. */
+function sameValue(a, b) {
+  const norm = (v) => {
+    if (Array.isArray(v)) return v.map(norm).sort((x, y) => JSON.stringify(x).localeCompare(JSON.stringify(y)));
+    if (v && typeof v === 'object')
+      return Object.fromEntries(
+        Object.keys(v)
+          .sort()
+          .map((k) => [k, norm(v[k])])
+      );
+    return v;
+  };
+  return JSON.stringify(norm(a ?? null)) === JSON.stringify(norm(b ?? null));
 }
 
 export function where() {

@@ -6,6 +6,7 @@ import YAML from 'yaml';
 import { detectStacks, commandPrefixes } from '../src/stacks.js';
 import { tcPattern } from '../src/engine.js';
 import { allowedTools } from '../src/adapters/claude.js';
+import { replaceYamlBlock } from '../src/util.js';
 import { tempDir, makeWorkspace, ok, readFile, git } from './helpers.js';
 
 function tree(root, files) {
@@ -62,14 +63,31 @@ test('aiws detect --write merges into policies.yaml, keeps comments and existing
   assert.equal(pol.commands.be_test, 'go -C source-be test ./...');
   assert.deepEqual(pol.sides, { be: 'source-be/**', fe: 'source-fe/**' });
   git(root, ['checkout', '--', 'aiws/config/policies.yaml']);
-  // comments survive a --write in the real kit file
+  // the real kit file: only the commands block changes, every other line stays byte-for-byte
   const kit = tempDir('aiws-kit-');
   ok(kit, ['init']);
+  const kitBefore = readFile(kit, 'aiws/config/policies.yaml');
   tree(kit, { 'source-be/Svc.csproj': '' });
   ok(kit, ['detect', '--write']);
   const text = readFile(kit, 'aiws/config/policies.yaml');
-  assert.match(text, /# Lệnh build\/test thật của từng side/);
-  assert.match(text, /be_test: dotnet test source-be\/Svc\.csproj/);
+  const untouched = kitBefore.split('\n').filter((l) => !/^commands:/.test(l));
+  for (const line of untouched) assert.ok(text.split('\n').includes(line), `line changed or lost: ${line}`);
+  assert.match(text, /^commands:\n {2}be_build: dotnet build source-be\/Svc\.csproj\n {2}be_test: dotnet test source-be\/Svc\.csproj$/m);
+  assert.match(text, /^protected_paths: {12}# không agent nào được ghi, ở mọi phase$/m, 'aligned inline comment kept');
+  // idempotent: a second run writes nothing
+  const again = ok(kit, ['detect', '--write']);
+  assert.match(again.stdout, /already up to date/);
+  assert.equal(readFile(kit, 'aiws/config/policies.yaml'), text);
+});
+
+test('replaceYamlBlock replaces one top-level block and keeps everything else', () => {
+  const src = ['# header', 'a: 1   # keep me', 'list:', '  - x   # old', '', '# about b', 'b: [ 1,2 ]', ''].join('\n');
+  assert.equal(
+    replaceYamlBlock(src, 'list', ['y', 'z']),
+    ['# header', 'a: 1   # keep me', 'list:', '  - y', '  - z', '', '# about b', 'b: [ 1,2 ]', ''].join('\n')
+  );
+  assert.equal(replaceYamlBlock(src, 'a', 2).split('\n')[1], 'a: 2   # keep me');
+  assert.ok(replaceYamlBlock(src, 'c', { k: 'v' }).endsWith('b: [ 1,2 ]\n\nc:\n  k: v\n'));
 });
 
 test('headless Bash permissions are derived from the project commands, for any language', () => {
