@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in the aiws CLI, a workflow gate or an agent definition does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please do not include secrets, `.env` content or proprietary source code.
+        Security issues: use **Security → Report a vulnerability** instead of a public issue.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you run, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. aiws new REQ-001
+        2. aiws run REQ-001
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: Output of `aiws status <REQ>` and the failing command
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: aiws version
+      description: Output of `aiws --version`
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows, macOS, Linux, Other]
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node.js and Claude Code versions
+      placeholder: node 22.x, claude 2.1.x
+  - type: input
+    id: stack
+    attributes:
+      label: Project stack (source-* languages)
+      placeholder: e.g. .NET 8 backend, React frontend, COBOL legacy

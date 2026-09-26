@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose a new phase, gate, adapter, skill or CLI capability.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is hard or impossible today? Who is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should it work? Which part changes (core in aiws/, orchestrator CLI, adapter)?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Design principles (spec V1 §1)
+      options:
+        - label: Keeps the core neutral to any AI tool
+        - label: Keeps the orchestrator deterministic (the LLM never changes state)
+        - label: Enforced by a real mechanism (hook, permission, git), not only by prompt
