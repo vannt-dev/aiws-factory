@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AIWS — AI Software Factory</title>
+<meta name="description" content="AIWS biến một requirement thành code đã test qua các phase có kiểm soát và human gate. Không phụ thuộc ngôn ngữ, chạy trên Claude Code.">
+<meta property="og:title" content="AIWS — AI Software Factory">
+<meta property="og:description" content="Requirement → phân tích → design + test spec → người duyệt → code theo task + unit test → review → người merge PR. Không phụ thuộc ngôn ngữ.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://vannt-dev.github.io/aiws-factory/">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Cpath d='M18 44 32 16l14 28M23 35h18' stroke='white' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f8fc;
+    --surface: #ffffff;
+    --surface-2: #eef1f8;
+    --text: #0f172a;
+    --muted: #55607a;
+    --border: #dde2ee;
+    --accent: #4f46e5;
+    --accent-2: #0d9488;
+    --accent-soft: #eef0ff;
+    --gate: #b45309;
+    --gate-soft: #fff4e0;
+    --ok: #15803d;
+    --code-bg: #0f172a;
+    --code-text: #e2e8f0;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 24px rgba(15, 23, 42, .06);
+    --radius: 14px;
+    --font: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1020;
+      --surface: #121a2e;
+      --surface-2: #18223a;
+      --text: #e7ecf6;
+      --muted: #9aa6c2;
+      --border: #26324d;
+      --accent: #8b87ff;
+      --accent-2: #2dd4bf;
+      --accent-soft: #1d2250;
+      --gate: #fbbf24;
+      --gate-soft: #3a2a0c;
+      --ok: #4ade80;
+      --code-bg: #070b16;
+      --code-text: #dbe4f5;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 var(--font);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre { font-family: var(--mono); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: max(20px, env(safe-area-inset-left)); }
+
+  /* nav */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: saturate(160%) blur(10px);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text); letter-spacing: -.01em; }
+  .brand:hover { text-decoration: none; }
+  .logo { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; }
+  .navlinks { display: flex; gap: 20px; margin-left: auto; font-size: 14px; font-weight: 500; }
+  .navlinks a { color: var(--muted); }
+  .navlinks a:hover { color: var(--text); text-decoration: none; }
+  @media (max-width: 760px) { .navlinks a:not(.gh) { display: none; } }
+
+  /* hero */
+  .hero { padding: 88px 0 56px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+    padding: 4px 12px; border-radius: 999px;
+  }
+  h1 {
+    font-size: clamp(36px, 6vw, 64px); line-height: 1.08; letter-spacing: -.03em;
+    margin: 20px 0 18px; font-weight: 800; max-width: 16ch;
+  }
+  h1 .grad { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { font-size: clamp(17px, 2.1vw, 20px); color: var(--muted); max-width: 62ch; margin: 0 0 32px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 15px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  }
+  .btn:hover { text-decoration: none; border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+
+  /* sections */
+  section { padding: 64px 0; }
+  .kicker { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2); margin: 0 0 8px; }
+  h2 { font-size: clamp(26px, 3.4vw, 38px); letter-spacing: -.02em; line-height: 1.2; margin: 0 0 14px; font-weight: 800; }
+  .sub { color: var(--muted); max-width: 70ch; margin: 0 0 36px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+  /* pipeline */
+  .pipeline { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+  .step {
+    flex: 1 1 150px; min-width: 0; padding: 16px 16px 14px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--border); position: relative;
+  }
+  .step .n { font: 600 12px var(--mono); color: var(--muted); }
+  .step b { display: block; font-size: 15px; margin: 4px 0 2px; }
+  .step span { font-size: 13px; color: var(--muted); line-height: 1.5; display: block; }
+  .step.gate { background: var(--gate-soft); border-color: color-mix(in srgb, var(--gate) 45%, transparent); }
+  .step.gate .n, .step.gate b { color: var(--gate); }
+  .step.loop { border-style: dashed; border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 18px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  /* grids */
+  .grid { display: grid; gap: 18px; }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .g4 { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .feature { padding: 24px; }
+  .feature h3 { margin: 12px 0 6px; font-size: 18px; letter-spacing: -.01em; }
+  .feature p { margin: 0; color: var(--muted); font-size: 15px; }
+  .icon { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+  .tag { display: inline-block; font: 600 12px var(--mono); color: var(--accent-2); margin-bottom: 4px; }
+
+  /* layers */
+  .layers { display: grid; gap: 14px; }
+  .layer { display: grid; grid-template-columns: 170px 1fr; gap: 18px; padding: 20px 22px; align-items: start; }
+  .layer h3 { margin: 0; font-size: 17px; }
+  .layer h3 small { display: block; font-weight: 500; color: var(--muted); font-size: 13px; }
+  .layer p { margin: 0; color: var(--muted); }
+  .layer code { font-size: 13px; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; color: var(--text); }
+  @media (max-width: 640px) { .layer { grid-template-columns: 1fr; gap: 6px; } }
+
+  /* stacks */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip { padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 14px; font-weight: 500; }
+  .chip small { color: var(--muted); font-family: var(--mono); font-size: 12px; margin-left: 6px; }
+
+  /* tables */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  .mono { font-family: var(--mono); font-size: 13px; }
+  .pass { color: var(--ok); font-weight: 700; }
+
+  /* stats */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+  .stat { padding: 22px; }
+  .stat .v { font-size: 34px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+  .stat .l { color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+  /* code */
+  .term { background: var(--code-bg); color: var(--code-text); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .term-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: #334155; }
+  .term-bar button {
+    margin-left: auto; font: 600 12px var(--font); color: var(--code-text); background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.14); border-radius: 7px; padding: 4px 10px; cursor: pointer;
+  }
+  .term pre { margin: 0; padding: 18px 20px 22px; overflow-x: auto; font-size: 14px; line-height: 1.75; }
+  .term .c { color: #7c8aa8; }
+  .term .p { color: #5eead4; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+  ul.check { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  ul.check li { padding-left: 30px; position: relative; color: var(--muted); }
+  ul.check li b { color: var(--text); }
+  ul.check li::before {
+    content: ""; position: absolute; left: 0; top: 5px; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m5 10.5 3.2 3L15 7' stroke='%234f46e5' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat;
+  }
+
+  footer { border-top: 1px solid var(--border); padding: 32px 0 calc(40px + env(safe-area-inset-bottom)); color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <span class="logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 64 64"><path d="M16 48 32 14l16 34M22 37h20" stroke="white" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      AIWS
+    </a>
+    <div class="navlinks">
+      <a href="#quy-trinh">Quy trình</a>
+      <a href="#kien-truc">Kiến trúc</a>
+      <a href="#bao-ve">Bảo vệ</a>
+      <a href="#chuan">Chuẩn</a>
+      <a href="#bat-dau">Bắt đầu</a>
+      <a class="gh" href="https://github.com/vannt-dev/aiws-factory">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <span class="eyebrow">V1 · Claude Code first · Codex / Gemini ở V2</span>
+    <h1>Từ requirement tới <span class="grad">code đã test</span>, có kiểm soát.</h1>
+    <p class="lead">AIWS (AI Software Factory) điều phối AI đi qua các phase rõ ràng: phân tích, thiết kế kèm test spec, code từng task nhỏ kèm unit test, rồi review. Mỗi bước bị giới hạn phạm vi ghi, mọi output nằm trong git, và con người duyệt ở những điểm quan trọng.</p>
+    <div class="cta">
+      <a class="btn primary" href="#bat-dau">Bắt đầu nhanh</a>
+      <a class="btn" href="https://github.com/vannt-dev/aiws-factory">Xem mã nguồn trên GitHub</a>
+      <a class="btn" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/spec-v1.md">Đọc đặc tả V1</a>
+    </div>
+  </div>
+</header>
+
+<section id="quy-trinh">
+  <div class="wrap">
+    <p class="kicker">Quy trình</p>
+    <h2>Một requirement, chín bước, hai lần người duyệt</h2>
+    <p class="sub">Orchestrator tất định quyết định phase nào được chạy; AI không tự chuyển trạng thái. Người chỉ can thiệp ở hai gate: duyệt design và merge PR.</p>
+    <div class="pipeline" role="list">
+      <div class="step" role="listitem"><span class="n">00</span><b>Discover</b><span>Lập bản đồ hệ thống từ source và legacy</span></div>
+      <div class="step" role="listitem"><span class="n">01</span><b>Analysis</b><span>Acceptance criteria dạng Given/When/Then</span></div>
+      <div class="step" role="listitem"><span class="n">02</span><b>Design + Test spec</b><span>Quyết định, OpenAPI, test case từ AC</span></div>
+      <div class="step gate" role="listitem"><span class="n">GATE</span><b>Người duyệt design</b><span>Approval gắn hash, sửa file là mất hiệu lực</span></div>
+      <div class="step" role="listitem"><span class="n">03</span><b>Planning</b><span>Task nhỏ ≤ 10 file, có test riêng</span></div>
+      <div class="step loop" role="listitem"><span class="n">04 · lặp</span><b>Implementation</b><span>Developer → build → unit test → commit</span></div>
+      <div class="step" role="listitem"><span class="n">05</span><b>Review</b><span>Đối chiếu design, contract, chuẩn code</span></div>
+      <div class="step gate" role="listitem"><span class="n">GATE</span><b>Người merge PR</b><span>Trên GitHub/GitLab như bình thường</span></div>
+      <div class="step" role="listitem"><span class="n">06</span><b>Knowledge update</b><span>Cập nhật bản đồ cho REQ sau</span></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--surface);border:1px solid var(--border)"></i>AI thực hiện</span>
+      <span><i style="background:var(--gate-soft);border:1px solid var(--gate)"></i>Human gate</span>
+      <span><i style="border:1px dashed var(--accent)"></i>Lặp theo task, retry ≤ 3 rồi <code>blocked</code></span>
+    </div>
+  </div>
+</section>
+
+<section id="kien-truc">
+  <div class="wrap">
+    <p class="kicker">Kiến trúc</p>
+    <h2>Ba lớp tách biệt</h2>
+    <p class="sub">Đổi AI không phải viết lại quy trình. Thêm Codex hay Gemini chỉ là thêm một adapter.</p>
+    <div class="layers">
+      <div class="layer card"><h3>Core<small>làm gì</small></h3><p>Agent, skill, workflow, contract, policy dưới dạng Markdown/YAML trong <code>aiws/</code>, trung lập với mọi AI. Người sở hữu và review như code.</p></div>
+      <div class="layer card"><h3>Orchestrator<small>khi nào được làm</small></h3><p>CLI <code>aiws</code> giữ <code>state.yaml</code>, chạy phase, kiểm contract, so diff-scope, chạy build/test thật, commit kèm trailer truy vết.</p></div>
+      <div class="layer card"><h3>Adapter<small>làm bằng AI nào</small></h3><p><code>claude</code> chạy Claude Code headless với quyền giới hạn; <code>scripted</code> chạy tất định để test không tốn token. V2: Codex, Gemini, review chéo giữa các model.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="bao-ve">
+  <div class="wrap">
+    <p class="kicker">Bảo vệ</p>
+    <h2>Gate được chặn bằng cơ chế thật, không chỉ bằng prompt</h2>
+    <p class="sub">Bốn lớp độc lập. Một lớp bị vượt qua thì lớp sau vẫn chặn.</p>
+    <div class="grid g4">
+      <div class="card feature">
+        <div class="icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <span class="tag">01</span><h3>Orchestrator</h3>
+        <p>Không gọi agent của phase bị khoá. Approval gắn hash nội dung, retry có giới hạn.</p>
+      </div>
+      <div class="card feature">
+        <div class="icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+        <span class="tag">02</span><h3>Quyền tool</h3>
+        <p>Mỗi lần chạy headless chỉ cấp đúng tool cần. Lệnh shell được suy ra từ lệnh build/test của dự án.</p>
+      </div>
+      <div class="card feature">
+        <div class="icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg></div>
+        <span class="tag">03</span><h3>Hook guard</h3>
+        <p>PreToolUse chặn ghi ngoài phạm vi phase, chặn đọc bí mật, chặn AI tự <code>approve</code>, kể cả lệnh lồng.</p>
+      </div>
+      <div class="card feature">
+        <div class="icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M6 8.5v7M8.3 7.2 15.7 11M8.3 16.8l7.4-3.8"/></svg></div>
+        <span class="tag">04</span><h3>Git + diff-scope</h3>
+        <p>Sau mỗi lần chạy, mọi file bị sửa ngoài phạm vi đều bị revert và lần chạy bị đánh fail, dù được ghi bằng cách nào.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="ngon-ngu">
+  <div class="wrap two">
+    <div>
+      <p class="kicker">Đa ngôn ngữ</p>
+      <h2>FE, BE, legacy viết bằng gì cũng được</h2>
+      <p class="sub" style="margin-bottom:24px">Orchestrator không giả định stack. <code>aiws detect</code> nhận diện từng thư mục <code>source-*</code> và đề xuất lệnh build/test; thêm bao nhiêu side cũng được (fe, be, mobile, worker...).</p>
+      <ul class="check">
+        <li><b>Tự nhận diện stack</b>: Maven, Gradle, .NET, npm/pnpm/yarn, Python, Go, PHP, Ruby, Rust, Dart/Flutter.</li>
+        <li><b>Legacy chỉ đọc</b>: thống kê ngôn ngữ (vd. <code>.cbl</code>, <code>.frm</code>) đưa vào discovery.</li>
+        <li><b>Truy vết mọi framework</b>: mã <code>TC-3</code> gắn qua <code>@DisplayName</code>, <code>[Trait]</code>, <code>pytest.mark</code>, <code>t.Run</code>...</li>
+      </ul>
+    </div>
+    <div class="chips" aria-label="Stack được hỗ trợ">
+      <span class="chip">Java<small>maven · gradle</small></span>
+      <span class="chip">Kotlin<small>gradle</small></span>
+      <span class="chip">C# / .NET<small>dotnet</small></span>
+      <span class="chip">TypeScript<small>npm · pnpm · yarn</small></span>
+      <span class="chip">Python<small>pytest</small></span>
+      <span class="chip">Go<small>go test</small></span>
+      <span class="chip">PHP<small>phpunit</small></span>
+      <span class="chip">Ruby<small>rspec</small></span>
+      <span class="chip">Rust<small>cargo</small></span>
+      <span class="chip">Dart / Flutter<small>flutter test</small></span>
+      <span class="chip">Legacy<small>read-only</small></span>
+      <span class="chip">Stack khác<small>khai báo lệnh</small></span>
+    </div>
+  </div>
+</section>
+
+<section id="chuan">
+  <div class="wrap">
+    <p class="kicker">Chuẩn quốc tế</p>
+    <h2>Output theo chuẩn thông dụng, không phá cấu trúc</h2>
+    <p class="sub">Ưu tiên convention sẵn có của dự án, sau đó tới style guide chính thống của ngôn ngữ. Đổi tên, di chuyển hay reformat ngoài design đã duyệt đều bị reviewer đánh lỗi.</p>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Hạng mục</th><th>Chuẩn áp dụng</th></tr></thead>
+        <tbody>
+          <tr><td>Acceptance criteria</td><td>Given/When/Then (Gherkin), chất lượng yêu cầu theo ISO/IEC/IEEE 29148</td></tr>
+          <tr><td>Test specification</td><td>ISO/IEC/IEEE 29119-3; kỹ thuật thiết kế test ISTQB (phân vùng, giá trị biên, bảng quyết định)</td></tr>
+          <tr><td>Unit test</td><td>Arrange-Act-Assert; tên theo quy ước framework; mã TC qua metadata chuẩn</td></tr>
+          <tr><td>Code</td><td>Google Java Style, .NET conventions, PEP 8, Effective Go, PSR-12, Effective Dart…</td></tr>
+          <tr><td>API</td><td>OpenAPI 3.x, RFC 9110, lỗi theo RFC 9457 Problem Details, thời gian ISO 8601</td></tr>
+          <tr><td>Bảo mật</td><td>OWASP Top 10 / ASVS</td></tr>
+          <tr><td>Commit</td><td>Conventional Commits kèm git trailer <span class="mono">REQ-ID · Task · Tests · AIWS-Run</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="truy-vet">
+  <div class="wrap two">
+    <div>
+      <p class="kicker">Truy vết</p>
+      <h2>Từ requirement tới commit, không cần database</h2>
+      <p class="sub" style="margin-bottom:24px">Chỉ dùng ID nhất quán, commit trailer và file evidence trong repo. <code>aiws trace</code> sinh ma trận; AC nào thiếu test hoặc test nào thiếu commit sẽ chặn phase review.</p>
+      <div class="term">
+        <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+<pre><span class="c"># git log -1 (commit do orchestrator tạo)</span>
+feat(REQ-001): T1 BE - setNickname
+
+REQ-ID: REQ-001
+Task: T1
+Tests: TC-1, TC-2
+AIWS-Run: run-0005</pre>
+      </div>
+    </div>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>AC</th><th>Test case</th><th>Task</th><th>Commit</th><th>Kết quả</th></tr></thead>
+        <tbody>
+          <tr><td>AC-1</td><td class="mono">TC-1</td><td class="mono">T1</td><td class="mono">882be59</td><td class="pass">pass</td></tr>
+          <tr><td>AC-2</td><td class="mono">TC-2</td><td class="mono">T1</td><td class="mono">882be59</td><td class="pass">pass</td></tr>
+          <tr><td>AC-3</td><td class="mono">TC-3, TC-4, TC-9</td><td class="mono">T1</td><td class="mono">882be59</td><td class="pass">pass</td></tr>
+          <tr><td>AC-8</td><td class="mono">TC-14</td><td class="mono">T2</td><td class="mono">9019a59</td><td class="pass">pass</td></tr>
+          <tr><td>AC-9</td><td class="mono">TC-15…17</td><td class="mono">T2</td><td class="mono">9019a59</td><td class="pass">pass</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="ket-qua">
+  <div class="wrap">
+    <p class="kicker">Đã chạy thật</p>
+    <h2>Kết quả trên REQ mẫu với Claude Code</h2>
+    <p class="sub">Một requirement nhỏ (FE + BE) chạy từ discovery tới knowledge update, headless, hook guard bật.</p>
+    <div class="stats">
+      <div class="card stat"><div class="v">2/2</div><div class="l">task pass ngay lần đầu</div></div>
+      <div class="card stat"><div class="v">11 → 17</div><div class="l">AC truy vết tới test case, đủ 100%</div></div>
+      <div class="card stat"><div class="v">0</div><div class="l">lần ghi ngoài phạm vi</div></div>
+      <div class="card stat"><div class="v">2</div><div class="l">lần người can thiệp: duyệt design, merge PR</div></div>
+      <div class="card stat"><div class="v">22</div><div class="l">test tự động của orchestrator</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="bat-dau">
+  <div class="wrap two">
+    <div>
+      <p class="kicker">Bắt đầu</p>
+      <h2>Chạy trong vài lệnh</h2>
+      <p class="sub" style="margin-bottom:24px">Yêu cầu Node ≥ 20, Git và Claude Code đã đăng nhập. Đưa code vào <code>source-fe/</code>, <code>source-be/</code>, <code>source-legacy/</code>, rồi:</p>
+      <ul class="check">
+        <li><b>Lệnh của người</b> (<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>) từ chối chạy trong phiên AI.</li>
+        <li><b>Chạy song song</b> nhiều REQ ở phase analysis/design qua <code>aiws new --worktree</code>.</li>
+        <li><b>Không tốn token khi test</b>: adapter <code>scripted</code> chạy toàn bộ quy trình tất định.</li>
+      </ul>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><button type="button" id="copy">Sao chép</button></div>
+<pre id="qs"><span class="c"># cài CLI</span>
+<span class="p">$</span> cd aiws/adapters/cli &amp;&amp; npm install &amp;&amp; npm link
+
+<span class="c"># nhận diện stack, sinh cấu hình Claude, lập bản đồ</span>
+<span class="p">$</span> aiws detect --write
+<span class="p">$</span> aiws sync claude
+<span class="p">$</span> aiws discover
+
+<span class="c"># một requirement</span>
+<span class="p">$</span> aiws new REQ-001
+<span class="p">$</span> aiws run REQ-001            <span class="c"># dừng ở gate design</span>
+<span class="p">$</span> aiws approve REQ-001 design
+<span class="p">$</span> aiws run REQ-001            <span class="c"># dừng ở gate PR</span>
+<span class="p">$</span> aiws approve REQ-001 pr     <span class="c"># sau khi merge</span>
+<span class="p">$</span> aiws run REQ-001 &amp;&amp; aiws trace REQ-001</pre>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>AIWS — AI Software Factory · V1</span>
+    <span><a href="https://github.com/vannt-dev/aiws-factory">GitHub</a> · <a href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.md">Hướng dẫn vận hành</a> · <a href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/spec-v1.md">Đặc tả V1</a></span>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('copy').addEventListener('click', async (e) => {
+    const text = document.getElementById('qs').innerText
+      .split('\n')
+      .filter((l) => l.startsWith('$'))
+      .map((l) => l.replace(/^\$\s*/, '').replace(/\s+#.*$/, ''))
+      .join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      e.target.textContent = 'Đã sao chép';
+    } catch {
+      e.target.textContent = 'Không sao chép được';
+    }
+    setTimeout(() => (e.target.textContent = 'Sao chép'), 1800);
+  });
+</script>
+</body>
+</html>
