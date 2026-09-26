@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A Claude Code session outside any requirement phase may now drive
+  `aiws new` and `aiws run`, so an assistant can coordinate the workflow. Inside
+  a phase they stay blocked, so an agent cannot start a nested run. The gate
+  commands `approve`, `reject`, `answer`, `redesign`, `resume` and `unlock`
+  remain human-only everywhere, enforced by the guard hook and by static deny
+  rules.
 - CI runs as a staged pipeline: change detection → lint and format → Linux tests
   (Node 22) → Windows, macOS and Node 24 tests → a single `4. CI result` status.
   Each stage runs only if the previous one passed; lint runs once instead of in

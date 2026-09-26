@@ -131,7 +131,7 @@ Hai chế độ dùng chung một bộ bảo vệ:
 - **Tự động:** `aiws run`.
 - **Tương tác:** mở `claude` trên nhánh `aiws/REQ-001` và yêu cầu *"dùng agent architect cho REQ-001"*. Hook suy ra phase từ `state.yaml` và chặn ghi sai phase.
 
-Trên `main`, không ở REQ nào, bạn được dùng Claude để bảo trì chính `aiws/` (agents, skills, config). Riêng `source-legacy/`, `requirements/`, `state.yaml` và `approvals/` luôn bị khoá, và AI không bao giờ được chạy `aiws approve…`.
+Trên `main`, không ở REQ nào, bạn được dùng Claude để bảo trì chính `aiws/` (agents, skills, config). Claude cũng có thể điều phối quy trình bằng `aiws new`, `aiws run` hay `aiws status`; mỗi lần chạy vẫn dừng ở các gate của người. Riêng `source-legacy/`, `requirements/`, `state.yaml` và `approvals/` luôn bị khoá. AI không bao giờ được chạy các lệnh gate `approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`, và khi đang ở trong một phase thì cũng không được tự khởi động `aiws run` lồng nhau.
 
 Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
 

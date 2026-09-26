@@ -193,6 +193,10 @@ test('init copies the kit into a fresh project and sync claude generates .claude
   );
   assert.ok(settings.permissions.deny.includes('Bash(aiws approve *)'), 'an AI may never approve');
   assert.ok(!settings.permissions.deny.includes('Bash(git commit *)'), 'git is blocked per phase by the hook, not statically');
+  assert.ok(!settings.permissions.deny.includes('Bash(aiws run *)'), 'aiws run is blocked per phase by the hook, not statically');
+  for (const gate of ['approve', 'reject', 'answer', 'redesign', 'resume', 'unlock']) {
+    assert.ok(settings.permissions.deny.includes(`Bash(aiws ${gate} *)`), `aiws ${gate} is always denied`);
+  }
   assert.equal(settings.hooks.PreToolUse[1].matcher, 'Bash|PowerShell');
   assert.match(settings.hooks.PreToolUse[0].hooks[0].command, /aiws\.js" guard$/);
   const dev = readFile(dir, '.claude/agents/developer.md');
