@@ -1,0 +1,14 @@
+{
+  "name": "crm-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CRM web client (AIWS demo frontend): vanilla ES modules, no build dependencies.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test"
+  }
+}

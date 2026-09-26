@@ -1,0 +1,3 @@
+# Maven wrapper: the shell script needs LF, the batch file CRLF
+mvnw text eol=lf
+*.cmd text eol=crlf

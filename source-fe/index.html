@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CRM — Khách hàng</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; margin: 2rem; color: #1f2937; }
+    table { border-collapse: collapse; width: 100%; max-width: 760px; }
+    th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f3f4f6; }
+    form { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.5rem 0; max-width: 760px; }
+    input { padding: .45rem .6rem; border: 1px solid #d1d5db; border-radius: 6px; }
+    .error { color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <h1>Khách hàng</h1>
+  <form id="create-form" novalidate>
+    <input name="name" placeholder="Họ tên" required>
+    <input name="email" type="email" placeholder="Email" required>
+    <button type="submit">Thêm</button>
+  </form>
+  <p id="message" class="error" role="alert"></p>
+  <div id="customers">Đang tải…</div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

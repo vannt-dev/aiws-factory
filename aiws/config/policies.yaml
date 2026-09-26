@@ -91,7 +91,15 @@ phase_write_scope:
 #   fe_build: "npm run build --prefix source-fe"         fe_test: "npm test --prefix source-fe"
 #   api_contract_be: "<so OpenAPI sinh từ code BE với api-contract.yaml>"   (tuỳ chọn, chạy ở review)
 #   api_contract_fe: "<sinh client/type từ contract rồi build FE>"          (tuỳ chọn, chạy ở review)
-commands: {}
+commands:
+  be_build:
+    windows: cd source-be && .\mvnw.cmd -q -DskipTests package
+    posix: cd source-be && ./mvnw -q -DskipTests package
+  be_test:
+    windows: cd source-be && .\mvnw.cmd -q test
+    posix: cd source-be && ./mvnw -q test
+  fe_build: npm run build --prefix source-fe
+  fe_test: npm test --prefix source-fe
 
 # Tiền tố lệnh Bash developer được chạy thêm (ngoài lệnh build/test ở trên) khi chạy headless.
 bash_allow_extra: ["ls", "dir", "git status", "git diff", "git log"]

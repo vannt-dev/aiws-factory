@@ -1,0 +1,38 @@
+package com.example.crm.repository;
+
+import com.example.crm.domain.Customer;
+import com.example.crm.domain.CustomerStatus;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicLong;
+
+/** Thread-safe in-memory store. Stands in for a database in this demo. */
+public class InMemoryCustomerRepository implements CustomerRepository {
+  private final Map<Long, Customer> customers = new ConcurrentSkipListMap<>();
+  private final AtomicLong sequence = new AtomicLong();
+
+  @Override
+  public List<Customer> findAll() {
+    return new ArrayList<>(customers.values());
+  }
+
+  @Override
+  public Optional<Customer> findById(long id) {
+    return Optional.ofNullable(customers.get(id));
+  }
+
+  @Override
+  public boolean existsByEmail(String email) {
+    return customers.values().stream().anyMatch(c -> c.email().equalsIgnoreCase(email));
+  }
+
+  @Override
+  public Customer insert(String name, String email) {
+    Customer customer = new Customer(sequence.incrementAndGet(), name, email, CustomerStatus.ACTIVE);
+    customers.put(customer.id(), customer);
+    return customer;
+  }
+}

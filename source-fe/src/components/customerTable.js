@@ -1,0 +1,16 @@
+import { escapeHtml } from '../utils/escapeHtml.js';
+
+const STATUS_LABELS = { ACTIVE: 'Đang hoạt động', INACTIVE: 'Ngừng hoạt động' };
+
+/** Renders the customer list as an HTML table string. */
+export function renderCustomerTable(customers) {
+  if (!customers.length) return '<p>Chưa có khách hàng.</p>';
+  const rows = customers
+    .map(
+      (c) =>
+        `<tr><td>${escapeHtml(c.id)}</td><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.email)}</td>` +
+        `<td>${escapeHtml(STATUS_LABELS[c.status] ?? c.status)}</td></tr>`
+    )
+    .join('');
+  return `<table><thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Trạng thái</th></tr></thead><tbody>${rows}</tbody></table>`;
+}

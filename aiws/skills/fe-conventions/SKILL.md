@@ -1,32 +1,38 @@
 ---
 name: fe-conventions
-description: Convention THẬT của source-fe (cấu trúc thư mục, gọi API, state, xử lý lỗi, đặt tên, test). Dùng khi thiết kế, code hoặc review FE.
+description: Convention THẬT của source-fe (JavaScript ES modules thuần, không framework, node:test) - cấu trúc thư mục, gọi API, render, xử lý lỗi, đặt tên, test. Dùng khi thiết kế, code hoặc review FE.
 ---
 
-# FE conventions
-
-> [CẦN XÁC NHẬN] File này là khung. Khi source-fe/ đã có code, chạy trong Claude Code:
-> "Đọc source-fe/, điền aiws/skills/fe-conventions/SKILL.md bằng convention THẬT đang dùng, mỗi ý kèm file ví dụ; chỗ không chắc đánh dấu [CẦN XÁC NHẬN]."
-> Sau đó NGƯỜI chốt nội dung, rồi `aiws sync claude`.
+# FE conventions (source-fe)
 
 ## Stack
-- Ngôn ngữ / framework / version: [CẦN XÁC NHẬN] (bất kỳ: React, Angular, Vue, Blazor, Flutter, Razor, JSP...)
-- Build / test: xem aiws/config/policies.yaml -> commands.fe_build, fe_test (`aiws detect` gợi ý)
+- JavaScript ES modules chạy thẳng trên trình duyệt (`<script type="module">`), không framework, không bundler, không dependency.
+- Node.js ≥ 22 chỉ dùng cho build và test. Lệnh: `aiws/config/policies.yaml` -> `commands.fe_build` (`npm run build`), `fe_test` (`npm test` = `node --test`).
+- `scripts/build.mjs`: kiểm cú pháp mọi file `src/**/*.js` (`node --check`) rồi chép `index.html` + `src/` vào `dist/` (gitignored).
 
-## Cấu trúc thư mục
-- [CẦN XÁC NHẬN] vd. `src/pages`, `src/components`, `src/api`, `src/store`, `test/`
+## Cấu trúc
+| Thư mục | Trách nhiệm | Ví dụ |
+| --- | --- | --- |
+| `src/api/` | Gọi HTTP tới BE, một file mỗi resource | `src/api/customerApi.js` |
+| `src/components/` | Hàm thuần trả về chuỗi HTML | `src/components/customerTable.js` |
+| `src/utils/` | Hàm tiện ích thuần | `src/utils/escapeHtml.js` |
+| `src/main.js` | Gắn DOM, sự kiện, gọi API và component | `src/main.js` |
+| `test/` | Unit test, `<module>.test.js` | `test/customerTable.test.js` |
 
 ## Gọi API
-- [CẦN XÁC NHẬN] client dùng chung ở đâu, base URL, xử lý lỗi HTTP, kiểu dữ liệu sinh từ api-contract hay viết tay.
+- Mọi request đi qua `request()` trong `src/api/customerApi.js`, base `API_BASE = '/api'`.
+- Lỗi non-2xx ném `ApiError` với `status` và `fieldErrors` (lấy từ `errors` của problem RFC 9457). UI hiển thị `fieldErrors` theo từng field.
+- Hàm API nhận `options.fetchImpl` để test không cần mạng.
 
-## State & dữ liệu
-- [CẦN XÁC NHẬN]
-
-## Xử lý lỗi & hiển thị
-- [CẦN XÁC NHẬN]
+## Render
+- Component là hàm thuần `render...(data) -> string`; **mọi dữ liệu động phải qua `escapeHtml`**.
+- Nhãn hiển thị tiếng Việt đặt trong component (vd. `STATUS_LABELS` trong `customerTable.js`).
 
 ## Đặt tên
-- [CẦN XÁC NHẬN] file, component, hook, biến.
+- File camelCase `.js`; hàm camelCase, động từ trước (`listCustomers`, `renderCustomerTable`); hằng `UPPER_SNAKE_CASE`.
+- Chuỗi dùng nháy đơn; chấm phẩy cuối câu lệnh; thụt lề 2 dấu cách.
 
 ## Test
-- [CẦN XÁC NHẬN] framework, vị trí file, tên test chứa mã TC.
+- `node:test` + `node:assert/strict`; Arrange-Act-Assert.
+- Mã TC đặt đầu tên test: `test('TC-n: ...', ...)`.
+- Test component bằng cách so khớp chuỗi HTML (`assert.match`); test API bằng `fetchImpl` giả (xem `test/customerApi.test.js`).
