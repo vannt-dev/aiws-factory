@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- CI runs as a staged pipeline: change detection → lint and format → Linux tests
+  (Node 22) → Windows, macOS and Node 24 tests → a single `4. CI result` status.
+  Each stage runs only if the previous one passed; lint runs once instead of in
+  every job.
+- Docs-only changes skip the lint and test stages while `4. CI result` still
+  reports success, so it can be a required check.
+- The AIWS gates check moved to its own workflow; Dependabot updates are grouped
+  into one pull request per ecosystem.
+- Branch protection on `main` requires `4. CI result` and `AIWS gates` and blocks
+  force pushes and branch deletion.
+
 ## [0.1.0] - 2026-09-26
 
 ### Added
