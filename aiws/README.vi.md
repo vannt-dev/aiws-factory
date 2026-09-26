@@ -177,12 +177,13 @@ AIWS_KEEP_TMP=1 npm test         # giữ lại workspace tạm để soi
 
 CI (GitHub Actions) là pipeline nhiều bước; bước sau chỉ chạy khi bước trước đạt:
 
+0. **Detect changes**: kiểm tra CLI, bộ kit `aiws/` hoặc `AGENTS.md` có thay đổi không.
 1. **Lint và định dạng**: ESLint và Prettier, chạy một lần.
 2. **Test trên Linux** với Node 22, phiên bản tối thiểu được hỗ trợ.
 3. **Test trên Windows và macOS** với Node 22, kèm Linux với Node 24.
-4. **CI result**: một trạng thái duy nhất để dùng cho branch protection.
+4. **CI result**: trạng thái duy nhất mà branch protection của `main` bắt buộc.
 
-CI chỉ chạy khi CLI, bộ kit `aiws/` hoặc `AGENTS.md` thay đổi; sửa tài liệu thuần thì bỏ qua. Workflow riêng **AIWS gates** kiểm lại trailer commit, approval và ma trận truy vết cho PR từ nhánh `aiws/REQ-*`. Cách đóng góp: [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
+Sửa tài liệu thuần thì bỏ qua tầng 1–3, nhưng tầng 4 vẫn báo thành công nên PR không bị kẹt. Branch protection của `main` bắt buộc `4. CI result` và `AIWS gates`, đồng thời chặn force-push và chặn xoá nhánh. Workflow riêng **AIWS gates** kiểm lại trailer commit, approval và ma trận truy vết cho PR từ nhánh `aiws/REQ-*`. Cách đóng góp: [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 
 Dự án mẫu dùng cho test nằm ở `test/fixtures/sample`. Các agent giả lập nằm ở `test/fixtures/scripted` (mỗi agent là một script Node ghi output như một AI "ngoan").
 

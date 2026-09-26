@@ -177,12 +177,13 @@ AIWS_KEEP_TMP=1 npm test         # keep the temporary workspaces for inspection
 
 CI (GitHub Actions) is a staged pipeline; each stage runs only if the previous one passed:
 
+0. **Detect changes**: checks whether the CLI, the `aiws/` kit or `AGENTS.md` changed.
 1. **Lint and format**: ESLint and Prettier, once.
 2. **Test on Linux** with Node 22, the minimum supported version.
 3. **Test on Windows and macOS** with Node 22, plus Linux with Node 24.
-4. **CI result**: a single status for branch protection.
+4. **CI result**: the single status required by branch protection on `main`.
 
-It starts only when the CLI, the `aiws/` kit or `AGENTS.md` change; docs-only changes skip it. A separate **AIWS gates** workflow re-checks commit trailers, approvals and the traceability matrix on pull requests from `aiws/REQ-*` branches. See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
+Docs-only changes skip stages 1–3, and stage 4 still reports success so the pull request is not blocked. Branch protection on `main` requires `4. CI result` and `AIWS gates`, and blocks force pushes and branch deletion. A separate **AIWS gates** workflow re-checks commit trailers, approvals and the traceability matrix on pull requests from `aiws/REQ-*` branches. See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 
 The sample project used by the tests lives in `test/fixtures/sample`; the simulated agents live in `test/fixtures/scripted` (each agent is a Node script that writes its outputs like a well-behaved AI).
 
