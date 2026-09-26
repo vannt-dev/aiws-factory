@@ -22,7 +22,7 @@ function mapTools(tools) {
 
 function modelFor(ws, hint) {
   const models = ws.runtime.claude?.models ?? {};
-  return hint ? models[hint] ?? null : null;
+  return hint ? (models[hint] ?? null) : null;
 }
 
 function yamlList(items) {

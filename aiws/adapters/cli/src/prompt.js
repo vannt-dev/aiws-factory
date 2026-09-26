@@ -48,7 +48,14 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
     }
     for (const o of outs) {
       const tpl = o.template ? ws.template(o.template) : null;
-      if (tpl) lines.push('', `### Template for ${fill(o.path, vars)} (keep headings and ID formats exactly)`, '```', fill(tpl, vars).trim(), '```');
+      if (tpl)
+        lines.push(
+          '',
+          `### Template for ${fill(o.path, vars)} (keep headings and ID formats exactly)`,
+          '```',
+          fill(tpl, vars).trim(),
+          '```'
+        );
     }
     parts.push(lines.join('\n'));
   }
@@ -80,10 +87,7 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
   }
 
   parts.push(
-    [
-      '## When you finish',
-      'Reply with a short report: files written, key decisions, and anything a reviewer must know.',
-    ].join('\n')
+    ['## When you finish', 'Reply with a short report: files written, key decisions, and anything a reviewer must know.'].join('\n')
   );
 
   return parts.join('\n\n') + '\n';

@@ -34,7 +34,10 @@ export function changedByRun(root, snap) {
   const now = G.head(root);
   if (now !== snap.head) {
     const out = G.git(root, ['diff', '--name-only', '--no-renames', '-z', snap.head, now]).stdout;
-    out.split('\0').filter(Boolean).forEach((f) => committedSince.add(f));
+    out
+      .split('\0')
+      .filter(Boolean)
+      .forEach((f) => committedSince.add(f));
   }
   const changed = [];
   for (const f of candidates) {

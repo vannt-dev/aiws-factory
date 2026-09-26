@@ -44,11 +44,32 @@ export function nowIso() {
   return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
+/**
+ * Resolves symlinks/junctions of the longest existing prefix of `p` (the file itself may not exist yet),
+ * so /var/... vs /private/var/... (macOS) or junctioned Windows paths compare equal.
+ */
+export function realpathBest(p) {
+  let head = path.resolve(p);
+  const tail = [];
+  while (!fs.existsSync(head)) {
+    const parent = path.dirname(head);
+    if (parent === head) return path.resolve(p);
+    tail.unshift(path.basename(head));
+    head = parent;
+  }
+  try {
+    return path.join(fs.realpathSync.native(head), ...tail);
+  } catch {
+    return path.resolve(p);
+  }
+}
+
 /** Converts an absolute or relative path to a repo-relative, forward-slash path. Returns null if outside root. */
 export function toRepoRel(root, p) {
   if (!p) return null;
-  const abs = path.resolve(root, p);
-  let rel = path.relative(root, abs);
+  const realRoot = realpathBest(root);
+  const abs = realpathBest(path.resolve(root, p));
+  let rel = path.relative(realRoot, abs);
   if (process.platform === 'win32' && path.isAbsolute(rel)) {
     // different drive: path.relative returns absolute
     return null;
@@ -102,7 +123,7 @@ export function runShell(command, opts = {}) {
 export function osCommand(value) {
   if (value === undefined || value === null) return null;
   if (typeof value === 'string') return value;
-  return process.platform === 'win32' ? value.windows ?? value.posix : value.posix ?? value.windows;
+  return process.platform === 'win32' ? (value.windows ?? value.posix) : (value.posix ?? value.windows);
 }
 
 export function log(msg = '') {

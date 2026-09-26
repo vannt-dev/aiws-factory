@@ -2,7 +2,9 @@ import { write, work, req } from './_lib.js';
 
 const round = process.env.AIWS_DESIGN_NOTE ?? '';
 
-write(work('02-design.md'), `
+write(
+  work('02-design.md'),
+  `
 # ${req} — Thiết kế
 
 ## Tổng quan
@@ -31,9 +33,12 @@ Không đáng kể
 
 ## Quyết định cần duyệt
 - Giới hạn 30 ký tự
-`);
+`
+);
 
-write(work('api-contract.yaml'), `
+write(
+  work('api-contract.yaml'),
+  `
 openapi: 3.0.3
 info: {title: ${req}, version: 1.0.0}
 paths:
@@ -48,5 +53,6 @@ paths:
       responses:
         "200": {description: OK}
         "400": {description: invalid nickname}
-`);
+`
+);
 console.log('design done');

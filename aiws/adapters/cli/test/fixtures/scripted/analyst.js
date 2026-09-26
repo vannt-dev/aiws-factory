@@ -1,6 +1,8 @@
 import { write, work, req } from './_lib.js';
 
-write(work('01-analysis.md'), `
+write(
+  work('01-analysis.md'),
+  `
 # ${req} — Phân tích requirement
 
 ## Mục tiêu
@@ -20,5 +22,6 @@ Cho phép người dùng đặt nickname hiển thị.
 
 ## Câu hỏi mở
 Không có
-`);
+`
+);
 console.log('analysis done');

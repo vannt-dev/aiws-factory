@@ -4,7 +4,9 @@ import { write, work, req, read } from './_lib.js';
 // unless the fix (trim) is already in the code.
 const critical = process.env.AIWS_REVIEW_CRITICAL && !read('source-be/src/users.js').includes('trim()');
 
-write(work('05-review.md'), `
+write(
+  work('05-review.md'),
+  `
 # ${req} — Review
 
 ## Tóm tắt
@@ -18,5 +20,6 @@ ${critical ? '- [critical] source-be/src/users.js — nickname chỉ gồm kho�
 
 ## Đối chiếu api-contract
 setNickname khớp PUT /users/{id}/nickname.
-`);
+`
+);
 console.log('review done');

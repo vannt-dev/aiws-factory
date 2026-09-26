@@ -31,8 +31,8 @@ export function buildTrace(ws, st) {
         rows.push({ ac, tc: tc.id, task: '-', commit: '-', result: 'MISSING' });
         continue;
       }
-      const c = task.commit ? commitBySha.get(task.commit) ?? findByPrefix(commits, task.commit) : null;
-      let result = task.test_result ?? 'not run';
+      const c = task.commit ? (commitBySha.get(task.commit) ?? findByPrefix(commits, task.commit)) : null;
+      const result = task.test_result ?? 'not run';
       if (task.status !== 'done') problems.push(`${task.id} (${tc.id}) is ${task.status}`);
       else if (!c) problems.push(`${task.id} commit ${task.commit ?? '(none)'} not found with trailer REQ-ID: ${req}`);
       else if (c.trailers.Task !== task.id) problems.push(`${task.id} commit ${c.sha.slice(0, 7)} has trailer Task: ${c.trailers.Task}`);

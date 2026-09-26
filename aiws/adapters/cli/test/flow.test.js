@@ -169,8 +169,17 @@ test('source lock: a second REQ in its own worktree cannot enter implementation'
 
 test('init copies the kit into a fresh project and sync claude generates .claude/', () => {
   const dir = tempDir('aiws-init-');
+  assert.match(ok(dir, ['--version']).stdout.trim(), /^\d+\.\d+\.\d+$/);
   ok(dir, ['init']);
-  for (const p of ['aiws/config/workflow.yaml', 'aiws/agents/developer.md', 'aiws/skills/unit-testing/SKILL.md', 'aiws/templates/01-analysis.md', 'AGENTS.md', 'source-legacy', 'requirements']) {
+  for (const p of [
+    'aiws/config/workflow.yaml',
+    'aiws/agents/developer.md',
+    'aiws/skills/unit-testing/SKILL.md',
+    'aiws/templates/01-analysis.md',
+    'AGENTS.md',
+    'source-legacy',
+    'requirements',
+  ]) {
     assert.ok(fs.existsSync(path.join(dir, p)), p);
   }
   ok(dir, ['sync', 'claude']);
@@ -178,7 +187,10 @@ test('init copies the kit into a fresh project and sync claude generates .claude
   const settings = JSON.parse(readFile(dir, '.claude/settings.json'));
   assert.ok(settings.permissions.deny.includes('Edit(./source-legacy/**)'));
   assert.ok(settings.permissions.deny.includes('Read(./**/.env)'));
-  assert.ok(!settings.permissions.deny.includes('Edit(./aiws/agents/**)'), 'maintainer-editable paths are guarded by the hook, not static deny');
+  assert.ok(
+    !settings.permissions.deny.includes('Edit(./aiws/agents/**)'),
+    'maintainer-editable paths are guarded by the hook, not static deny'
+  );
   assert.ok(settings.permissions.deny.includes('Bash(aiws approve *)'), 'an AI may never approve');
   assert.ok(!settings.permissions.deny.includes('Bash(git commit *)'), 'git is blocked per phase by the hook, not statically');
   assert.equal(settings.hooks.PreToolUse[1].matcher, 'Bash|PowerShell');

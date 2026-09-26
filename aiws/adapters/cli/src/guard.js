@@ -73,7 +73,9 @@ export function decide(ws, input, env = process.env) {
   if (!rel) return deny(`writing outside the workspace (${target}) is not allowed during ${ctx.req} ${ctx.phase}`);
   if (matcher(pol.protected_paths)(rel)) return deny(`${rel} is protected; agents may never write it`);
   if (ctx.status !== 'running') {
-    return deny(`${ctx.req} is '${ctx.status}' in phase ${ctx.phase}; no agent writes are allowed until a human acts (aiws status ${ctx.req})`);
+    return deny(
+      `${ctx.req} is '${ctx.status}' in phase ${ctx.phase}; no agent writes are allowed until a human acts (aiws status ${ctx.req})`
+    );
   }
   const task = taskOf(ws, ctx);
   const scope = [...writeScope(pol, ctx.phase, { req: ctx.req, task }), ...orchestratorPaths(ctx.req ?? '*')];
@@ -98,12 +100,15 @@ export function normalizeCommand(cmd) {
     .replace(/\$\(/g, ' ; ')
     .replace(/[;&|(){}\r\n]+/g, ' ; ')
     .toLowerCase();
-  const tokens = flat.split(/\s+/).filter(Boolean).map((t) => {
-    const base = t.split(/[\\/]/).pop();
-    if (/^aiws(\.js|\.cmd|\.ps1)?$/.test(base)) return 'aiws';
-    if (/^git(\.exe)?$/.test(base)) return 'git';
-    return t;
-  });
+  const tokens = flat
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => {
+      const base = t.split(/[\\/]/).pop();
+      if (/^aiws(\.js|\.cmd|\.ps1)?$/.test(base)) return 'aiws';
+      if (/^git(\.exe)?$/.test(base)) return 'git';
+      return t;
+    });
   // drop "node" directly in front of aiws so `node .../aiws.js approve` == `aiws approve`
   const out = tokens.filter((t, i) => !(t === 'node' && tokens[i + 1] === 'aiws'));
   return collapseGitOptions(out).join(' ');

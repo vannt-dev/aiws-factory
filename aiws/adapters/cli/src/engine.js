@@ -116,7 +116,10 @@ export function executeAgent(ws, counter, { req, phase, agentId, contract, task 
   };
   const errors = [];
   if (!res.ok) {
-    errors.push({ kind: 'invalid', message: `agent run failed (exit ${res.exitCode}): ${tail(res.report?.result || res.stderr || '', 800)}` });
+    errors.push({
+      kind: 'invalid',
+      message: `agent run failed (exit ${res.exitCode}): ${tail(res.report?.result || res.stderr || '', 800)}`,
+    });
   }
   if (scope.violations.length) {
     errors.push({
@@ -180,7 +183,9 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
 function assertOnBranch(ws, st) {
   const cur = G.currentBranch(ws.root);
   if (st.branch && cur !== st.branch) {
-    throw new AiwsError(`${st.req_id} runs on branch ${st.branch} but you are on ${cur}. Run \`git switch ${st.branch}\` (or use its worktree).`);
+    throw new AiwsError(
+      `${st.req_id} runs on branch ${st.branch} but you are on ${cur}. Run \`git switch ${st.branch}\` (or use its worktree).`
+    );
   }
 }
 
@@ -193,7 +198,9 @@ function assertCleanEnough(ws, st) {
   const ok = matcher(allowed);
   const stray = G.dirtyFiles(ws.root).filter((f) => !ok(f));
   if (stray.length) {
-    throw new AiwsError(`Working tree has uncommitted changes outside ${st.req_id}'s scope:\n  ${stray.join('\n  ')}\nCommit or stash them first.`);
+    throw new AiwsError(
+      `Working tree has uncommitted changes outside ${st.req_id}'s scope:\n  ${stray.join('\n  ')}\nCommit or stash them first.`
+    );
   }
 }
 
@@ -239,7 +246,8 @@ function stepAgentPhase(ws, st, def) {
   });
   let errors = r.errors;
   if (!errors.length) errors = validateOutputs(ws, contract, { req }).errors;
-  if (!errors.length && def.checks) errors = runNamedChecks(ws, def.checks, null).map((m) => ({ kind: def.checks_severity ?? 'critical', message: m }));
+  if (!errors.length && def.checks)
+    errors = runNamedChecks(ws, def.checks, null).map((m) => ({ kind: def.checks_severity ?? 'critical', message: m }));
 
   r.evidence.validation = errors;
   const invalid = errors.filter((e) => e.kind === 'invalid');
@@ -270,7 +278,12 @@ function stepAgentPhase(ws, st, def) {
     r.evidence.outcome = 'needs_human';
     writeEvidence(ws, req, r.evidence);
     addHistory(st, { phase: def.id, agent: step.agent, result: 'questions', run: r.runId });
-    setPhase(st, def.id, 'waiting_human', `blocking questions - answer with \`aiws answer ${req} -m "..."\`: ${human.map((h) => h.message).join(' | ')}`);
+    setPhase(
+      st,
+      def.id,
+      'waiting_human',
+      `blocking questions - answer with \`aiws answer ${req} -m "..."\`: ${human.map((h) => h.message).join(' | ')}`
+    );
     commitWork(ws, st, `chore(${req}): ${def.id} has blocking questions`, outputs, { 'AIWS-Run': r.runId });
     return;
   }
@@ -326,7 +339,9 @@ function phaseExtra(ws, st, def) {
     const files = G.git(ws.root, ['diff', '--name-only', st.base_commit, 'HEAD'], { allowFail: true })
       .stdout.split(/\r?\n/)
       .filter((f) => f && isSource(f));
-    const logOut = G.git(ws.root, ['log', '--format=%h %s', `--grep=REQ-ID: ${st.req_id}`, '-F', `${st.base_commit}..HEAD`], { allowFail: true }).stdout.trim();
+    const logOut = G.git(ws.root, ['log', '--format=%h %s', `--grep=REQ-ID: ${st.req_id}`, '-F', `${st.base_commit}..HEAD`], {
+      allowFail: true,
+    }).stdout.trim();
     return [
       '## Diff under review',
       `Source files changed on ${st.branch} since ${String(st.base_commit).slice(0, 7)} (read them all):`,
@@ -433,7 +448,8 @@ function runNamedChecks(ws, checks, task) {
     const cmd = osCommand(configured) ?? (configured === undefined && entry.optional ? null : entry.command);
     if (!cmd) continue;
     const res = runShell(fill(cmd, { task: task?.id }), { cwd: ws.root, env: cleanEnv({}) });
-    if (res.status !== 0) failures.push(`check '${entry.command}' failed (exit ${res.status}):\n${tail(res.stdout + '\n' + res.stderr, 3000)}`);
+    if (res.status !== 0)
+      failures.push(`check '${entry.command}' failed (exit ${res.status}):\n${tail(res.stdout + '\n' + res.stderr, 3000)}`);
   }
   return failures;
 }
@@ -471,7 +487,7 @@ function stepLoop(ws, st, def) {
   const qRel = ws.workRel(req, 'questions.md');
   const qBefore = readTextIfExists(ws.abs(qRel));
   const r = executeAgent(ws, st, { req, phase: def.id, agentId: devStep.agent, contract, task, attempt, failure: task.last_failure });
-  let errors = [...r.errors];
+  const errors = [...r.errors];
 
   const qAfter = readTextIfExists(ws.abs(qRel));
   if (!errors.length && qAfter && qAfter.trim() && qAfter !== qBefore) {
@@ -568,12 +584,20 @@ function runUnitTests(ws, st, task, attempt, runId) {
   for (const side of sides) {
     const cmd = osCommand(ws.policies.commands?.[`${side}_test`]);
     if (!cmd) {
-      failures.push(`no '${side}_test' command configured in aiws/config/policies.yaml (a human runs \`aiws detect --write\` or fills it in)`);
+      failures.push(
+        `no '${side}_test' command configured in aiws/config/policies.yaml (a human runs \`aiws detect --write\` or fills it in)`
+      );
       continue;
     }
     const started = Date.now();
     const res = runShell(cmd, { cwd: ws.root, env: cleanEnv({}), timeout: 30 * 60 * 1000 });
-    results.push({ side, command: cmd, exit_code: res.status, duration_ms: Date.now() - started, output_tail: tail(res.stdout + '\n' + res.stderr, 4000) });
+    results.push({
+      side,
+      command: cmd,
+      exit_code: res.status,
+      duration_ms: Date.now() - started,
+      output_tail: tail(res.stdout + '\n' + res.stderr, 4000),
+    });
     if (res.status !== 0) failures.push(`${side} tests failed (${cmd}):\n${tail(res.stdout + '\n' + res.stderr, 3000)}`);
   }
 
@@ -582,7 +606,8 @@ function runUnitTests(ws, st, task, attempt, runId) {
   const files = G.changedSince(ws.root, task.base).filter((f) => inTask(f));
   const text = files.map((f) => readTextIfExists(ws.abs(f)) ?? '').join('\n');
   for (const tc of task.tests ?? []) {
-    if (!tcPattern(tc).test(text)) failures.push(`${tc} is not referenced in any test changed by ${task.id} (put the TC id in the test name or an adjacent comment)`);
+    if (!tcPattern(tc).test(text))
+      failures.push(`${tc} is not referenced in any test changed by ${task.id} (put the TC id in the test name or an adjacent comment)`);
   }
 
   writeYaml(path.join(ws.workDir(req), 'evidence', 'test-results', `${task.id}-attempt-${attempt}.yaml`), {
@@ -607,7 +632,12 @@ export function runDiscover(ws, { maxAttempts } = {}) {
   const contract = ws.contract('contracts/discover.yaml');
   const max = maxAttempts ?? contract.max_attempts ?? 2;
   const seqFile = path.join(ws.workDir(req), 'seq.yaml');
-  const counter = { req_id: req, requirement: '(none - repository discovery)', feedback: [], ...(YAML.parse(readTextIfExists(seqFile) ?? '') ?? {}) };
+  const counter = {
+    req_id: req,
+    requirement: '(none - repository discovery)',
+    feedback: [],
+    ...(YAML.parse(readTextIfExists(seqFile) ?? '') ?? {}),
+  };
   const { report } = detectStacks(ws.root);
   const extra = [
     '## Detected stacks (heuristic - verify against the code)',
@@ -617,7 +647,15 @@ export function runDiscover(ws, { maxAttempts } = {}) {
   let failure = null;
   for (let attempt = 1; attempt <= max; attempt++) {
     log(`[discover] attempt ${attempt}/${max}`);
-    const r = executeAgent(ws, counter, { req, phase: 'discover', agentId: contract.agent ?? 'discovery', contract, attempt, failure, extra });
+    const r = executeAgent(ws, counter, {
+      req,
+      phase: 'discover',
+      agentId: contract.agent ?? 'discovery',
+      contract,
+      attempt,
+      failure,
+      extra,
+    });
     writeYaml(seqFile, { run_seq: counter.run_seq });
     let errors = r.errors;
     if (!errors.length) errors = validateOutputs(ws, contract, { req }).errors;
@@ -625,7 +663,10 @@ export function runDiscover(ws, { maxAttempts } = {}) {
     r.evidence.outcome = errors.length ? 'failed' : 'ok';
     writeEvidence(ws, req, r.evidence);
     if (!errors.length) {
-      const sha = G.commit(ws.root, `docs(knowledge): discover knowledge base\n\nAIWS-Run: ${r.runId}\n`, ['aiws/knowledge', ws.workRel(req)]);
+      const sha = G.commit(ws.root, `docs(knowledge): discover knowledge base\n\nAIWS-Run: ${r.runId}\n`, [
+        'aiws/knowledge',
+        ws.workRel(req),
+      ]);
       log(`  knowledge written${sha ? ` (${sha.slice(0, 7)})` : ''}. Review aiws/knowledge/ and correct it before the first REQ.`);
       return { ok: true };
     }

@@ -2,7 +2,9 @@ import { write, read } from './_lib.js';
 
 const incremental = Boolean(process.env.AIWS_REQ && process.env.AIWS_REQ !== '_discover');
 
-write('aiws/knowledge/system-map.md', `
+write(
+  'aiws/knowledge/system-map.md',
+  `
 # System map
 
 ## Tổng quan
@@ -19,34 +21,46 @@ Sample user app: source-fe (view helpers), source-be (in-memory user store).
 
 ## Phụ thuộc ngoài
 Không có.
-`);
+`
+);
 
-write('aiws/knowledge/api-inventory.md', `
+write(
+  'aiws/knowledge/api-inventory.md',
+  `
 # API inventory
 
 ## Endpoints
 | Method | Path | Handler | Mô tả | FE |
 | --- | --- | --- | --- | --- |
 | GET | /users/{id} | source-be/src/users.js:getUser | get user | source-fe/src/view.js |
-${incremental ? '| PUT | /users/{id}/nickname | source-be/src/users.js:setNickname | set nickname | source-fe/src/view.js |\n' : ''}`);
+${incremental ? '| PUT | /users/{id}/nickname | source-be/src/users.js:setNickname | set nickname | source-fe/src/view.js |\n' : ''}`
+);
 
-write('aiws/knowledge/db-schema.md', `
+write(
+  'aiws/knowledge/db-schema.md',
+  `
 # DB schema
 
 ## Bảng
 - users (in-memory): id, name${incremental || read('source-be/src/users.js').includes('nickname') ? ', nickname' : ''}
-`);
+`
+);
 
-write('aiws/knowledge/glossary.md', `
+write(
+  'aiws/knowledge/glossary.md',
+  `
 # Glossary
 
 ## Thuật ngữ
 | Thuật ngữ | Nghĩa | Tên trong code |
 | --- | --- | --- |
 | Người dùng | user | user |
-`);
+`
+);
 
-write('aiws/knowledge/conventions.md', `
+write(
+  'aiws/knowledge/conventions.md',
+  `
 # Conventions
 
 ## Frontend
@@ -57,5 +71,6 @@ Functions in source-be/src; errors carry .status.
 
 ## Test
 node:test, test names contain TC ids.
-`);
+`
+);
 console.log('knowledge written');

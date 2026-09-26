@@ -15,7 +15,9 @@ export function readLock(root) {
 export function acquire(root, req) {
   const cur = readLock(root);
   if (cur && cur.req !== req) {
-    throw new AiwsError(`Source lock is held by ${cur.req} since ${cur.at}. Only one REQ may write source at a time (release with \`aiws unlock\` if stale).`);
+    throw new AiwsError(
+      `Source lock is held by ${cur.req} since ${cur.at}. Only one REQ may write source at a time (release with \`aiws unlock\` if stale).`
+    );
   }
   if (!cur) writeYaml(lockFile(root), { req, at: nowIso() });
 }

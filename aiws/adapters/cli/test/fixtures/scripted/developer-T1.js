@@ -2,7 +2,10 @@ import { write, read } from './_lib.js';
 
 const src = read('source-be/src/users.js');
 if (!src.includes('setNickname')) {
-  write('source-be/src/users.js', src + `
+  write(
+    'source-be/src/users.js',
+    src +
+      `
 export function setNickname(id, nickname) {
   const u = users.get(id);
   if (!u) {
@@ -18,10 +21,13 @@ export function setNickname(id, nickname) {
   u.nickname = nickname;
   return { ...u };
 }
-`);
+`
+  );
 }
 
-write('source-be/test/nickname.test.js', `
+write(
+  'source-be/test/nickname.test.js',
+  `
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setNickname, getUser } from '../src/users.js';
@@ -36,5 +42,6 @@ test('TC-2: setNickname rejects empty or too long nickname', () => {
   assert.throws(() => setNickname('u2', 'x'.repeat(31)), (e) => e.status === 400);
   assert.equal(getUser('u2').nickname, undefined);
 });
-`);
+`
+);
 console.log('T1 implemented');

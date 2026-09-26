@@ -1,9 +1,13 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { AiwsError, log } from './util.js';
-import { Workspace } from './workspace.js';
+import { Workspace, PKG_ROOT } from './workspace.js';
 import * as C from './commands.js';
 import { runHook } from './guard.js';
 
 const HELP = `aiws - AI Software Factory orchestrator (V1, Claude Code first)
+
+Usage: aiws <command> [options]        aiws --version | --help
 
 Setup
   aiws init [dir]                      create workspace skeleton (copies the aiws/ kit into a new project)
@@ -34,6 +38,10 @@ Checks (for CI and debugging)
   aiws guard [--bash]                  Claude Code PreToolUse hook (reads tool JSON on stdin)
 `;
 
+export function version() {
+  return JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8')).version;
+}
+
 const VALUE_FLAGS = new Set(['-m', '--message', '--task', '--req', '--phase', '--base', '--range', '--worktree']);
 
 export function parseArgs(argv) {
@@ -55,13 +63,23 @@ export function parseArgs(argv) {
 export async function main(argv) {
   const { pos, flags } = parseArgs(argv);
   const [cmd, a1, a2] = pos;
+  if (!cmd && flags.version) {
+    log(version());
+    return 0;
+  }
   const human = { yes: Boolean(flags.yes), message: flags.message, sign: Boolean(flags.sign) };
 
   switch (cmd) {
     case undefined:
     case 'help':
     case '--help':
+    case '-h':
       log(HELP);
+      return 0;
+    case 'version':
+    case '--version':
+    case '-v':
+      log(version());
       return 0;
     case 'init':
       C.init(a1);

@@ -35,10 +35,13 @@ test('happy path: REQ-001 from requirement to done with 2 human interventions', 
   ok(root, ['run', 'REQ-001']);
   st = state(root);
   assert.equal(st.phase, 'pr_approval', JSON.stringify(st, null, 2));
-  assert.deepEqual(st.tasks.map((t) => [t.id, t.status, t.test_result]), [
-    ['T1', 'done', 'pass'],
-    ['T2', 'done', 'pass'],
-  ]);
+  assert.deepEqual(
+    st.tasks.map((t) => [t.id, t.status, t.test_result]),
+    [
+      ['T1', 'done', 'pass'],
+      ['T2', 'done', 'pass'],
+    ]
+  );
 
   // commits carry trailers
   const t1 = git(root, ['log', '-1', '--format=%B', st.tasks[0].commit]);

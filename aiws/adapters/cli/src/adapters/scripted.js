@@ -26,7 +26,13 @@ export function runAgent(ws, { env, agent, task, attempt }) {
     if (script) break;
   }
   if (!script) {
-    return { ok: false, exitCode: 1, raw: '', stderr: `scripted adapter: no script for agent ${agent.id} in ${dirs.join(', ')}`, report: { is_error: true } };
+    return {
+      ok: false,
+      exitCode: 1,
+      raw: '',
+      stderr: `scripted adapter: no script for agent ${agent.id} in ${dirs.join(', ')}`,
+      report: { is_error: true },
+    };
   }
   const started = Date.now();
   const res = spawnSync(process.execPath, [script], { cwd: ws.root, env, encoding: 'utf8', windowsHide: true });

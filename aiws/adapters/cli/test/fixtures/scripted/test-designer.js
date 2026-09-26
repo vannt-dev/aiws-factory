@@ -1,6 +1,8 @@
 import { write, work, req } from './_lib.js';
 
-write(work('03-test-spec.md'), `
+write(
+  work('03-test-spec.md'),
+  `
 # ${req} — Test spec
 
 ## Chiến lược
@@ -26,5 +28,6 @@ Unit test node:test cho BE và FE.
 | AC-1 | TC-1 |
 | AC-2 | TC-2 |
 | AC-3 | TC-3 |
-`);
+`
+);
 console.log('test spec done');

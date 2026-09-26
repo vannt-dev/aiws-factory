@@ -155,7 +155,13 @@ export function status(req) {
     if (st.tasks.length) {
       log('  tasks:');
       for (const t of st.tasks) {
-        const extra = [t.commit && `commit ${t.commit.slice(0, 7)}`, t.attempts && `attempts ${t.attempts}`, t.test_result && `tests ${t.test_result}`].filter(Boolean).join(', ');
+        const extra = [
+          t.commit && `commit ${t.commit.slice(0, 7)}`,
+          t.attempts && `attempts ${t.attempts}`,
+          t.test_result && `tests ${t.test_result}`,
+        ]
+          .filter(Boolean)
+          .join(', ');
         log(`    ${t.id.padEnd(6)} ${t.status.padEnd(8)} ${t.title ?? ''}${extra ? `  (${extra})` : ''}`);
         if (t.last_failure && t.status !== 'done') log(`           last failure: ${t.last_failure.split('\n')[0].slice(0, 160)}`);
       }
@@ -163,7 +169,10 @@ export function status(req) {
     const last = st.history.slice(-3);
     if (last.length) {
       log('  recent:');
-      for (const h of last) log(`    ${h.at} ${h.phase}${h.agent ? '/' + h.agent : ''}${h.task ? '/' + h.task : ''} -> ${h.result}${h.run ? ` (${h.run})` : ''}`);
+      for (const h of last)
+        log(
+          `    ${h.at} ${h.phase}${h.agent ? '/' + h.agent : ''}${h.task ? '/' + h.task : ''} -> ${h.result}${h.run ? ` (${h.run})` : ''}`
+        );
     }
   }
   if (lock) log(`source lock: held by ${lock.req} since ${lock.at}`);
@@ -205,7 +214,9 @@ function approveDesign(req, opts) {
   addHistory(st, { phase: def.id, result: 'approved', by, record: path.basename(file) });
   enterPhase(ws, st, def.on_approve);
   saveState(ws, st);
-  G.commit(ws.root, `chore(${req}): design approved by ${by}\n\nREQ-ID: ${req}\nAIWS-Approval: ${file}\n`, [ws.workRel(req)], { sign: opts.sign });
+  G.commit(ws.root, `chore(${req}): design approved by ${by}\n\nREQ-ID: ${req}\nAIWS-Approval: ${file}\n`, [ws.workRel(req)], {
+    sign: opts.sign,
+  });
   log(`Design approved (${file}). Next: aiws run ${req}`);
 }
 
@@ -235,7 +246,9 @@ function approvePr(req, opts) {
   if (def.release_lock) Lock.release(ws.root, req, { force: true });
   enterPhase(ws, st, def.on_approve);
   saveState(ws, st);
-  G.commit(ws.root, `chore(${req}): PR merged, approved by ${by}\n\nREQ-ID: ${req}\nAIWS-Approval: ${file}\n`, [ws.workRel(req)], { sign: opts.sign });
+  G.commit(ws.root, `chore(${req}): PR merged, approved by ${by}\n\nREQ-ID: ${req}\nAIWS-Approval: ${file}\n`, [ws.workRel(req)], {
+    sign: opts.sign,
+  });
   log(`PR approval recorded. Switched to ${kBranch} for the knowledge update. Next: aiws run ${req}`);
 }
 
@@ -254,7 +267,9 @@ export async function reject(req, gate, opts = {}) {
   addHistory(st, { phase: def.id, result: decision, by, record: path.basename(file) });
   enterPhase(ws, st, target);
   saveState(ws, st);
-  G.commit(ws.root, `chore(${req}): ${gate} ${decision} by ${by}\n\nREQ-ID: ${req}\nAIWS-Approval: ${file}\n`, [ws.workRel(req)], { sign: opts.sign });
+  G.commit(ws.root, `chore(${req}): ${gate} ${decision} by ${by}\n\nREQ-ID: ${req}\nAIWS-Approval: ${file}\n`, [ws.workRel(req)], {
+    sign: opts.sign,
+  });
   log(`${gate} ${decision}; feedback recorded for phase '${target}'. Next: aiws run ${req}`);
 }
 
@@ -289,7 +304,8 @@ export async function redesign(req, opts = {}) {
   await requireHuman('redesign', req, opts);
   const { ws, st } = openForHuman(req);
   const def = ws.phaseDef(st.phase);
-  if (!(def.type === 'human_gate' && def.gate === 'question')) throw new AiwsError(`${req} is not at a design question (phase ${st.phase}).`);
+  if (!(def.type === 'human_gate' && def.gate === 'question'))
+    throw new AiwsError(`${req} is not at a design question (phase ${st.phase}).`);
   const by = currentUser(ws.root);
   addFeedback(st, def.on_design_change, `design change requested by ${by}`, opts.message);
   for (const t of st.tasks) if (t.status === 'running') t.status = 'pending';
@@ -448,7 +464,9 @@ export function detect({ write = false, force = false } = {}) {
     doc.setIn(['commands', k], v);
   }
   fs.writeFileSync(file, doc.toString({ lineWidth: 0 }));
-  log(`\nUpdated aiws/config/policies.yaml${force ? '' : ' (kept existing commands; --force to overwrite)'}. Review it, then \`aiws sync claude\`.`);
+  log(
+    `\nUpdated aiws/config/policies.yaml${force ? '' : ' (kept existing commands; --force to overwrite)'}. Review it, then \`aiws sync claude\`.`
+  );
 }
 
 export function where() {

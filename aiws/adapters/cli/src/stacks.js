@@ -4,7 +4,23 @@ import path from 'node:path';
 // Language-agnostic stack detection: AIWS only needs to know how to build and test each source-* dir.
 // Every suggestion is a starting point for a human to confirm in aiws/config/policies.yaml.
 
-const SKIP = new Set(['.git', 'node_modules', 'target', 'bin', 'obj', 'dist', 'build', 'vendor', '.venv', 'venv', '__pycache__', '.gradle', '.idea', '.next', 'out']);
+const SKIP = new Set([
+  '.git',
+  'node_modules',
+  'target',
+  'bin',
+  'obj',
+  'dist',
+  'build',
+  'vendor',
+  '.venv',
+  'venv',
+  '__pycache__',
+  '.gradle',
+  '.idea',
+  '.next',
+  'out',
+]);
 
 const has = (dir, f) => fs.existsSync(path.join(dir, f));
 const glob1 = (dir, re) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => re.test(f)) : []);
@@ -65,7 +81,13 @@ const DETECTORS = [
     const scripts = pkg.scripts ?? {};
     const pm = has(d, 'pnpm-lock.yaml') ? 'pnpm' : has(d, 'yarn.lock') ? 'yarn' : 'npm';
     const runIn = (script) =>
-      pm === 'pnpm' ? `pnpm --dir ${rel} ${script}` : pm === 'yarn' ? `yarn --cwd ${rel} ${script}` : script === 'test' ? `npm test --prefix ${rel}` : `npm run ${script} --prefix ${rel}`;
+      pm === 'pnpm'
+        ? `pnpm --dir ${rel} ${script}`
+        : pm === 'yarn'
+          ? `yarn --cwd ${rel} ${script}`
+          : script === 'test'
+            ? `npm test --prefix ${rel}`
+            : `npm run ${script} --prefix ${rel}`;
     return {
       stack: `node-${pm}`,
       build: scripts.build ? runIn('build') : null,
@@ -107,7 +129,10 @@ export function languageSummary(dir, top = 6) {
     }
   };
   walk(dir);
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, top).map(([ext, n]) => `${ext}:${n}`);
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, top)
+    .map(([ext, n]) => `${ext}:${n}`);
 }
 
 function detectDir(dir, rel) {
@@ -117,9 +142,17 @@ function detectDir(dir, rel) {
   }
   // monorepo-ish: a single sub-project one level down
   const subs = fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory() && !SKIP.has(e.name)) : [];
-  const found = subs.map((s) => ({ s, hit: DETECTORS.map((f) => f(path.join(dir, s.name), `${rel}/${s.name}`)).find(Boolean) })).filter((x) => x.hit);
+  const found = subs
+    .map((s) => ({ s, hit: DETECTORS.map((f) => f(path.join(dir, s.name), `${rel}/${s.name}`)).find(Boolean) }))
+    .filter((x) => x.hit);
   if (found.length === 1) return { ...found[0].hit, note: `detected in ${rel}/${found[0].s.name}` };
-  if (found.length > 1) return { stack: 'multiple', build: null, test: null, note: `several projects: ${found.map((x) => `${x.s.name} (${x.hit.stack})`).join(', ')} - write a command that builds/tests all of them` };
+  if (found.length > 1)
+    return {
+      stack: 'multiple',
+      build: null,
+      test: null,
+      note: `several projects: ${found.map((x) => `${x.s.name} (${x.hit.stack})`).join(', ')} - write a command that builds/tests all of them`,
+    };
   return null;
 }
 
@@ -157,7 +190,10 @@ export function detectStacks(root) {
 export function reportText(report) {
   if (!report.length) return 'No source-* directories found.';
   return report
-    .map((r) => `- ${r.dir}${r.side ? ` (side '${r.side}')` : ''}: ${r.stack}${r.languages.length ? `; files ${r.languages.join(' ')}` : ''}${r.note ? `; ${r.note}` : ''}`)
+    .map(
+      (r) =>
+        `- ${r.dir}${r.side ? ` (side '${r.side}')` : ''}: ${r.stack}${r.languages.length ? `; files ${r.languages.join(' ')}` : ''}${r.note ? `; ${r.note}` : ''}`
+    )
     .join('\n');
 }
 

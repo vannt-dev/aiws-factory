@@ -15,19 +15,31 @@ test('guard: phase write scope, protected paths, secrets', () => {
   const abs = (p) => path.join(root, p);
 
   // analysis may write its own output only
-  assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: abs('aiws/work/REQ-001/01-analysis.md') } }, inPhase('analysis')).status, 0);
+  assert.equal(
+    hook(root, { tool_name: 'Write', tool_input: { file_path: abs('aiws/work/REQ-001/01-analysis.md') } }, inPhase('analysis')).status,
+    0
+  );
   const src = hook(root, { tool_name: 'Edit', tool_input: { file_path: abs('source-be/src/users.js') } }, inPhase('analysis'));
   assert.equal(src.status, 2);
   assert.match(src.stderr, /outside the write scope of phase 'analysis'/);
 
   // protected, in every phase
-  for (const p of ['source-legacy/README.md', 'aiws/work/REQ-001/state.yaml', 'aiws/work/REQ-001/approvals/design-01.yaml', 'aiws/config/policies.yaml', 'requirements/x.md']) {
+  for (const p of [
+    'source-legacy/README.md',
+    'aiws/work/REQ-001/state.yaml',
+    'aiws/work/REQ-001/approvals/design-01.yaml',
+    'aiws/config/policies.yaml',
+    'requirements/x.md',
+  ]) {
     const r = hook(root, { tool_name: 'Write', tool_input: { file_path: abs(p) } }, inPhase('implementation', { AIWS_TASK: 'T1' }));
     assert.equal(r.status, 2, p);
   }
 
   // outside the workspace during a phase
-  assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: path.join(path.dirname(root), 'evil.txt') } }, inPhase('design')).status, 2);
+  assert.equal(
+    hook(root, { tool_name: 'Write', tool_input: { file_path: path.join(path.dirname(root), 'evil.txt') } }, inPhase('design')).status,
+    2
+  );
 
   // secrets cannot be read, also via bash
   assert.equal(hook(root, { tool_name: 'Read', tool_input: { file_path: abs('source-be/.env') } }).status, 2);
@@ -66,7 +78,7 @@ test('guard --bash: denylist incl. nested, path-prefixed and option-laden forms'
     'git push origin main',
     'git -C . push',
     'bash -c "git push"',
-    'sh -c \'aiws approve REQ-001 design --yes\'',
+    "sh -c 'aiws approve REQ-001 design --yes'",
     'node aiws/adapters/cli/bin/aiws.js approve REQ-001 design',
     'npx aiws approve REQ-001 design',
     'echo x && aiws resume REQ-001',
@@ -81,8 +93,22 @@ test('guard --bash: denylist incl. nested, path-prefixed and option-laden forms'
   for (const command of blocked) assert.equal(hook(root, { tool_name: 'Bash', tool_input: { command } }, phaseEnv).status, 2, command);
   // the PowerShell tool (Claude Code on Windows) gets the same checks
   assert.equal(hook(root, { tool_name: 'PowerShell', tool_input: { command: 'git push origin main' } }, phaseEnv).status, 2);
-  assert.equal(hook(root, { tool_name: 'PowerShell', tool_input: { command: '& node aiws/adapters/cli/bin/aiws.js approve REQ-001 design' } }, phaseEnv).status, 2);
-  const allowed = ['npm test --prefix source-be', 'node --test source-be/test/', 'git status', 'git diff', 'aiws status REQ-001', 'ls source-fe'];
+  assert.equal(
+    hook(
+      root,
+      { tool_name: 'PowerShell', tool_input: { command: '& node aiws/adapters/cli/bin/aiws.js approve REQ-001 design' } },
+      phaseEnv
+    ).status,
+    2
+  );
+  const allowed = [
+    'npm test --prefix source-be',
+    'node --test source-be/test/',
+    'git status',
+    'git diff',
+    'aiws status REQ-001',
+    'ls source-fe',
+  ];
   for (const command of allowed) assert.equal(hook(root, { tool_name: 'Bash', tool_input: { command } }, phaseEnv).status, 0, command);
 });
 

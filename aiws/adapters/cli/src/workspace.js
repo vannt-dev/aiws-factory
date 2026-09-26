@@ -95,14 +95,17 @@ export class Workspace {
 
   listAgents() {
     const dir = path.join(this.aiwsDir, 'agents');
-    return fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => f.slice(0, -3)) : [];
+    return fs.existsSync(dir)
+      ? fs
+          .readdirSync(dir)
+          .filter((f) => f.endsWith('.md'))
+          .map((f) => f.slice(0, -3))
+      : [];
   }
 
   listSkills() {
     const dir = path.join(this.aiwsDir, 'skills');
-    return fs.existsSync(dir)
-      ? fs.readdirSync(dir).filter((d) => fs.existsSync(path.join(dir, d, 'SKILL.md')))
-      : [];
+    return fs.existsSync(dir) ? fs.readdirSync(dir).filter((d) => fs.existsSync(path.join(dir, d, 'SKILL.md'))) : [];
   }
 
   workDir(req) {

@@ -62,7 +62,8 @@ export const RULES = {
     const ids = P.acceptanceCriteria(work('01-analysis.md'));
     if (!ids.length) return [invalid('01-analysis.md defines no acceptance criteria (expected list items "- AC-1: ...")')];
     const expected = ids.map((_, i) => `AC-${i + 1}`);
-    if (ids.join() !== expected.join()) return [invalid(`Acceptance criteria must be numbered AC-1..AC-${ids.length} in order; found ${ids.join(', ')}`)];
+    if (ids.join() !== expected.join())
+      return [invalid(`Acceptance criteria must be numbered AC-1..AC-${ids.length} in order; found ${ids.join(', ')}`)];
     return [];
   },
 
@@ -151,10 +152,11 @@ export function validatePlan(ws, text, testCases) {
   if (hasCycle(tasks)) errs.push('Task dependencies contain a cycle');
   const known = new Set(testCases.map((t) => t.id));
   const assigned = new Map();
-  for (const t of tasks) for (const tc of t.tests ?? []) {
-    if (!known.has(tc)) errs.push(`${t.id}: test ${tc} is not defined in 03-test-spec.md`);
-    assigned.set(tc, (assigned.get(tc) ?? 0) + 1);
-  }
+  for (const t of tasks)
+    for (const tc of t.tests ?? []) {
+      if (!known.has(tc)) errs.push(`${t.id}: test ${tc} is not defined in 03-test-spec.md`);
+      assigned.set(tc, (assigned.get(tc) ?? 0) + 1);
+    }
   for (const tc of known) if (!assigned.has(tc)) errs.push(`${tc} is not assigned to any task`);
   return errs;
 }

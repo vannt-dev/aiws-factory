@@ -99,7 +99,15 @@ test('headless Bash permissions are derived from the project commands, for any l
 
 test('TC ids are recognised in every language naming style', () => {
   const p = tcPattern('TC-3');
-  for (const s of ["test('TC-3: x')", '@DisplayName("TC-3: x")', 'def test_tc_3_returns_404():', 'func TestTC3_Returns404(t *testing.T)', 'public void TC3_Works()', '# tc-3', 'fn tc_3_ok()']) {
+  for (const s of [
+    "test('TC-3: x')",
+    '@DisplayName("TC-3: x")',
+    'def test_tc_3_returns_404():',
+    'func TestTC3_Returns404(t *testing.T)',
+    'public void TC3_Works()',
+    '# tc-3',
+    'fn tc_3_ok()',
+  ]) {
     assert.ok(p.test(s), s);
   }
   for (const s of ["test('TC-30: x')", 'def test_tc_31():', 'ATC3']) assert.ok(!p.test(s), s);
