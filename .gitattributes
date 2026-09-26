@@ -1,6 +1,9 @@
 # Only AIWS-owned files are normalised. source-* keep whatever line endings their own repos use.
 /aiws/** text=auto eol=lf
-/AGENTS.md text=auto eol=lf
-/CLAUDE.md text=auto eol=lf
-/README.md text=auto eol=lf
+/.github/** text=auto eol=lf
 /.claude/** text=auto eol=lf
+/*.md text=auto eol=lf
+/LICENSE text=auto eol=lf
+/.editorconfig text=auto eol=lf
+/.gitattributes text=auto eol=lf
+/.gitignore text=auto eol=lf
