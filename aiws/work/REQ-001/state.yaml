@@ -42,6 +42,12 @@ history:
     run: run-0005
     commit: 50be8fe
     at: 2026-10-03T06:57:41Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0006
+    commit: 4ac989e
+    at: 2026-10-03T07:02:00Z
 tasks:
   - id: T1
     title: be - thêm PhoneNumbers port quy tắc chuẩn hoá và hợp lệ số điện thoại của legacy
@@ -78,10 +84,10 @@ tasks:
       - TC-11
       - TC-12
     depends_on: []
-    status: running
-    base: 3d4a89fb0b560a29cb8ca094bfcdfbbe97dd21a8
+    status: done
     attempts: 1
     test_result: pass
+    commit: 4ac989e1d1d730b6861c456c11e6472837f89d1b
   - id: T3
     title: be - nhận, kiểm tra và trả phone khi tạo khách hàng qua service và POST /api/customers
     type: feat
