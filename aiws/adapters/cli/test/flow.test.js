@@ -167,6 +167,32 @@ test('source lock: a second REQ in its own worktree cannot enter implementation'
   assert.match(ok(root, ['status']).stdout, /No REQs on this branch|source lock/);
 });
 
+test('status shows the AI runs and the cumulative cost of a requirement', () => {
+  const root = makeWorkspace();
+  ok(root, ['new', 'REQ-001']);
+  assert.doesNotMatch(ok(root, ['status', 'REQ-001']).stdout, /AI runs/, 'nothing to report before the first run');
+
+  const runs = 'aiws/work/REQ-001/evidence/runs';
+  writeFile(root, `${runs}/run-0001.json`, JSON.stringify({ phase: 'analysis', duration_ms: 120000, report: { cost_usd: 1.25 } }));
+  writeFile(root, `${runs}/run-0002.json`, JSON.stringify({ phase: 'design', duration_ms: 180000, report: { cost_usd: 2 } }));
+  writeFile(root, `${runs}/run-0003.json`, JSON.stringify({ phase: 'design', duration_ms: 60000, report: { cost_usd: 0.5 } }));
+  writeFile(root, `${runs}/run-0004.json`, '{ "truncated": '); // interrupted run: ignored
+  writeFile(root, `${runs}/run-0003.prompt.md`, 'prompt'); // not evidence
+  assert.match(
+    ok(root, ['status', 'REQ-001']).stdout,
+    /AI runs: 3 \(6 min\), cost 3\.75 USD list-price equivalent \(analysis 1\.25, design 2\.50\)/
+  );
+
+  // adapters that report no cost (scripted): runs and time only
+  writeFile(root, `${runs}/run-0001.json`, JSON.stringify({ phase: 'analysis', duration_ms: 1000, report: {} }));
+  fs.rmSync(path.join(root, runs, 'run-0002.json'));
+  fs.rmSync(path.join(root, runs, 'run-0003.json'));
+  const line = ok(root, ['status', 'REQ-001'])
+    .stdout.split('\n')
+    .find((l) => l.includes('AI runs'));
+  assert.equal(line.trim(), 'AI runs: 1 (1 min)');
+});
+
 test('init copies the kit into a fresh project and sync claude generates .claude/', () => {
   const dir = tempDir('aiws-init-');
   assert.match(ok(dir, ['--version']).stdout.trim(), /^\d+\.\d+\.\d+$/);

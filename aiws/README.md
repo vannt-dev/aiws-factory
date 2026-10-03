@@ -144,7 +144,7 @@ To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 
 ## 8. Cost
 
-`cost_usd` in the evidence is the **API list-price equivalent** reported by Claude Code. With a Claude subscription (Pro/Max) it only counts against your plan's usage limits; with an API key or Console account it is real spend. Run `/status` in Claude Code to see which applies.
+`aiws status REQ-001` shows the number of AI runs, their total time and the cumulative cost of the requirement, broken down by phase. `cost_usd` in the evidence is the **API list-price equivalent** reported by Claude Code. With a Claude subscription (Pro/Max) it only counts against your plan's usage limits; with an API key or Console account it is real spend. Run `/status` in Claude Code to see which applies.
 
 A real run on the sample project (sonnet, a small requirement with 2 tasks) cost about USD 1.30 equivalent over 8 runs. Change `runtime.yaml → claude.models` to reduce it. `npm test` uses the `scripted` adapter and costs nothing.
 
