@@ -94,6 +94,8 @@ Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `resume`, `unl
 
 **Merge PR:** cách merge nào cũng được. `aiws approve REQ-001 pr` chấp nhận khi nhánh REQ là tổ tiên của nhánh gốc (merge commit hoặc fast-forward), hoặc khi mọi file REQ đã sửa có cùng nội dung trên nhánh gốc (squash hoặc rebase). Nhớ cập nhật nhánh gốc ở máy trước. Sau squash hoặc rebase, mã commit ghi trong `state.yaml` không còn trên nhánh gốc, nên `aiws trace` tìm commit của task theo trailer `Task:`. Merge commit giữ mỗi task một commit, vì vậy là lựa chọn tốt nhất cho truy vết.
 
+**Tạm dừng:** `aiws stop REQ-001`, chạy từ terminal hay worktree nào cũng được, yêu cầu `aiws run` đang chạy dừng lại sau bước hiện tại; sau đó `aiws run REQ-001` chạy tiếp, không cần lệnh duyệt nào. Nếu tiến trình bị tắt ngang (Ctrl+C, đóng terminal), task đang làm vẫn ở trạng thái `running` trong `state.yaml`: lần `aiws run` kế tiếp giữ các file viết dở của task đó và dặn agent developer xem lại chúng trước. File chưa commit nằm ngoài task vẫn bị từ chối.
+
 **Chạy song song:** tại một thời điểm chỉ một REQ được ghi source, từ lúc vào implementation tới khi PR merge (source lock). Các REQ khác vẫn làm analysis/design được, mỗi REQ trong worktree riêng:
 
 ```bash

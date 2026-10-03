@@ -91,6 +91,7 @@ test('guard --bash: denylist incl. nested, path-prefixed and option-laden forms'
     // inside a phase an agent may not start or advance the pipeline itself
     'aiws run REQ-001',
     'node aiws/adapters/cli/bin/aiws.js new REQ-002',
+    'aiws stop REQ-001',
   ];
   const phaseEnv = inPhase('implementation', { AIWS_TASK: 'T1' });
   for (const command of blocked) assert.equal(hook(root, { tool_name: 'Bash', tool_input: { command } }, phaseEnv).status, 2, command);
@@ -123,6 +124,7 @@ test('guard --bash: a maintainer session may commit and drive aiws, but an AI ma
   // an assistant may start and advance a requirement; the run still stops at every human gate
   assert.equal(run('aiws new REQ-001'), 0);
   assert.equal(run('node aiws/adapters/cli/bin/aiws.js run REQ-001'), 0);
+  assert.equal(run('aiws stop REQ-001'), 0);
   for (const gate of [
     'approve REQ-001 design --yes',
     'reject REQ-001 design -m x',

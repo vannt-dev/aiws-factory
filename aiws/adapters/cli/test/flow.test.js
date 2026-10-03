@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { makeWorkspace, aiws, ok, state, git, scenario, readFile, writeFile, tempDir } from './helpers.js';
+import YAML from 'yaml';
+import { makeWorkspace, aiws, ok, state, git, scenario, readFile, writeFile, tempDir, BIN } from './helpers.js';
 
 function toImplementation(root, env) {
   ok(root, ['new', 'REQ-001']);
@@ -142,6 +143,70 @@ x
   ok(root, ['run', 'REQ-001', '--once'], { env });
   st = state(root);
   assert.equal(st.phase, 'design');
+});
+
+test('aiws stop: the run stops after the current step and continues later', () => {
+  const root = makeWorkspace({ discover: true });
+  // while T1 is running, a human asks for a stop from another terminal
+  const t1 = new URL('./fixtures/scripted/developer-T1.js', import.meta.url).href;
+  const env = {
+    ...scenario({
+      'developer-T1.js': `
+        import { spawnSync } from 'node:child_process';
+        await import(${JSON.stringify(t1)});
+        spawnSync(process.execPath, [process.env.AIWS_TEST_BIN, 'stop', 'REQ-001']);
+      `,
+    }),
+    AIWS_TEST_BIN: BIN,
+  };
+  toImplementation(root, env);
+  const first = ok(root, ['run', 'REQ-001'], { env });
+  assert.match(first.stdout, /stop requested/);
+  let st = state(root);
+  assert.equal(st.phase, 'implementation');
+  assert.equal(st.status, 'running', 'a stop is not a block: no human gate command is needed to continue');
+  assert.deepEqual(
+    st.tasks.map((t) => t.status),
+    ['done', 'pending']
+  );
+  assert.equal(git(root, ['status', '--porcelain']), '', 'the tree is clean after a stop');
+
+  // a stop requested while nothing runs is stale: the next run ignores it
+  ok(root, ['stop', 'REQ-001']);
+  ok(root, ['run', 'REQ-001']);
+  st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+});
+
+test('a task interrupted mid-run is resumed with its partial work', () => {
+  const root = makeWorkspace({ discover: true });
+  toImplementation(root);
+  ok(root, ['run', 'REQ-001', '--once']); // planning
+
+  // what a killed `aiws run` leaves behind: T1 saved as running, a half-written file of the task
+  const file = path.join(root, 'aiws/work/REQ-001/state.yaml');
+  const saved = YAML.parse(fs.readFileSync(file, 'utf8'));
+  Object.assign(saved.tasks[0], { status: 'running', in_progress: true, base: git(root, ['rev-parse', 'HEAD']) });
+  fs.writeFileSync(file, YAML.stringify(saved));
+  writeFile(root, 'source-be/test/nickname.test.js', '// half written\n');
+
+  const r = ok(root, ['run', 'REQ-001']);
+  assert.match(r.stdout, /T1 \(attempt 1\/3\) - resuming an interrupted attempt/);
+  const st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+  assert.equal(st.tasks[0].in_progress, undefined);
+  const prompts = fs.readdirSync(path.join(root, 'aiws/work/REQ-001/evidence/runs')).filter((f) => f.endsWith('.prompt.md'));
+  const t1Prompt = prompts.map((f) => readFile(root, `aiws/work/REQ-001/evidence/runs/${f}`)).find((p) => p.includes('task: T1'));
+  assert.match(t1Prompt, /previous attempt was interrupted/);
+
+  // dirty files outside the task are still refused
+  const other = makeWorkspace({ discover: true });
+  toImplementation(other);
+  ok(other, ['run', 'REQ-001', '--once']);
+  writeFile(other, 'source-fe/src/stray.js', 'export const x = 1;\n');
+  const refused = aiws(other, ['run', 'REQ-001']);
+  assert.notEqual(refused.status, 0);
+  assert.match(refused.out, /uncommitted changes outside REQ-001's scope/);
 });
 
 test('source lock: a second REQ in its own worktree cannot enter implementation', () => {

@@ -276,6 +276,14 @@ export function mergedInto(root, branchHead, base, baseCommit) {
   return same ? 'squash or rebase' : null;
 }
 
+/** `aiws stop REQ`: asks a running `aiws run` to stop after its current step. Changes no state. */
+export function stop(req) {
+  assertReqId(req);
+  const ws = Workspace.open();
+  Lock.requestStop(ws.root, req);
+  log(`Stop requested: ${req} stops after its current step. Continue later with \`aiws run ${req}\`.`);
+}
+
 export async function reject(req, gate, opts = {}) {
   if (!opts.message) throw new AiwsError('reject needs feedback: -m "what must change"');
   await requireHuman(`reject ${gate}`, req, opts);
