@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `aiws approve REQ pr` accepts squash and rebase merges: besides the ancestor
+  check it passes when every file the requirement changed has the same content
+  on the base. It no longer checks out the base branch, so it works when the
+  base is checked out in another worktree. `aiws trace` falls back to the
+  `Task:` trailer when a recorded commit id is not on the base.
 - `aiws detect` proposes Maven test commands without `-q` (`-B -ntp` instead),
   so the test evidence keeps the "Tests run: N" summary. Existing policies keep
   their commands until `aiws detect --write --force`.

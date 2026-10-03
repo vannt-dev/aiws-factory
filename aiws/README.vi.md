@@ -92,6 +92,8 @@ Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lện
 
 Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **từ chối chạy trong phiên AI** và đòi gõ lại mã REQ để xác nhận. Trong script CI thì truyền `--yes`.
 
+**Merge PR:** cách merge nào cũng được. `aiws approve REQ-001 pr` chấp nhận khi nhánh REQ là tổ tiên của nhánh gốc (merge commit hoặc fast-forward), hoặc khi mọi file REQ đã sửa có cùng nội dung trên nhánh gốc (squash hoặc rebase). Nhớ cập nhật nhánh gốc ở máy trước. Sau squash hoặc rebase, mã commit ghi trong `state.yaml` không còn trên nhánh gốc, nên `aiws trace` tìm commit của task theo trailer `Task:`. Merge commit giữ mỗi task một commit, vì vậy là lựa chọn tốt nhất cho truy vết.
+
 **Chạy song song:** tại một thời điểm chỉ một REQ được ghi source, từ lúc vào implementation tới khi PR merge (source lock). Các REQ khác vẫn làm analysis/design được, mỗi REQ trong worktree riêng:
 
 ```bash
