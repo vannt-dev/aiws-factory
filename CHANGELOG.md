@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `aiws status` shows the AI runs of a requirement: how many, their total time
   and the cumulative cost (list-price equivalent) per phase.
+- `aiws check build` runs every configured `<side>_build` and `<side>_test`
+  command. The AIWS gates workflow runs it on `aiws/REQ-*` pull requests and
+  sets up Java only when a Maven or Gradle project exists.
 
 ### Fixed
 

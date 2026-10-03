@@ -140,7 +140,7 @@ To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 - `aiws/work/REQ/evidence/runs/run-NNNN.json` and `.prompt.md` record the adapter, command, allowed tools, prompt hash, duration, turns, estimated cost, changed files, reverted violations and validation errors.
 - `evidence/test-results/<task>-attempt-N.yaml` records the test command, exit code, a log excerpt and the task's test cases.
 - Task commits carry the trailers `REQ-ID`, `Task`, `Tests` and `AIWS-Run`; `git log --grep "REQ-ID: REQ-001"` lists every change of a requirement.
-- CI runs `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (enable `require_signed` to require GPG/SSH-signed approvals via `aiws approve --sign`) and `aiws trace REQ-001`.
+- CI runs `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (enable `require_signed` to require GPG/SSH-signed approvals via `aiws approve --sign`), `aiws trace REQ-001` and `aiws check build`. The last one re-runs every `<side>_build` and `<side>_test` command of `policies.yaml`, so code about to be merged is rebuilt and retested outside the AI run.
 
 ## 8. Cost
 
@@ -183,7 +183,7 @@ CI (GitHub Actions) is a staged pipeline; each stage runs only if the previous o
 3. **Test on Windows and macOS** with Node 22, plus Linux with Node 24.
 4. **CI result**: the single status required by branch protection on `main`.
 
-Docs-only changes skip stages 1–3, and stage 4 still reports success so the pull request is not blocked. Branch protection on `main` requires `4. CI result` and `AIWS gates`, and blocks force pushes and branch deletion. A separate **AIWS gates** workflow re-checks commit trailers, approvals and the traceability matrix on pull requests from `aiws/REQ-*` branches. See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
+Docs-only changes skip stages 1–3, and stage 4 still reports success so the pull request is not blocked. Branch protection on `main` requires `4. CI result` and `AIWS gates`, and blocks force pushes and branch deletion. A separate **AIWS gates** workflow re-checks commit trailers, approvals and the traceability matrix on pull requests from `aiws/REQ-*` branches, then runs the project's own build and tests with `aiws check build`. It sets up Java only when a Maven or Gradle project exists under `source-*`; add the toolchain steps your stack needs. See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 
 The sample project used by the tests lives in `test/fixtures/sample`; the simulated agents live in `test/fixtures/scripted` (each agent is a Node script that writes its outputs like a well-behaved AI).
 

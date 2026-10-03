@@ -167,6 +167,30 @@ test('source lock: a second REQ in its own worktree cannot enter implementation'
   assert.match(ok(root, ['status']).stdout, /No REQs on this branch|source lock/);
 });
 
+test('check build runs every configured build and test command and fails when one fails', () => {
+  const root = makeWorkspace();
+  const pass = ok(root, ['check', 'build']);
+  for (const name of ['be_build', 'be_test', 'fe_build', 'fe_test']) assert.match(pass.stdout, new RegExp(`> ${name}: `));
+  assert.match(pass.stdout, /build check ok \(4 command\(s\)\)/);
+
+  // a failing test fails the check, but the remaining commands still run
+  writeFile(
+    root,
+    'source-be/test/broken.test.js',
+    "import { test } from 'node:test';\ntest('broken', () => { throw new Error('boom'); });\n"
+  );
+  const fail = aiws(root, ['check', 'build']);
+  assert.equal(fail.status, 1);
+  assert.match(fail.stdout, /be_test: .*\n\s+FAILED \(exit 1\)/);
+  assert.match(fail.stdout, /> fe_test: /, 'later commands still run');
+  assert.match(fail.stdout, /build check FAILED: be_test/);
+
+  // a workspace without configured commands (the kit itself) is a no-op
+  const kit = tempDir('aiws-kit-');
+  ok(kit, ['init']);
+  assert.match(ok(kit, ['check', 'build']).stdout, /nothing to run/);
+});
+
 test('status shows the AI runs and the cumulative cost of a requirement', () => {
   const root = makeWorkspace();
   ok(root, ['new', 'REQ-001']);

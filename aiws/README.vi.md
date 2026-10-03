@@ -140,7 +140,7 @@ Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
 - `aiws/work/REQ/evidence/runs/run-NNNN.json` + `.prompt.md` ghi: adapter, lệnh, tool được phép, hash prompt, thời gian, số turn, chi phí quy đổi, file đã đổi, vi phạm đã revert, lỗi validate.
 - `evidence/test-results/<task>-attempt-N.yaml` ghi: lệnh test, exit code, log rút gọn, TC của task.
 - Commit của task có các trailer `REQ-ID`, `Task`, `Tests`, `AIWS-Run`. Lệnh `git log --grep "REQ-ID: REQ-001"` liệt kê mọi thay đổi của một REQ.
-- CI chạy `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (bật `require_signed` để bắt buộc approval ký GPG/SSH qua `aiws approve --sign`) và `aiws trace REQ-001`.
+- CI chạy `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (bật `require_signed` để bắt buộc approval ký GPG/SSH qua `aiws approve --sign`), `aiws trace REQ-001` và `aiws check build`. Lệnh cuối chạy lại mọi lệnh `<side>_build` và `<side>_test` trong `policies.yaml`, để code sắp merge được build và test lại bên ngoài lần chạy của AI.
 
 ## 8. Chi phí
 
@@ -183,7 +183,7 @@ CI (GitHub Actions) là pipeline nhiều bước; bước sau chỉ chạy khi b
 3. **Test trên Windows và macOS** với Node 22, kèm Linux với Node 24.
 4. **CI result**: trạng thái duy nhất mà branch protection của `main` bắt buộc.
 
-Sửa tài liệu thuần thì bỏ qua tầng 1–3, nhưng tầng 4 vẫn báo thành công nên PR không bị kẹt. Branch protection của `main` bắt buộc `4. CI result` và `AIWS gates`, đồng thời chặn force-push và chặn xoá nhánh. Workflow riêng **AIWS gates** kiểm lại trailer commit, approval và ma trận truy vết cho PR từ nhánh `aiws/REQ-*`. Cách đóng góp: [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
+Sửa tài liệu thuần thì bỏ qua tầng 1–3, nhưng tầng 4 vẫn báo thành công nên PR không bị kẹt. Branch protection của `main` bắt buộc `4. CI result` và `AIWS gates`, đồng thời chặn force-push và chặn xoá nhánh. Workflow riêng **AIWS gates** kiểm lại trailer commit, approval và ma trận truy vết cho PR từ nhánh `aiws/REQ-*`, rồi chạy build và test của chính dự án bằng `aiws check build`. Workflow chỉ cài Java khi có dự án Maven hoặc Gradle trong `source-*`; với stack khác, bạn thêm bước cài toolchain tương ứng. Cách đóng góp: [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 
 Dự án mẫu dùng cho test nằm ở `test/fixtures/sample`. Các agent giả lập nằm ở `test/fixtures/scripted` (mỗi agent là một script Node ghi output như một AI "ngoan").
 
