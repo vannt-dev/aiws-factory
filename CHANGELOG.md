@@ -57,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   commands `approve`, `reject`, `answer`, `redesign`, `resume` and `unlock`
   remain human-only everywhere, enforced by the guard hook and by static deny
   rules.
+- An interactive session on an `aiws/REQ-*` branch may also run `aiws new`,
+  `aiws run` and `aiws stop`, and may write outside the workspace. Agents
+  started by the orchestrator (`AIWS_PHASE` set) keep every restriction; write
+  scopes, the git denylist and the gate commands are unchanged for both.
 - CI runs as a staged pipeline: change detection → lint and format → Linux tests
   (Node 22) → Windows, macOS and Node 24 tests → a single `4. CI result` status.
   Each stage runs only if the previous one passed; lint runs once instead of in

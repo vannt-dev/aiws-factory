@@ -133,7 +133,7 @@ Rule validator có sẵn: `ac_numbered`, `no_blocking_questions`, `every_ac_has_
 Hai chế độ dùng chung một bộ bảo vệ:
 
 - **Tự động:** `aiws run`.
-- **Tương tác:** mở `claude` trên nhánh `aiws/REQ-001` và yêu cầu *"dùng agent architect cho REQ-001"*. Hook suy ra phase từ `state.yaml` và chặn ghi sai phase.
+- **Tương tác:** mở `claude` trên nhánh `aiws/REQ-001` và yêu cầu *"dùng agent architect cho REQ-001"*. Hook suy ra phase từ `state.yaml` và chặn ghi sai phase. Phiên như vậy cũng được chạy `aiws run`, `aiws stop` và ghi ghi chú của riêng nó ra ngoài workspace; lệnh git và các lệnh gate vẫn bị chặn. Agent do `aiws run` khởi động thì không được nới bất kỳ điều nào trong số này.
 
 Trên `main`, không ở REQ nào, bạn được dùng Claude để bảo trì chính `aiws/` (agents, skills, config). Claude cũng có thể điều phối quy trình bằng `aiws new`, `aiws run` hay `aiws status`; mỗi lần chạy vẫn dừng ở các gate của người. Riêng `source-legacy/`, `requirements/`, `state.yaml` và `approvals/` luôn bị khoá. AI không bao giờ được chạy các lệnh gate `approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`, và khi đang ở trong một phase thì cũng không được tự khởi động `aiws run` lồng nhau.
 

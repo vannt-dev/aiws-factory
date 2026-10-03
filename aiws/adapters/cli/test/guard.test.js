@@ -56,6 +56,24 @@ test('guard: resolves context from the aiws/REQ branch when no env is set (inter
   assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: abs('source-fe/src/view.js') } }).status, 2);
   assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: abs('aiws/work/REQ-001/01-analysis.md') } }).status, 0);
 
+  // The same interactive session may drive the orchestrator and keep notes outside the workspace...
+  const bash = (command, env) => hook(root, { tool_name: 'Bash', tool_input: { command } }, env).status;
+  const outside = path.join(path.dirname(root), 'notes-outside-workspace.md');
+  for (const command of ['aiws run REQ-001', 'node aiws/adapters/cli/bin/aiws.js new REQ-002', 'aiws stop REQ-001']) {
+    assert.equal(bash(command), 0, command);
+  }
+  assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: outside } }).status, 0);
+  // ...but everything else stays as strict as for an agent: git, gate commands, protected paths
+  for (const command of ['git commit -m x', 'git push', 'aiws approve REQ-001 design --yes', 'aiws resume REQ-001']) {
+    assert.equal(bash(command), 2, command);
+  }
+  assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: abs('aiws/work/REQ-001/state.yaml') } }).status, 2);
+
+  // An agent started by the orchestrator (AIWS_PHASE set) gets none of these allowances.
+  const agent = inPhase('analysis');
+  for (const command of ['aiws run REQ-001', 'aiws new REQ-002', 'aiws stop REQ-001']) assert.equal(bash(command, agent), 2, command);
+  assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: outside } }, agent).status, 2);
+
   // on main (maintainer session): aiws/ kit is editable, legacy is not
   git(root, ['switch', '-q', 'main']);
   assert.equal(hook(root, { tool_name: 'Edit', tool_input: { file_path: abs('aiws/agents/developer.md') } }).status, 0);

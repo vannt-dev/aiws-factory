@@ -133,7 +133,7 @@ Built-in validator rules: `ac_numbered`, `no_blocking_questions`, `every_ac_has_
 Both modes share the same protection:
 
 - **Automatic:** `aiws run`.
-- **Interactive:** open `claude` on branch `aiws/REQ-001` and ask *"use the architect agent for REQ-001"*. The hook infers the phase from `state.yaml` and blocks writes that belong to another phase.
+- **Interactive:** open `claude` on branch `aiws/REQ-001` and ask *"use the architect agent for REQ-001"*. The hook infers the phase from `state.yaml` and blocks writes that belong to another phase. Such a session may also run `aiws run` and `aiws stop`, and write its own notes outside the workspace; git commands and the gate commands stay blocked. Agents started by `aiws run` get none of these allowances.
 
 On `main`, outside any requirement, you may use Claude to maintain `aiws/` itself (agents, skills, config). Claude can also coordinate the workflow by running `aiws new`, `aiws run` or `aiws status`; each run still stops at the human gates. `source-legacy/`, `requirements/`, `state.yaml` and `approvals/` stay locked. An AI can never run the gate commands `approve`, `reject`, `answer`, `redesign`, `resume` or `unlock`, and inside a phase it cannot start a nested `aiws run` either.
 
