@@ -5,7 +5,7 @@ import { Workspace, KIT_DIR, assertReqId, findRoot } from './workspace.js';
 import * as G from './git.js';
 import * as Lock from './lock.js';
 import { loadState, saveState, setPhase, addHistory, addFeedback, listReqs, statePath } from './state.js';
-import { enterPhase, runReq, runDiscover } from './engine.js';
+import { enterPhase, runReq, runDiscover, budgetStatus } from './engine.js';
 import YAML from 'yaml';
 import { detectStacks, reportText } from './stacks.js';
 import { requireHuman, inAiSession, currentUser, recordApproval, hashArtifacts, listApprovals, designApprovalStatus } from './gate.js';
@@ -155,6 +155,8 @@ export function status(req) {
     if (st.reason) log(`  reason: ${st.reason}`);
     const usage = statsLine(runStats(ws, r));
     if (usage) log(`  ${usage}`);
+    const budget = budgetStatus(ws, st);
+    if (budget.limit !== null) log(`  budget: ${budget.spent.toFixed(2)} of ${budget.limit.toFixed(2)} USD used`);
     if (st.tasks.length) {
       log('  tasks:');
       for (const t of st.tasks) {
@@ -360,11 +362,24 @@ export async function resume(req, opts = {}) {
       t.attempts = 0;
     }
   }
+  // Only a human raises the budget: explicitly with --budget, or by one more configured budget
+  // (counted from what is already spent) when the block was a budget block.
+  let budgetNote = '';
+  if (opts.budget !== undefined || st.blocked_by === 'budget') {
+    const b = budgetStatus(ws, st);
+    const limit = opts.budget !== undefined ? Number(opts.budget) : b.spent + (b.configured ?? b.limit ?? 0);
+    if (!(limit > b.spent)) {
+      throw new AiwsError(`--budget must be a number of USD above what is already spent (${b.spent.toFixed(2)}).`);
+    }
+    st.budget_usd = Math.round(limit * 100) / 100;
+    budgetNote = ` Budget is now ${st.budget_usd.toFixed(2)} USD (spent ${b.spent.toFixed(2)}).`;
+  }
+  delete st.blocked_by;
   if (opts.message) addFeedback(st, st.phase, `resume note by ${by}`, opts.message);
-  addHistory(st, { phase: st.phase, result: 'resumed', by });
+  addHistory(st, { phase: st.phase, result: 'resumed', by, ...(st.budget_usd ? { budget_usd: st.budget_usd } : {}) });
   setPhase(st, st.phase, 'running');
   saveState(ws, st);
-  log(`${req} resumed at ${st.phase}. Next: aiws run ${req}`);
+  log(`${req} resumed at ${st.phase}.${budgetNote} Next: aiws run ${req}`);
 }
 
 export async function unlock(opts = {}) {

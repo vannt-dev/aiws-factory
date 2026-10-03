@@ -150,7 +150,12 @@ Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
 
 `aiws status REQ-001` hiển thị số lần AI chạy, tổng thời gian và chi phí cộng dồn của requirement, chia theo phase. `cost_usd` trong evidence là **giá quy đổi theo bảng giá API** mà Claude Code báo. Nếu Claude Code đăng nhập bằng gói Claude (Pro/Max) thì con số này chỉ trừ vào hạn mức của gói. Nếu dùng API key hoặc Console thì đó là tiền thật. Bạn gõ `/status` trong Claude Code để biết mình đang dùng loại nào.
 
-Lần chạy thử thật trên dự án mẫu (sonnet, REQ nhỏ có 2 task) hết khoảng 1,3 USD quy đổi cho 8 lần chạy. Muốn giảm thì đổi `runtime.yaml → claude.models`. `npm test` dùng adapter `scripted` nên không tốn token.
+Hai lần chạy thật để tham khảo. Với Sonnet, một REQ nhỏ có 2 task hết khoảng 1,3 USD quy đổi cho 8 lần chạy. Với Opus trên workspace demo, một REQ có 22 acceptance criteria và 5 task hết khoảng 27,6 USD cho 10 lần chạy, cộng 2,4 USD cho discovery. `npm test` dùng adapter `scripted` nên không tốn token.
+
+Có hai cách kiểm soát chi phí:
+
+- **Chọn model theo agent.** `runtime.yaml → claude.models` ánh xạ từng `model_hint` sang model, còn `claude.agent_models` ghi đè cho riêng một agent, ví dụ `developer: sonnet` trong khi design và review vẫn dùng Opus. Sửa xong thì chạy `aiws sync claude`.
+- **Ngân sách cho mỗi REQ.** `policies.yaml → limits.max_cost_usd_per_req` chặn REQ trước bước kế tiếp khi chi phí AI chạm ngân sách. Chỉ người mới cho chạy tiếp được: `aiws resume REQ-001` cấp thêm một lần ngân sách tính từ mức đã tiêu, còn `aiws resume REQ-001 --budget 80` đặt giới hạn mới. Lần chạy không báo chi phí thì không bị tính. Mặc định không giới hạn.
 
 ## 9. Khác biệt so với Spec V1 (có chủ đích)
 

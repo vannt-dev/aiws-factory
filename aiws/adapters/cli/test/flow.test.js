@@ -232,6 +232,46 @@ test('source lock: a second REQ in its own worktree cannot enter implementation'
   assert.match(ok(root, ['status']).stdout, /No REQs on this branch|source lock/);
 });
 
+test('cost budget: a requirement over budget is blocked until a human raises it', () => {
+  const root = makeWorkspace({ discover: true });
+  const polFile = path.join(root, 'aiws/config/policies.yaml');
+  const pol = YAML.parse(fs.readFileSync(polFile, 'utf8'));
+  pol.limits.max_cost_usd_per_req = 5;
+  fs.writeFileSync(polFile, YAML.stringify(pol));
+  git(root, ['commit', '-q', '-am', 'budget of 5 USD per requirement']);
+  ok(root, ['new', 'REQ-001']);
+  const runs = 'aiws/work/REQ-001/evidence/runs';
+
+  // runs that report no cost (scripted adapter) never count against the budget
+  ok(root, ['run', 'REQ-001', '--once']);
+  assert.equal(state(root).phase, 'design');
+
+  // 6 USD spent: the next step does not start
+  writeFile(root, `${runs}/run-9001.json`, JSON.stringify({ phase: 'analysis', duration_ms: 1000, report: { cost_usd: 6 } }));
+  ok(root, ['run', 'REQ-001']);
+  let st = state(root);
+  assert.equal(st.status, 'blocked');
+  assert.equal(st.phase, 'design');
+  assert.match(st.reason, /budget exceeded: AI runs cost 6\.00 USD of 5\.00 USD/);
+  assert.equal(st.history.filter((h) => h.phase === 'design' && h.agent).length, 0, 'no design agent ran');
+  assert.match(ok(root, ['status', 'REQ-001']).stdout, /budget: 6\.00 of 5\.00 USD used/);
+  ok(root, ['run', 'REQ-001']);
+  assert.equal(state(root).status, 'blocked', 'running again does not get past the budget');
+
+  // only a human can raise it, and not below what is already spent
+  assert.equal(aiws(root, ['resume', 'REQ-001', '--yes', '--budget', '50'], { env: { CLAUDECODE: '1' } }).status, 3);
+  const low = aiws(root, ['resume', 'REQ-001', '--yes', '--budget', '3']);
+  assert.notEqual(low.status, 0);
+  assert.match(low.stderr, /above what is already spent/);
+
+  // without --budget the human grants one more configured budget on top of what is spent: 6 + 5
+  assert.match(ok(root, ['resume', 'REQ-001', '--yes']).stdout, /Budget is now 11\.00 USD/);
+  ok(root, ['run', 'REQ-001']);
+  st = state(root);
+  assert.equal(st.phase, 'design_approval', st.reason);
+  assert.equal(st.budget_usd, 11);
+});
+
 test('check build runs every configured build and test command and fails when one fails', () => {
   const root = makeWorkspace();
   const pass = ok(root, ['check', 'build']);
@@ -319,4 +359,13 @@ test('init copies the kit into a fresh project and sync claude generates .claude
   assert.match(dev, /tools: Read, Grep, Glob, Edit, MultiEdit, Write, Bash/);
   assert.match(dev, /model: opus/);
   assert.ok(fs.existsSync(path.join(dir, '.claude/skills/be-conventions/SKILL.md')));
+
+  // claude.agent_models overrides the model_hint mapping for one agent only
+  const rtFile = path.join(dir, 'aiws/config/runtime.yaml');
+  const rt = YAML.parse(fs.readFileSync(rtFile, 'utf8'));
+  rt.claude.agent_models = { developer: 'sonnet' };
+  fs.writeFileSync(rtFile, YAML.stringify(rt));
+  ok(dir, ['sync', 'claude']);
+  assert.match(readFile(dir, '.claude/agents/developer.md'), /\nmodel: sonnet\n/);
+  assert.match(readFile(dir, '.claude/agents/architect.md'), /\nmodel: opus\n/);
 });

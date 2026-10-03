@@ -21,9 +21,12 @@ function mapTools(tools) {
   return [...new Set((tools ?? ['read']).flatMap((t) => TOOL_MAP[t] ?? [t]))];
 }
 
-function modelFor(ws, hint) {
-  const models = ws.runtime.claude?.models ?? {};
-  return hint ? (models[hint] ?? null) : null;
+/** Model of one agent: `claude.agent_models.<agent id>` wins over the `model_hint` mapping in `claude.models`. */
+export function modelFor(ws, agent) {
+  const cfg = ws.runtime.claude ?? {};
+  const own = cfg.agent_models?.[agent.id];
+  if (own) return own;
+  return agent.model_hint ? (cfg.models?.[agent.model_hint] ?? null) : null;
 }
 
 function yamlList(items) {
@@ -43,7 +46,7 @@ export function sync(ws) {
   fs.rmSync(agentsDir, { recursive: true, force: true });
   for (const id of ws.listAgents()) {
     const a = ws.agent(id);
-    const model = modelFor(ws, a.model_hint);
+    const model = modelFor(ws, a);
     const skills = a.skills ?? [];
     const fm = [
       '---',
@@ -149,7 +152,7 @@ export function runAgent(ws, { prompt, env, contract, agent }) {
   const args = ['-p', '--output-format', 'json', '--permission-mode', cfg.permission_mode ?? 'dontAsk'];
   const tools = allowedTools(ws, contract);
   args.push('--allowedTools', tools.join(','));
-  const model = modelFor(ws, agent.model_hint);
+  const model = modelFor(ws, agent);
   if (model) args.push('--model', model);
   if (cfg.max_turns) args.push('--max-turns', String(cfg.max_turns));
   for (const extra of cfg.extra_args ?? []) args.push(fill(extra, {}));

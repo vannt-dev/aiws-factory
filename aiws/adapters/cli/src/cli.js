@@ -28,7 +28,8 @@ Human-only (refuse to run inside an AI session; confirm interactively or pass --
   aiws reject  REQ-001 design|pr -m FEEDBACK [--sign]
   aiws answer  REQ-001 -m ANSWER       answer blocking questions / a developer question (design unchanged)
   aiws redesign REQ-001 -m REASON      developer question needs a design change -> back to design
-  aiws resume  REQ-001 [-m NOTE]       continue after a block you have fixed
+  aiws resume  REQ-001 [-m NOTE] [--budget USD]
+                                       continue after a block you have fixed, or raise the cost budget
   aiws unlock                          release a stale source lock
 
 Checks (for CI and debugging)
@@ -44,7 +45,7 @@ export function version() {
   return JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8')).version;
 }
 
-const VALUE_FLAGS = new Set(['-m', '--message', '--task', '--req', '--phase', '--base', '--range', '--worktree']);
+const VALUE_FLAGS = new Set(['-m', '--message', '--task', '--req', '--phase', '--base', '--range', '--worktree', '--budget']);
 
 export function parseArgs(argv) {
   const pos = [];
@@ -123,7 +124,7 @@ export async function main(argv) {
       await C.redesign(a1, human);
       return 0;
     case 'resume':
-      await C.resume(a1, human);
+      await C.resume(a1, { ...human, budget: flags.budget });
       return 0;
     case 'unlock':
       await C.unlock(human);
