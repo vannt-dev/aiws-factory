@@ -5,7 +5,7 @@ import { matcher, writeScope, orchestratorPaths } from './scope.js';
 import { currentBranch } from './git.js';
 import { loadState } from './state.js';
 import { hardProtected } from './adapters/claude.js';
-import { isHumanOnlyEntry } from './gate.js';
+import { isHumanOnlyEntry, isDriverEntry } from './gate.js';
 
 const WRITE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 const READ_TOOLS = new Set(['Read']);
@@ -54,7 +54,10 @@ export function decide(ws, input, env = process.env) {
   const ti = input.tool_input ?? {};
   const pol = ws.policies;
 
-  if (SHELL_TOOLS.has(tool)) return decideBash(pol, ti.command ?? '', { inPhase: Boolean(resolveContext(ws, env)) });
+  if (SHELL_TOOLS.has(tool)) {
+    const shellCtx = resolveContext(ws, env);
+    return decideBash(pol, ti.command ?? '', { inPhase: Boolean(shellCtx), orchestrated: shellCtx?.source === 'env' });
+  }
 
   const target = ti.file_path ?? ti.notebook_path ?? ti.path;
   if (!target) return { allow: true };
@@ -71,7 +74,12 @@ export function decide(ws, input, env = process.env) {
     if (rel && matcher(hardProtected(pol))(rel)) return deny(`${rel} is protected (policies.yaml protected_paths)`);
     return { allow: true };
   }
-  if (!rel) return deny(`writing outside the workspace (${target}) is not allowed during ${ctx.req} ${ctx.phase}`);
+  if (!rel) {
+    // An agent started by the orchestrator has no business outside the workspace. An interactive session on a
+    // requirement branch does (its own notes and scratch files); the tool's own permission prompts cover that.
+    if (ctx.source === 'env') return deny(`writing outside the workspace (${target}) is not allowed during ${ctx.req} ${ctx.phase}`);
+    return { allow: true };
+  }
   if (matcher(pol.protected_paths)(rel)) return deny(`${rel} is protected; agents may never write it`);
   if (ctx.status !== 'running') {
     return deny(
@@ -132,17 +140,21 @@ function collapseGitOptions(tokens) {
 }
 
 /**
- * Shell command check. Inside a REQ phase the whole bash_denylist applies (so an agent can neither
- * run git nor start a nested `aiws run`). In a plain maintainer session only the human-only gate
- * commands stay blocked: an assistant may drive `aiws new` / `aiws run`, but never approve.
- * Secret paths are blocked everywhere.
+ * Shell command check, by kind of session:
+ *  - orchestrated agent (AIWS_PHASE set by `aiws run`): the whole bash_denylist applies, so it can neither
+ *    run git nor start, advance or stop the pipeline;
+ *  - interactive session on an aiws/REQ-* branch: the same, except that it may drive the orchestrator
+ *    (`aiws new` / `aiws run` / `aiws stop`), which still stops at every human gate;
+ *  - maintainer session (no requirement): only the human-only gate commands are blocked.
+ * The gate commands (approve, reject, ...) and secret paths are blocked for every AI session.
  */
-export function decideBash(pol, command, { inPhase = true } = {}) {
+export function decideBash(pol, command, { inPhase = true, orchestrated = inPhase } = {}) {
   const norm = ` ${normalizeCommand(command)} `;
   for (const entry of pol.bash_denylist ?? []) {
     const e = normalizeCommand(entry);
     if (!e) continue;
     if (!inPhase && !isHumanOnlyEntry(e)) continue;
+    if (!orchestrated && isDriverEntry(e)) continue;
     const re = new RegExp(`(^|\\s|;)${escapeRe(e)}(?=\\s|;|$)`);
     if (re.test(norm)) return deny(`command matches bash_denylist entry '${entry}'`);
   }

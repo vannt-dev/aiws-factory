@@ -11,6 +11,15 @@ export function isHumanOnlyEntry(entry) {
   return Boolean(m && HUMAN_ONLY_COMMANDS.includes(m[1]));
 }
 
+/** `aiws` subcommands that start, advance or pause the pipeline. Blocked only for agents the orchestrator started. */
+export const DRIVER_COMMANDS = ['new', 'run', 'stop'];
+
+/** True when a bash_denylist entry such as "aiws run" names a pipeline-driving command. */
+export function isDriverEntry(entry) {
+  const m = /^aiws\s+(\S+)/.exec(String(entry).trim());
+  return Boolean(m && DRIVER_COMMANDS.includes(m[1]));
+}
+
 const AI_SESSION_VARS = ['AIWS_PHASE', 'CLAUDECODE', 'CLAUDE_CODE_ENTRYPOINT', 'CODEX_SANDBOX', 'GEMINI_CLI'];
 
 /** True when the current process looks like it was started from inside an AI agent session. */
