@@ -30,8 +30,13 @@ public class InMemoryCustomerRepository implements CustomerRepository {
   }
 
   @Override
-  public Customer insert(String name, String email) {
-    Customer customer = new Customer(sequence.incrementAndGet(), name, email, CustomerStatus.ACTIVE);
+  public boolean existsByPhoneAndStatus(String phone, CustomerStatus status) {
+    return customers.values().stream().anyMatch(c -> phone.equals(c.phone()) && c.status() == status);
+  }
+
+  @Override
+  public Customer insert(String name, String email, String phone, CustomerStatus status) {
+    Customer customer = new Customer(sequence.incrementAndGet(), name, email, phone, status);
     customers.put(customer.id(), customer);
     return customer;
   }
