@@ -4,8 +4,9 @@ requirement: requirements/REQ-001-customer-phone.md
 branch: aiws/REQ-001
 base_branch: demo
 base_commit: 8daa5ec1c217523f8ea18eeb264703ba06163a6f
-phase: review
-status: running
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-001 pr` (or `aiws reject REQ-001 pr -m "..."`)
 history:
   - phase: new
     result: created
@@ -69,6 +70,11 @@ history:
   - phase: implementation
     result: all_tasks_done
     at: 2026-10-03T07:13:27Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0010
+    at: 2026-10-03T07:22:27Z
 tasks:
   - id: T1
     title: be - thêm PhoneNumbers port quy tắc chuẩn hoá và hợp lệ số điện thoại của legacy
@@ -191,4 +197,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 9
+run_seq: 10
