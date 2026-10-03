@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `aiws detect` proposes Maven test commands without `-q` (`-B -ntp` instead),
+  so the test evidence keeps the "Tests run: N" summary. Existing policies keep
+  their commands until `aiws detect --write --force`.
 - `aiws detect` now proposes `.\mvnw.cmd` on Windows. A bare `mvnw.cmd` is not
   found by cmd.exe when `NoDefaultCurrentDirectoryInExePath` is set, which
   Claude Code does.

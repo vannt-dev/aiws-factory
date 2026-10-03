@@ -36,7 +36,9 @@ test('detectStacks recognises many languages and treats legacy as read-only', ()
   const { sides, commands, report } = detectStacks(root);
   assert.deepEqual(Object.keys(sides).sort(), ['api', 'be', 'fe', 'ml', 'mobile', 'portal', 'worker']);
   assert.equal(sides.legacy, undefined);
-  assert.deepEqual(commands.be_test, { windows: 'cd source-be && .\\mvnw.cmd -q test', posix: 'cd source-be && ./mvnw -q test' });
+  // tests run without -q so the evidence keeps the "Tests run: N" summary; the build stays quiet
+  assert.deepEqual(commands.be_test, { windows: 'cd source-be && .\\mvnw.cmd -B -ntp test', posix: 'cd source-be && ./mvnw -B -ntp test' });
+  assert.equal(commands.be_build.posix, 'cd source-be && ./mvnw -q -DskipTests package');
   assert.equal(commands.api_test, 'dotnet test source-api/Api.sln');
   assert.equal(commands.worker_test, 'go -C source-worker test ./...');
   assert.equal(commands.ml_test, 'python -m pytest -q source-ml');
