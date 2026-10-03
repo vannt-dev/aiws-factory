@@ -18,7 +18,7 @@ form.addEventListener('submit', async (event) => {
   messageEl.textContent = '';
   const data = Object.fromEntries(new FormData(form));
   try {
-    await createCustomer({ name: data.name, email: data.email });
+    await createCustomer({ name: data.name, email: data.email, phone: data.phone });
     form.reset();
     await refresh();
   } catch (error) {

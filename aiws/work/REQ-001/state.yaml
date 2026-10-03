@@ -174,9 +174,12 @@ tasks:
       - TC-43
     depends_on:
       - T3
-    status: pending
+    status: running
+    base: cf4345b1347f549d2523638609782bdcb8ba6d5b
+    attempts: 1
+    test_result: pass
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 8
+run_seq: 9
