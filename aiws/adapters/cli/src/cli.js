@@ -19,7 +19,8 @@ Setup
 Requirement lifecycle
   aiws new REQ-001 [--worktree PATH]   create aiws/work/REQ-001 and branch aiws/REQ-001
   aiws run REQ-001 [--once]            run phases until the next human gate / block / done
-  aiws status [REQ-001]                phase, tasks, recent history, source lock
+  aiws stop REQ-001                    ask a running \`aiws run\` to stop after its current step
+  aiws status [REQ-001]              phase, tasks, recent history, source lock
   aiws prompt REQ-001 PHASE [--task T] print the prompt an agent would receive
 
 Human-only (refuse to run inside an AI session; confirm interactively or pass --yes)
@@ -99,6 +100,9 @@ export async function main(argv) {
       return 0;
     case 'run':
       C.run(a1, { once: Boolean(flags.once) });
+      return 0;
+    case 'stop':
+      C.stop(a1);
       return 0;
     case 'status':
       C.status(a1);

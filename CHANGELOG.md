@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `aiws check build` runs every configured `<side>_build` and `<side>_test`
   command. The AIWS gates workflow runs it on `aiws/REQ-*` pull requests and
   sets up Java only when a Maven or Gradle project exists.
+- `aiws stop REQ` asks a running `aiws run` to stop after its current step,
+  through a marker file, so it works the same on Windows, macOS and Linux.
+  Agents inside a phase cannot run it.
+- Interrupted runs are resumable: a task is saved as running before its agent
+  starts, and the next `aiws run` continues it and tells the developer that
+  the task's files may contain partial work.
 
 ### Fixed
 

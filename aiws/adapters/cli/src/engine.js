@@ -143,6 +143,10 @@ function formatErrors(errors) {
   return errors.map((e) => `- ${e.message}`).join('\n');
 }
 
+const INTERRUPTED_NOTE =
+  '- The previous attempt was interrupted before it finished (no error). The files of this task may contain ' +
+  'partial work: read them first, then complete or correct them.';
+
 // ---------------------------------------------------------------- run loop
 
 /** Runs a REQ until the next human gate, a block, or done. Returns the final state. */
@@ -150,10 +154,15 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
   let st = loadState(ws, req);
   assertOnBranch(ws, st);
   assertCleanEnough(ws, st);
+  Lock.takeStop(ws.root, req); // a stop request left over from an earlier run does not apply to this one
 
   for (let i = 0; i < maxSteps; i++) {
     st = loadState(ws, req);
     if (st.status !== 'running') break;
+    if (Lock.takeStop(ws.root, req)) {
+      log(`[${req}] stop requested: stopped before the next step. Continue with \`aiws run ${req}\`.`);
+      break;
+    }
 
     if (AFTER_APPROVAL.has(st.phase)) {
       const gateDef = ws.workflow.phases.find((p) => p.gate === 'design');
@@ -479,14 +488,21 @@ function stepLoop(ws, st, def) {
   const testStep = def.steps.find((s) => s.builtin === 'unit_test');
   const contract = ws.contract(devStep.contract);
   const maxAttempts = def.on_fail?.retry ?? contract.max_attempts ?? 3;
+  // The task is saved as running BEFORE the agent starts. If this process is killed mid-task, the next
+  // `aiws run` finds it, accepts the partly written files of the task and tells the developer about them.
+  const interrupted = task.status === 'running' && task.in_progress === true;
   task.status = 'running';
   task.base ??= G.head(ws.root);
+  task.in_progress = true;
+  saveState(ws, st);
   const attempt = (task.attempts ?? 0) + 1;
-  log(`[${req}] implementation / ${task.id} (attempt ${attempt}/${maxAttempts})`);
+  log(`[${req}] implementation / ${task.id} (attempt ${attempt}/${maxAttempts})${interrupted ? ' - resuming an interrupted attempt' : ''}`);
 
   const qRel = ws.workRel(req, 'questions.md');
   const qBefore = readTextIfExists(ws.abs(qRel));
-  const r = executeAgent(ws, st, { req, phase: def.id, agentId: devStep.agent, contract, task, attempt, failure: task.last_failure });
+  const failure = interrupted ? [INTERRUPTED_NOTE, task.last_failure].filter(Boolean).join('\n') : task.last_failure;
+  const r = executeAgent(ws, st, { req, phase: def.id, agentId: devStep.agent, contract, task, attempt, failure });
+  delete task.in_progress;
   const errors = [...r.errors];
 
   const qAfter = readTextIfExists(ws.abs(qRel));
