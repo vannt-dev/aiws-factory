@@ -36,6 +36,12 @@ history:
     result: ok
     run: run-0004
     at: 2026-09-26T14:26:47Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0005
+    commit: 50be8fe
+    at: 2026-10-03T06:57:41Z
 tasks:
   - id: T1
     title: be - thêm PhoneNumbers port quy tắc chuẩn hoá và hợp lệ số điện thoại của legacy
@@ -55,10 +61,10 @@ tasks:
       - TC-9
       - TC-10
     depends_on: []
-    status: running
-    base: 0a3deec100dc335dfff8ec97940435943e43aaae
+    status: done
     attempts: 1
     test_result: pass
+    commit: 50be8fea3e4c4574a77999a157484c8615948b99
   - id: T2
     title: be - lưu phone và status trong repository, thêm existsByPhoneAndStatus
     type: feat
