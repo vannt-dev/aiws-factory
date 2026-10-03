@@ -92,6 +92,8 @@ When the orchestrator stops, `aiws status REQ-001` tells you why and what to run
 
 Human-only commands (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **refuse to run inside an AI session** and ask you to retype the requirement id. Pass `--yes` in CI scripts.
 
+**Merging the PR:** any merge method works. `aiws approve REQ-001 pr` accepts the merge when the requirement branch is an ancestor of the base (merge commit or fast-forward), or when every file the requirement changed has the same content on the base (squash or rebase). Update your local base branch first. After a squash or rebase the commit ids recorded in `state.yaml` no longer exist on the base, so `aiws trace` finds the task commits by their `Task:` trailer. A merge commit keeps one commit per task and is the best choice for traceability.
+
 **Parallel work:** only one requirement may write source code at a time, from implementation until its PR is merged (the source lock). Other requirements can still run analysis and design, each in its own worktree:
 
 ```bash

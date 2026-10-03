@@ -230,29 +230,50 @@ function approvePr(req, opts) {
   const branchHead = G.revParse(ws.root, st.branch);
   const base = st.base_branch ?? ws.baseBranch();
   if (!branchHead) throw new AiwsError(`Branch ${st.branch} not found.`);
-  if (opts.mergeCheck !== false && !G.isAncestor(ws.root, branchHead, base)) {
-    throw new AiwsError(`${st.branch} is not merged into ${base} yet. Merge the PR first (or pass --no-merge-check).`);
+  const merged = opts.mergeCheck === false ? 'not checked' : mergedInto(ws.root, branchHead, base, st.base_commit);
+  if (!merged) {
+    throw new AiwsError(
+      `${st.branch} is not merged into ${base} yet: it is not an ancestor of ${base}, and the files it changed differ on ${base}. ` +
+        `Merge the PR and update your local ${base} first (or pass --no-merge-check).`
+    );
   }
   const dirty = G.dirtyFiles(ws.root);
   if (dirty.length) throw new AiwsError(`Working tree is not clean:\n  ${dirty.join('\n  ')}`);
 
-  // knowledge update happens on its own branch cut from the merged base
+  // The knowledge update happens on its own branch cut from the merged base. The base itself is never
+  // checked out here, so this also works when it is checked out in another worktree.
   const kBranch = `aiws/${req}-knowledge`;
-  G.git(ws.root, ['switch', '-q', base]);
-  G.git(ws.root, ['switch', '-q', '-c', kBranch]);
+  G.git(ws.root, ['switch', '-q', '-c', kBranch, base]);
   ({ ws, st } = openForHuman(req));
   const by = currentUser(ws.root);
   const file = recordApproval(ws, req, { gate: 'pr', decision: 'merged', by, notes: opts.message, artifacts: undefined });
   st.code_head = branchHead;
   st.branch = kBranch;
-  addHistory(st, { phase: def.id, result: 'merged', by, record: path.basename(file), head: branchHead.slice(0, 7) });
+  addHistory(st, { phase: def.id, result: 'merged', by, record: path.basename(file), head: branchHead.slice(0, 7), merge: merged });
   if (def.release_lock) Lock.release(ws.root, req, { force: true });
   enterPhase(ws, st, def.on_approve);
   saveState(ws, st);
   G.commit(ws.root, `chore(${req}): PR merged, approved by ${by}\n\nREQ-ID: ${req}\nAIWS-Approval: ${file}\n`, [ws.workRel(req)], {
     sign: opts.sign,
   });
-  log(`PR approval recorded. Switched to ${kBranch} for the knowledge update. Next: aiws run ${req}`);
+  log(`PR approval recorded (merge: ${merged}). Switched to ${kBranch} for the knowledge update. Next: aiws run ${req}`);
+}
+
+/**
+ * How a requirement branch reached its base, or null when it has not:
+ *  - 'merge commit': the branch head is an ancestor of the base (merge commit or fast-forward);
+ *  - 'squash or rebase': the commit ids differ, but every file the requirement changed has the same
+ *    content on the base as on the branch head.
+ */
+export function mergedInto(root, branchHead, base, baseCommit) {
+  if (G.isAncestor(root, branchHead, base)) return 'merge commit';
+  if (!baseCommit) return null;
+  const files = G.git(root, ['diff', '--name-only', '--no-renames', '-z', baseCommit, branchHead], { allowFail: true })
+    .stdout.split('\0')
+    .filter(Boolean);
+  if (!files.length) return null;
+  const same = G.git(root, ['diff', '--quiet', base, branchHead, '--', ...files], { allowFail: true }).status === 0;
+  return same ? 'squash or rebase' : null;
 }
 
 export async function reject(req, gate, opts = {}) {

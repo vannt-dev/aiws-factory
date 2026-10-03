@@ -31,11 +31,15 @@ export function buildTrace(ws, st) {
         rows.push({ ac, tc: tc.id, task: '-', commit: '-', result: 'MISSING' });
         continue;
       }
-      const c = task.commit ? (commitBySha.get(task.commit) ?? findByPrefix(commits, task.commit)) : null;
+      // By commit id first. After a squash or rebase merge the ids recorded in state.yaml no longer exist on
+      // the base, so fall back to the commit that carries the task's trailer.
+      const bySha = task.commit ? (commitBySha.get(task.commit) ?? findByPrefix(commits, task.commit)) : null;
+      const c = bySha ?? commits.find((x) => hasTaskTrailer(x, task.id)) ?? null;
       const result = task.test_result ?? 'not run';
       if (task.status !== 'done') problems.push(`${task.id} (${tc.id}) is ${task.status}`);
-      else if (!c) problems.push(`${task.id} commit ${task.commit ?? '(none)'} not found with trailer REQ-ID: ${req}`);
-      else if (c.trailers.Task !== task.id) problems.push(`${task.id} commit ${c.sha.slice(0, 7)} has trailer Task: ${c.trailers.Task}`);
+      else if (!c)
+        problems.push(`${task.id}: no commit with trailers REQ-ID: ${req} and Task: ${task.id} (recorded ${task.commit ?? 'none'})`);
+      else if (!hasTaskTrailer(c, task.id)) problems.push(`${task.id} commit ${c.sha.slice(0, 7)} has no trailer Task: ${task.id}`);
       if (result !== 'pass') problems.push(`${task.id} tests: ${result}`);
       rows.push({ ac, tc: tc.id, task: task.id, commit: c ? c.sha.slice(0, 7) : '-', result });
     }
@@ -46,6 +50,12 @@ export function buildTrace(ws, st) {
 
 function findByPrefix(commits, sha) {
   return commits.find((c) => c.sha.startsWith(sha)) ?? null;
+}
+
+// A squash commit lists the messages of all its commits, so it can carry several `Task:` lines.
+function hasTaskTrailer(commit, taskId) {
+  const id = taskId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^[\\s*-]*Task:\\s*${id}\\s*$`, 'm').test(commit.body ?? '');
 }
 
 export function traceMarkdown(req, { rows, problems }) {
