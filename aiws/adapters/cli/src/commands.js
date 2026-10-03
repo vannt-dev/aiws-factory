@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AiwsError, log, writeText, readTextIfExists, copyDir, nowIso, replaceYamlBlock } from './util.js';
+import { AiwsError, log, writeText, readTextIfExists, copyDir, nowIso, replaceYamlBlock, runShell, osCommand } from './util.js';
 import { Workspace, KIT_DIR, assertReqId, findRoot } from './workspace.js';
 import * as G from './git.js';
 import * as Lock from './lock.js';
@@ -434,6 +434,50 @@ export function checkApprovals({ req }) {
     bad.forEach((b) => log(b));
     process.exitCode = 1;
   } else log(`approvals ok (${listApprovals(ws, req, 'design').length} design record(s))`);
+}
+
+/**
+ * `aiws check build`: runs every configured `<side>_build` and `<side>_test` command of policies.yaml,
+ * the same commands the orchestrator runs after each task. Meant for CI on requirement pull requests,
+ * so merged code is rebuilt and retested outside the AI run. Does nothing when no command is configured.
+ */
+export function checkBuild() {
+  const ws = Workspace.open();
+  const pol = ws.policies;
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT; // set by an outer `node --test`; it would make a project's own node tests always pass
+  const failed = [];
+  let ran = 0;
+  for (const side of Object.keys(pol.sides ?? {})) {
+    for (const kind of ['build', 'test']) {
+      const name = `${side}_${kind}`;
+      const cmd = osCommand(pol.commands?.[name]);
+      if (!cmd) continue;
+      ran += 1;
+      log(`> ${name}: ${cmd}`);
+      const res = runShell(cmd, { cwd: ws.root, env, timeout: 30 * 60 * 1000 });
+      const output = (res.stdout + '\n' + res.stderr).trim();
+      if (res.status === 0) {
+        log(`  ok${output ? `\n${indentTail(output, 15)}` : ''}`);
+      } else {
+        failed.push(name);
+        log(`  FAILED (exit ${res.status})\n${indentTail(output, 60)}`);
+      }
+    }
+  }
+  if (!ran) return log('No <side>_build or <side>_test command in aiws/config/policies.yaml; nothing to run.');
+  if (failed.length) {
+    log(`\nbuild check FAILED: ${failed.join(', ')}`);
+    process.exitCode = 1;
+  } else log(`\nbuild check ok (${ran} command(s))`);
+}
+
+function indentTail(text, lines) {
+  return text
+    .split(/\r?\n/)
+    .slice(-lines)
+    .map((l) => `    ${l}`)
+    .join('\n');
 }
 
 /**

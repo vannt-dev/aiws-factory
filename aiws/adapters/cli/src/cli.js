@@ -35,6 +35,7 @@ Checks (for CI and debugging)
   aiws check diff-scope --req R [--phase P] [--task T] [--base REV]
   aiws check commit-trailer --req R [--range A..B]
   aiws check approvals --req R
+  aiws check build                     run every <side>_build and <side>_test command of policies.yaml
   aiws guard [--bash]                  Claude Code PreToolUse hook (reads tool JSON on stdin)
 `;
 
@@ -130,7 +131,8 @@ export async function main(argv) {
       if (a1 === 'diff-scope') C.checkDiffScope(flags);
       else if (a1 === 'commit-trailer') C.checkCommitTrailers(flags);
       else if (a1 === 'approvals') C.checkApprovals(flags);
-      else throw new AiwsError(`Unknown check '${a1}'. Use diff-scope | commit-trailer | approvals`);
+      else if (a1 === 'build') C.checkBuild();
+      else throw new AiwsError(`Unknown check '${a1}'. Use diff-scope | commit-trailer | approvals | build`);
       return process.exitCode ?? 0;
     case 'guard': {
       let ws;
