@@ -21,8 +21,8 @@ public final class App {
   public static void main(String[] args) throws IOException {
     int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
     CustomerService service = new CustomerService(new InMemoryCustomerRepository());
-    service.create("Nguyen Van An", "an.nguyen@example.com");
-    service.create("Tran Thi Binh", "binh.tran@example.com");
+    service.create("Nguyen Van An", "an.nguyen@example.com", null);
+    service.create("Tran Thi Binh", "binh.tran@example.com", null);
     HttpServer server = start(port, service);
     System.out.println("CRM API listening on http://localhost:" + server.getAddress().getPort());
   }

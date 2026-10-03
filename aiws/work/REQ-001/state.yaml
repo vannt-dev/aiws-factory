@@ -122,7 +122,10 @@ tasks:
     depends_on:
       - T1
       - T2
-    status: pending
+    status: running
+    base: ceef2376ee9c6fe8303c54470836285c644cb9cd
+    attempts: 1
+    test_result: pass
   - id: T4
     title: fe - thêm formatPhone và cột Điện thoại trong bảng khách hàng
     type: feat
@@ -161,4 +164,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 6
+run_seq: 7

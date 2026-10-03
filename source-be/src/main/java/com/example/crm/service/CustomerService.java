@@ -29,9 +29,11 @@ public class CustomerService {
     return repository.findById(id).orElseThrow(() -> new NotFoundException("Customer " + id + " not found"));
   }
 
-  public Customer create(String name, String email) {
+  public Customer create(String name, String email, String phone) {
     String trimmedName = name == null ? "" : name.trim();
     String trimmedEmail = email == null ? "" : email.trim();
+    String trimmedPhone = PhoneNumbers.trim(phone);
+    String normalizedPhone = null;
     Map<String, String> errors = new LinkedHashMap<>();
     if (trimmedName.isEmpty()) {
       errors.put("name", "must not be blank");
@@ -43,9 +45,17 @@ public class CustomerService {
     } else if (repository.existsByEmail(trimmedEmail)) {
       errors.put("email", "is already used by another customer");
     }
+    if (!trimmedPhone.isEmpty()) {
+      normalizedPhone = PhoneNumbers.normalize(trimmedPhone);
+      if (!PhoneNumbers.isValid(normalizedPhone)) {
+        errors.put("phone", "must be a valid phone number");
+      } else if (repository.existsByPhoneAndStatus(normalizedPhone, CustomerStatus.ACTIVE)) {
+        errors.put("phone", "is already used by another customer");
+      }
+    }
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-    return repository.insert(trimmedName, trimmedEmail, null, CustomerStatus.ACTIVE);
+    return repository.insert(trimmedName, trimmedEmail, normalizedPhone, CustomerStatus.ACTIVE);
   }
 }
