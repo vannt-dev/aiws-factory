@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Interrupted runs are resumable: a task is saved as running before its agent
   starts, and the next `aiws run` continues it and tells the developer that
   the task's files may contain partial work.
+- Cost budget per requirement: `limits.max_cost_usd_per_req` in `policies.yaml`
+  blocks a requirement before its next step once its AI runs reach the budget.
+  Only a human continues, with `aiws resume REQ [--budget USD]`; `aiws status`
+  shows the budget. Off by default; runs that report no cost never count.
+- `claude.agent_models` in `runtime.yaml` chooses the model of one agent, for
+  example `developer: sonnet`, overriding the `model_hint` mapping.
 
 ### Fixed
 

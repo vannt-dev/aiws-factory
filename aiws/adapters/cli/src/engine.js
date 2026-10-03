@@ -14,6 +14,7 @@ import { designApprovalStatus } from './gate.js';
 import { buildTrace, traceMarkdown } from './trace.js';
 import { adapterName, getAdapter } from './adapters/index.js';
 import { detectStacks, reportText } from './stacks.js';
+import { runStats } from './stats.js';
 
 // Phases that are only legal while the design approval is valid (hash unchanged).
 const AFTER_APPROVAL = new Set(['planning', 'implementation', 'design_change_requested', 'review', 'pr_approval']);
@@ -143,6 +144,28 @@ function formatErrors(errors) {
   return errors.map((e) => `- ${e.message}`).join('\n');
 }
 
+/**
+ * Cost budget of a requirement. The limit is `st.budget_usd` (set by a human with `aiws resume --budget`)
+ * or policies `limits.max_cost_usd_per_req`; no limit when neither is a positive number.
+ * Runs that report no cost (scripted adapter) never count.
+ */
+export function budgetStatus(ws, st) {
+  const configured = Number(ws.policies.limits?.max_cost_usd_per_req);
+  const own = Number(st.budget_usd);
+  const limit = own > 0 ? own : configured > 0 ? configured : null;
+  const spent = runStats(ws, st.req_id).cost_usd;
+  return {
+    limit,
+    spent: spent ?? 0,
+    configured: configured > 0 ? configured : null,
+    exceeded: limit !== null && spent !== null && spent >= limit,
+  };
+}
+
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+
 const INTERRUPTED_NOTE =
   '- The previous attempt was interrupted before it finished (no error). The files of this task may contain ' +
   'partial work: read them first, then complete or correct them.';
@@ -161,6 +184,21 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
     if (st.status !== 'running') break;
     if (Lock.takeStop(ws.root, req)) {
       log(`[${req}] stop requested: stopped before the next step. Continue with \`aiws run ${req}\`.`);
+      break;
+    }
+    const budget = budgetStatus(ws, st);
+    if (budget.exceeded && ws.phaseDef(st.phase).type !== 'human_gate') {
+      st.blocked_by = 'budget';
+      addHistory(st, { phase: st.phase, result: 'budget_exceeded', spent_usd: round2(budget.spent), budget_usd: budget.limit });
+      setPhase(
+        st,
+        st.phase,
+        'blocked',
+        `budget exceeded: AI runs cost ${budget.spent.toFixed(2)} USD of ${budget.limit.toFixed(2)} USD (list-price equivalent). ` +
+          `A human continues with \`aiws resume ${req}\` (one more budget) or \`aiws resume ${req} --budget <USD>\``
+      );
+      commitWork(ws, st, `chore(${req}): blocked by budget`);
+      log(`[${req}] ${st.reason}`);
       break;
     }
 

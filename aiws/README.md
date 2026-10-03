@@ -150,7 +150,12 @@ To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 
 `aiws status REQ-001` shows the number of AI runs, their total time and the cumulative cost of the requirement, broken down by phase. `cost_usd` in the evidence is the **API list-price equivalent** reported by Claude Code. With a Claude subscription (Pro/Max) it only counts against your plan's usage limits; with an API key or Console account it is real spend. Run `/status` in Claude Code to see which applies.
 
-A real run on the sample project (sonnet, a small requirement with 2 tasks) cost about USD 1.30 equivalent over 8 runs. Change `runtime.yaml → claude.models` to reduce it. `npm test` uses the `scripted` adapter and costs nothing.
+Two real runs for reference. With Sonnet, a small requirement with 2 tasks cost about USD 1.30 equivalent over 8 runs. With Opus on the demo workspace, a requirement with 22 acceptance criteria and 5 tasks cost about USD 27.60 over 10 runs, plus USD 2.40 for discovery. `npm test` uses the `scripted` adapter and costs nothing.
+
+Two controls keep cost in hand:
+
+- **Model per agent.** `runtime.yaml → claude.models` maps each `model_hint` to a model, and `claude.agent_models` overrides it for one agent, for example `developer: sonnet` while design and review stay on Opus. Run `aiws sync claude` afterwards.
+- **Budget per requirement.** `policies.yaml → limits.max_cost_usd_per_req` blocks a requirement before its next step once its AI runs reach the budget. Only a human continues: `aiws resume REQ-001` grants one more budget on top of what is spent, and `aiws resume REQ-001 --budget 80` sets a new limit. Runs that report no cost never count. The budget is off by default.
 
 ## 9. Intentional differences from spec V1
 
