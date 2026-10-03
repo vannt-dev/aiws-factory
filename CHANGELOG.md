@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `aiws status` shows the AI runs of a requirement: how many, their total time
+  and the cumulative cost (list-price equivalent) per phase.
+
 ### Fixed
 
 - `aiws detect` now proposes `.\mvnw.cmd` on Windows. A bare `mvnw.cmd` is not

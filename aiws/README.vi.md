@@ -144,7 +144,7 @@ Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
 
 ## 8. Chi phí
 
-`cost_usd` trong evidence là **giá quy đổi theo bảng giá API** mà Claude Code báo. Nếu Claude Code đăng nhập bằng gói Claude (Pro/Max) thì con số này chỉ trừ vào hạn mức của gói. Nếu dùng API key hoặc Console thì đó là tiền thật. Bạn gõ `/status` trong Claude Code để biết mình đang dùng loại nào.
+`aiws status REQ-001` hiển thị số lần AI chạy, tổng thời gian và chi phí cộng dồn của requirement, chia theo phase. `cost_usd` trong evidence là **giá quy đổi theo bảng giá API** mà Claude Code báo. Nếu Claude Code đăng nhập bằng gói Claude (Pro/Max) thì con số này chỉ trừ vào hạn mức của gói. Nếu dùng API key hoặc Console thì đó là tiền thật. Bạn gõ `/status` trong Claude Code để biết mình đang dùng loại nào.
 
 Lần chạy thử thật trên dự án mẫu (sonnet, REQ nhỏ có 2 task) hết khoảng 1,3 USD quy đổi cho 8 lần chạy. Muốn giảm thì đổi `runtime.yaml → claude.models`. `npm test` dùng adapter `scripted` nên không tốn token.
 

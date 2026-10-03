@@ -11,6 +11,7 @@ import { detectStacks, reportText } from './stacks.js';
 import { requireHuman, inAiSession, currentUser, recordApproval, hashArtifacts, listApprovals, designApprovalStatus } from './gate.js';
 import { buildPrompt } from './prompt.js';
 import { buildTrace, traceMarkdown } from './trace.js';
+import { runStats, statsLine } from './stats.js';
 import { getAdapter } from './adapters/index.js';
 import * as DS from './diffscope.js';
 import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
@@ -152,6 +153,8 @@ export function status(req) {
     log(`${st.req_id}  ${st.title}`);
     log(`  branch: ${st.branch}   phase: ${st.phase}   status: ${st.status}`);
     if (st.reason) log(`  reason: ${st.reason}`);
+    const usage = statsLine(runStats(ws, r));
+    if (usage) log(`  ${usage}`);
     if (st.tasks.length) {
       log('  tasks:');
       for (const t of st.tasks) {
