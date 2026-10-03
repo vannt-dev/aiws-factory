@@ -4,7 +4,7 @@ requirement: requirements/REQ-001-customer-phone.md
 branch: aiws/REQ-001
 base_branch: demo
 base_commit: 8daa5ec1c217523f8ea18eeb264703ba06163a6f
-phase: implementation
+phase: review
 status: running
 history:
   - phase: new
@@ -65,6 +65,9 @@ history:
     result: done
     run: run-0009
     commit: 4becff9
+    at: 2026-10-03T07:13:27Z
+  - phase: implementation
+    result: all_tasks_done
     at: 2026-10-03T07:13:27Z
 tasks:
   - id: T1
