@@ -152,7 +152,10 @@ tasks:
       - TC-41
     depends_on:
       - T3
-    status: pending
+    status: running
+    base: 9dab6296464fbed3e4a917ebf745de222001d8e2
+    attempts: 1
+    test_result: pass
   - id: T5
     title: fe - thêm ô nhập số điện thoại và gửi phone khi tạo khách hàng
     type: feat
@@ -170,4 +173,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 7
+run_seq: 8
