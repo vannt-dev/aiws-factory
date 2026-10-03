@@ -1,0 +1,24 @@
+req: REQ-001
+task: T1
+attempt: 1
+run: run-0005
+at: 2026-10-03T06:57:40Z
+tests:
+  - TC-1
+  - TC-2
+  - TC-3
+  - TC-4
+  - TC-5
+  - TC-6
+  - TC-7
+  - TC-8
+  - TC-9
+  - TC-10
+result: pass
+suites:
+  - side: be
+    command: cd source-be && .\mvnw.cmd -q test
+    exit_code: 0
+    duration_ms: 15169
+    output_tail: ""
+problems: []

@@ -55,7 +55,10 @@ tasks:
       - TC-9
       - TC-10
     depends_on: []
-    status: pending
+    status: running
+    base: 0a3deec100dc335dfff8ec97940435943e43aaae
+    attempts: 1
+    test_result: pass
   - id: T2
     title: be - lưu phone và status trong repository, thêm existsByPhoneAndStatus
     type: feat
@@ -143,4 +146,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 4
+run_seq: 5
