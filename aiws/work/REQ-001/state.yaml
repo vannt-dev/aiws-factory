@@ -78,7 +78,10 @@ tasks:
       - TC-11
       - TC-12
     depends_on: []
-    status: pending
+    status: running
+    base: 3d4a89fb0b560a29cb8ca094bfcdfbbe97dd21a8
+    attempts: 1
+    test_result: pass
   - id: T3
     title: be - nhận, kiểm tra và trả phone khi tạo khách hàng qua service và POST /api/customers
     type: feat
@@ -152,4 +155,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 5
+run_seq: 6

@@ -1,6 +1,7 @@
 package com.example.crm.service;
 
 import com.example.crm.domain.Customer;
+import com.example.crm.domain.CustomerStatus;
 import com.example.crm.error.NotFoundException;
 import com.example.crm.error.ValidationException;
 import com.example.crm.repository.CustomerRepository;
@@ -45,6 +46,6 @@ public class CustomerService {
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-    return repository.insert(trimmedName, trimmedEmail);
+    return repository.insert(trimmedName, trimmedEmail, null, CustomerStatus.ACTIVE);
   }
 }
