@@ -1,6 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AiwsError, log, writeText, readTextIfExists, copyDir, nowIso, replaceYamlBlock, runShell, osCommand } from './util.js';
+import {
+  AiwsError,
+  EXIT_TEMPFAIL,
+  log,
+  writeText,
+  readTextIfExists,
+  copyDir,
+  nowIso,
+  replaceYamlBlock,
+  runShell,
+  osCommand,
+} from './util.js';
 import { Workspace, KIT_DIR, assertReqId, findRoot } from './workspace.js';
 import * as G from './git.js';
 import * as Lock from './lock.js';
@@ -136,6 +147,7 @@ export function run(req, opts) {
   const ws = Workspace.open();
   const st = runReq(ws, req, opts);
   printStop(ws, st);
+  if (st.paused) process.exitCode = EXIT_TEMPFAIL; // lets a script tell "retry later" from "waits for a human"
 }
 
 function printStop(ws, st) {
@@ -161,6 +173,14 @@ export function discover({ branch } = {}) {
     log(`Discovery runs on the new branch ${target} (from ${from}).`);
   }
   const r = runDiscover(ws);
+  if (r.paused) {
+    log(
+      `Discovery paused by the AI usage limit (${r.paused}). Run \`aiws discover\` again once the limit resets` +
+        (target ? `; you are already on ${target}, so without --branch.` : '.')
+    );
+    process.exitCode = EXIT_TEMPFAIL;
+    return;
+  }
   if (!r.ok) throw new AiwsError('Discovery failed; see aiws/work/_discover/evidence/runs/.');
   if (target) {
     log(

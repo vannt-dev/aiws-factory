@@ -4,6 +4,10 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import YAML from 'yaml';
 
+// sysexits.h EX_TEMPFAIL: a temporary failure, the caller is invited to retry later. `aiws run` and
+// `aiws discover` exit with it when the AI usage limit pauses them.
+export const EXIT_TEMPFAIL = 75;
+
 export class AiwsError extends Error {
   constructor(message, code = 1) {
     super(message);

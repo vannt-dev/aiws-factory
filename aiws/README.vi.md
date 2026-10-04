@@ -89,12 +89,15 @@ Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lện
 | Task fail 3 lần | `implementation / blocked` | sửa tay hoặc revert, rồi `aiws resume REQ-001`, rồi `aiws run` |
 | Review có `[critical]` | tự quay lại `planning` | không cần làm gì: planner thêm task sửa |
 | Sửa design sau khi đã duyệt | tự quay về `design_approval` | duyệt lại |
+| AI hết giới hạn sử dụng | giữ nguyên phase, vẫn `running` | không cần duyệt gì: chạy lại `aiws run REQ-001` khi giới hạn được đặt lại |
 
 Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **từ chối chạy trong phiên AI** và đòi gõ lại mã REQ để xác nhận. Trong script CI thì truyền `--yes`.
 
 **Merge PR:** cách merge nào cũng được. `aiws approve REQ-001 pr` chấp nhận khi nhánh REQ là tổ tiên của nhánh gốc (merge commit hoặc fast-forward), hoặc khi mọi file REQ đã sửa có cùng nội dung trên nhánh gốc (squash hoặc rebase). Nhớ cập nhật nhánh gốc ở máy trước. Sau squash hoặc rebase, mã commit ghi trong `state.yaml` không còn trên nhánh gốc, nên `aiws trace` tìm commit của task theo trailer `Task:`. Merge commit giữ mỗi task một commit, vì vậy là lựa chọn tốt nhất cho truy vết.
 
 **Tạm dừng:** `aiws stop REQ-001`, chạy từ terminal hay worktree nào cũng được, yêu cầu `aiws run` đang chạy dừng lại sau bước hiện tại; sau đó `aiws run REQ-001` chạy tiếp, không cần lệnh duyệt nào. Nếu tiến trình bị tắt ngang (Ctrl+C, đóng terminal), task đang làm vẫn ở trạng thái `running` trong `state.yaml`: lần `aiws run` kế tiếp giữ các file viết dở của task đó và dặn agent developer xem lại chúng trước. File chưa commit nằm ngoài task vẫn bị từ chối.
+
+**Hết giới hạn sử dụng AI:** khi AI trả lời rằng tài khoản đã hết giới hạn sử dụng (ví dụ giới hạn phiên của gói Claude), lần chạy tạm dừng chứ không bị tính là lỗi. Không lượt thử nào bị tính và không có gì bị khoá; `aiws run` thoát với mã 75 và `aiws status` hiện thông báo của AI, trong đó có giờ đặt lại giới hạn. Chạy lại `aiws run REQ-001` khi giới hạn được đặt lại: bước đó chạy lại từ đầu, phần output viết dở được giữ và agent được dặn xem lại nó trước. `aiws discover` cũng tạm dừng theo cách này.
 
 **Chạy song song:** tại một thời điểm chỉ một REQ được ghi source, từ lúc vào implementation tới khi PR merge (source lock). Các REQ khác vẫn làm analysis/design được, mỗi REQ trong worktree riêng:
 
