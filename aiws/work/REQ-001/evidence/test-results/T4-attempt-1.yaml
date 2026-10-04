@@ -1,0 +1,111 @@
+req: REQ-001
+task: T4
+attempt: 1
+run: run-0008
+at: 2026-10-03T07:11:35Z
+tests:
+  - TC-33
+  - TC-34
+  - TC-35
+  - TC-36
+  - TC-37
+  - TC-38
+  - TC-39
+  - TC-40
+  - TC-41
+result: pass
+suites:
+  - side: fe
+    command: npm test --prefix source-fe
+    exit_code: 0
+    duration_ms: 803
+    output_tail: |-
+      > crm-web@0.1.0 test
+      > node --test
+
+      TAP version 13
+      # Subtest: listCustomers calls GET /api/customers and returns the body
+      ok 1 - listCustomers calls GET /api/customers and returns the body
+        ---
+        duration_ms: 2.8312
+        ...
+      # Subtest: createCustomer posts JSON and returns the created customer
+      ok 2 - createCustomer posts JSON and returns the created customer
+        ---
+        duration_ms: 0.4491
+        ...
+      # Subtest: createCustomer throws ApiError with field errors from a problem response
+      ok 3 - createCustomer throws ApiError with field errors from a problem response
+        ---
+        duration_ms: 0.9318
+        ...
+      # Subtest: renderCustomerTable shows one row per customer with a translated status
+      ok 4 - renderCustomerTable shows one row per customer with a translated status
+        ---
+        duration_ms: 2.1657
+        ...
+      # Subtest: renderCustomerTable escapes HTML in customer data
+      ok 5 - renderCustomerTable escapes HTML in customer data
+        ---
+        duration_ms: 0.2558
+        ...
+      # Subtest: renderCustomerTable shows an empty state
+      ok 6 - renderCustomerTable shows an empty state
+        ---
+        duration_ms: 0.143
+        ...
+      # Subtest: TC-36: renderCustomerTable has a phone column between email and status
+      ok 7 - TC-36: renderCustomerTable has a phone column between email and status
+        ---
+        duration_ms: 0.5102
+        ...
+      # Subtest: TC-37: renderCustomerTable shows a 10-character phone as 4-3-3
+      ok 8 - TC-37: renderCustomerTable shows a 10-character phone as 4-3-3
+        ---
+        duration_ms: 0.3099
+        ...
+      # Subtest: TC-38: renderCustomerTable shows an 11-character phone as 3-4-4
+      ok 9 - TC-38: renderCustomerTable shows an 11-character phone as 3-4-4
+        ---
+        duration_ms: 0.2756
+        ...
+      # Subtest: TC-39: renderCustomerTable shows an em dash when there is no phone
+      ok 10 - TC-39: renderCustomerTable shows an em dash when there is no phone
+        ---
+        duration_ms: 0.2194
+        ...
+      # Subtest: TC-40: renderCustomerTable shows a phone of any other length verbatim and HTML-escaped
+      ok 11 - TC-40: renderCustomerTable shows a phone of any other length verbatim and HTML-escaped
+        ---
+        duration_ms: 0.2484
+        ...
+      # Subtest: TC-41: renderCustomerTable formats the raw phone before escaping it
+      ok 12 - TC-41: renderCustomerTable formats the raw phone before escaping it
+        ---
+        duration_ms: 0.507
+        ...
+      # Subtest: TC-33: formatPhone formats a 10-character string as 4-3-3
+      ok 13 - TC-33: formatPhone formats a 10-character string as 4-3-3
+        ---
+        duration_ms: 2.5911
+        ...
+      # Subtest: TC-34: formatPhone formats an 11-character string as 3-4-4
+      ok 14 - TC-34: formatPhone formats an 11-character string as 3-4-4
+        ---
+        duration_ms: 0.2349
+        ...
+      # Subtest: TC-35: formatPhone returns a string of any other length unchanged
+      ok 15 - TC-35: formatPhone returns a string of any other length unchanged
+        ---
+        duration_ms: 0.2725
+        ...
+      1..15
+      # tests 15
+      # suites 0
+      # pass 15
+      # fail 0
+      # cancelled 0
+      # skipped 0
+      # todo 0
+      # duration_ms 157.1071
+problems: []

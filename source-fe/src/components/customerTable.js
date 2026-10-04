@@ -1,6 +1,8 @@
 import { escapeHtml } from '../utils/escapeHtml.js';
+import { formatPhone } from '../utils/formatPhone.js';
 
 const STATUS_LABELS = { ACTIVE: 'Đang hoạt động', INACTIVE: 'Ngừng hoạt động' };
+const NO_PHONE = '—';
 
 /** Renders the customer list as an HTML table string. */
 export function renderCustomerTable(customers) {
@@ -9,8 +11,9 @@ export function renderCustomerTable(customers) {
     .map(
       (c) =>
         `<tr><td>${escapeHtml(c.id)}</td><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.email)}</td>` +
+        `<td>${escapeHtml(c.phone ? formatPhone(c.phone) : NO_PHONE)}</td>` +
         `<td>${escapeHtml(STATUS_LABELS[c.status] ?? c.status)}</td></tr>`
     )
     .join('');
-  return `<table><thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Trạng thái</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table><thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Điện thoại</th><th>Trạng thái</th></tr></thead><tbody>${rows}</tbody></table>`;
 }

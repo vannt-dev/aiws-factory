@@ -1,0 +1,200 @@
+req_id: REQ-001
+title: Số điện thoại khách hàng
+requirement: requirements/REQ-001-customer-phone.md
+branch: aiws/REQ-001
+base_branch: demo
+base_commit: 8daa5ec1c217523f8ea18eeb264703ba06163a6f
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-001 pr` (or `aiws reject REQ-001 pr -m "..."`)
+history:
+  - phase: new
+    result: created
+    by: Van Nguyen
+    at: 2026-09-26T13:51:06Z
+  - phase: analysis
+    agent: analyst
+    result: ok
+    run: run-0001
+    at: 2026-09-26T13:59:05Z
+  - phase: design
+    agent: architect
+    result: ok
+    run: run-0002
+    at: 2026-09-26T14:08:12Z
+  - phase: design
+    agent: test-designer
+    result: ok
+    run: run-0003
+    at: 2026-09-26T14:19:25Z
+  - phase: design_approval
+    result: approved
+    by: Van Nguyen
+    record: design-01.yaml
+    at: 2026-09-26T14:22:42Z
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0004
+    at: 2026-09-26T14:26:47Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0005
+    commit: 50be8fe
+    at: 2026-10-03T06:57:41Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0006
+    commit: 4ac989e
+    at: 2026-10-03T07:02:00Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0007
+    commit: 73594aa
+    at: 2026-10-03T07:08:36Z
+  - phase: implementation
+    task: T4
+    result: done
+    run: run-0008
+    commit: 2a1bdf3
+    at: 2026-10-03T07:11:35Z
+  - phase: implementation
+    task: T5
+    result: done
+    run: run-0009
+    commit: 4becff9
+    at: 2026-10-03T07:13:27Z
+  - phase: implementation
+    result: all_tasks_done
+    at: 2026-10-03T07:13:27Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0010
+    at: 2026-10-03T07:22:27Z
+tasks:
+  - id: T1
+    title: be - thêm PhoneNumbers port quy tắc chuẩn hoá và hợp lệ số điện thoại của legacy
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/PhoneNumbers.java
+      - source-be/src/test/java/com/example/crm/service/PhoneNumbersTest.java
+    tests:
+      - TC-1
+      - TC-2
+      - TC-3
+      - TC-4
+      - TC-5
+      - TC-6
+      - TC-7
+      - TC-8
+      - TC-9
+      - TC-10
+    depends_on: []
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 50be8fea3e4c4574a77999a157484c8615948b99
+  - id: T2
+    title: be - lưu phone và status trong repository, thêm existsByPhoneAndStatus
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/domain/Customer.java
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests:
+      - TC-11
+      - TC-12
+    depends_on: []
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 4ac989e1d1d730b6861c456c11e6472837f89d1b
+  - id: T3
+    title: be - nhận, kiểm tra và trả phone khi tạo khách hàng qua service và POST /api/customers
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/main/java/com/example/crm/api/CreateCustomerRequest.java
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/main/java/com/example/crm/App.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests:
+      - TC-13
+      - TC-14
+      - TC-15
+      - TC-16
+      - TC-17
+      - TC-18
+      - TC-19
+      - TC-20
+      - TC-21
+      - TC-22
+      - TC-23
+      - TC-24
+      - TC-25
+      - TC-26
+      - TC-27
+      - TC-28
+      - TC-29
+      - TC-30
+      - TC-31
+      - TC-32
+    depends_on:
+      - T1
+      - T2
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 73594aa46d311ca67ed3414f05886cb51596d0a4
+  - id: T4
+    title: fe - thêm formatPhone và cột Điện thoại trong bảng khách hàng
+    type: feat
+    allowed_files:
+      - source-fe/src/utils/formatPhone.js
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/formatPhone.test.js
+      - source-fe/test/customerTable.test.js
+    tests:
+      - TC-33
+      - TC-34
+      - TC-35
+      - TC-36
+      - TC-37
+      - TC-38
+      - TC-39
+      - TC-40
+      - TC-41
+    depends_on:
+      - T3
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 2a1bdf346d5adb52c2ab452044b0b0c0220f6490
+  - id: T5
+    title: fe - thêm ô nhập số điện thoại và gửi phone khi tạo khách hàng
+    type: feat
+    allowed_files:
+      - source-fe/index.html
+      - source-fe/src/main.js
+      - source-fe/test/customerApi.test.js
+    tests:
+      - TC-42
+      - TC-43
+    depends_on:
+      - T3
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 4becff96483ae06f32e7aedc9e0cbcc801d01251
+feedback: []
+attempts: {}
+last_failure: {}
+step_index: 0
+run_seq: 10

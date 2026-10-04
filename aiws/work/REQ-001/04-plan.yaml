@@ -1,0 +1,128 @@
+# REQ-001 — Plan. Mỗi task nhỏ: <= 10 file, có test riêng. Mọi TC trong 03-test-spec.md thuộc đúng 1 task.
+# allowed_files: đường dẫn chính xác (hoặc glob hẹp) trong các thư mục source_paths, gồm cả file test,
+#   đặt đúng cấu trúc hiện có của dự án (không tạo cấu trúc mới, không đổi tên/di chuyển file).
+# type: loại commit theo Conventional Commits (feat | fix | refactor | perf | test | docs | build | chore...).
+#
+# Chia theo nhóm biên dịch của 02-design.md (BE change -> BE-1/BE-2/BE-3, FE change -> FE-1/FE-2), vì sau
+# mỗi task orchestrator chạy toàn bộ `be_test`/`fe_test` của side bị chạm: mọi trạng thái trung gian phải
+# biên dịch và pass cả test cũ. Thứ tự: BE trước FE (design -> Migration: deploy BE trước, FE sau).
+tasks:
+  - id: T1
+    type: feat
+    title: be - thêm PhoneNumbers port quy tắc chuẩn hoá và hợp lệ số điện thoại của legacy
+    description: >-
+      Nhóm BE-1 (design D1, D2). Tạo `service/PhoneNumbers.java`: package-private `final class`, constructor
+      `private`, Javadoc một dòng dẫn chiếu `source-legacy/lib/phone.php` (BR-07). Ba hàm `static`:
+      `trim(String raw)` (`null` -> `""`; chỉ bỏ ở hai đầu space, `\t`, `\n`, `\r`, NUL, VT; KHÔNG dùng
+      `String.trim()`/`strip()`; nếu dùng regex thì neo bằng `\A`/`\z`, không dùng `^`/`$`),
+      `normalize(String raw)` (trim -> xoá mọi ký tự thuộc `[ \t\n\x0B\f\r.()-]` -> `+84` thành `"0" + s.substring(3)`,
+      `"+84"` một mình cho `"0"` -> ngược lại `84` và `length() == 11` thành `"0" + s.substring(2)` -> còn lại giữ nguyên),
+      `isValid(String normalized)` (`0[35789][0-9]{8}|02[0-9]{9}` với `matcher(s).matches()`, không `find()`).
+      Không dùng `\p{Space}`, `UNICODE_CHARACTER_CLASS` hay `Character::isWhitespace`. `Pattern` là hằng
+      `private static final` UPPER_SNAKE_CASE. Chưa nối vào `CustomerService` (việc của T3).
+      Test `PhoneNumbersTest.java` (cùng package `com.example.crm.service`): TC-1..TC-10 theo đúng bảng dữ liệu
+      trong 03-test-spec.md, giữ nguyên các dòng [CẦN XÁC NHẬN] (VT, NBSP, EM SPACE). `pom.xml` dùng artifact
+      tổng hợp `junit-jupiter`, nên dùng được `@ParameterizedTest` + `@MethodSource` (không dùng `@CsvSource` vì
+      dữ liệu có ký tự điều khiển); vòng lặp trong một `@Test` cũng chấp nhận. `@DisplayName("TC-n: ...")` ở mức
+      method. Lưu ý literal Java: không viết `\u000A`/`\u000D`; `\0` không đứng ngay trước chữ số 0-7 (dùng `\u0000`).
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/PhoneNumbers.java
+      - source-be/src/test/java/com/example/crm/service/PhoneNumbersTest.java
+    tests: [TC-1, TC-2, TC-3, TC-4, TC-5, TC-6, TC-7, TC-8, TC-9, TC-10]
+    depends_on: []
+
+  - id: T2
+    type: feat
+    title: be - lưu phone và status trong repository, thêm existsByPhoneAndStatus
+    description: >-
+      Nhóm BE-2 (design D5, D6, D7). `domain/Customer.java` thành
+      `record Customer(long id, String name, String email, String phone, CustomerStatus status)` (`phone` có thể `null`).
+      `repository/CustomerRepository.java`: thêm `boolean existsByPhoneAndStatus(String phone, CustomerStatus status)`;
+      đổi `insert(String name, String email, String phone, CustomerStatus status)` và cập nhật Javadoc của `insert`
+      (repository gán `id`, lưu đúng `status` được truyền vào). `repository/InMemoryCustomerRepository.java`: cài đặt
+      hai method; `insert` dùng `status` được truyền, không tự gán `ACTIVE`; `existsByPhoneAndStatus` so sánh
+      `phone.equals(c.phone()) && c.status() == status` — BẮT BUỘC viết `phone.equals(c.phone())`, không viết ngược
+      (tránh `NullPointerException` với khách hàng không có số).
+      `service/CustomerService.java`: GIỮ NGUYÊN chữ ký 2 tham số `create(String name, String email)`, chỉ đổi lệnh gọi
+      thành `repository.insert(trimmedName, trimmedEmail, null, CustomerStatus.ACTIVE)`. Không sửa file nào khác:
+      `CustomerServiceTest`, `CustomerHandlerTest`, `App`, `CustomerHandler` phải biên dịch và pass không đổi.
+      Test mới `repository/InMemoryCustomerRepositoryTest.java` (package `com.example.crm.repository`): TC-11, TC-12
+      gọi thẳng repository thật, không dùng `create` 3 tham số, không mock. TC-12 chèn C (`phone = null`, ACTIVE) đầu tiên.
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/domain/Customer.java
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests: [TC-11, TC-12]
+    depends_on: []
+
+  - id: T3
+    type: feat
+    title: be - nhận, kiểm tra và trả phone khi tạo khách hàng qua service và POST /api/customers
+    description: >-
+      Nhóm BE-3 (design D3, D4, D8; api-contract.yaml). Đổi chữ ký thành
+      `CustomerService.create(String name, String email, String phone)` và bỏ bản 2 tham số (không giữ overload).
+      Luồng phone chạy SAU name/email và BẤT KỂ name/email có lỗi: `trimmedPhone = PhoneNumbers.trim(phone)`;
+      rỗng -> lưu `null`; ngược lại `normalized = PhoneNumbers.normalize(trimmedPhone)`; `!isValid` ->
+      `errors.put("phone", "must be a valid phone number")`; ngược lại nếu
+      `repository.existsByPhoneAndStatus(normalized, CustomerStatus.ACTIVE)` -> `errors.put("phone", "is already used by another customer")`
+      (truy vấn trùng chỉ chạy khi số hợp lệ); không lỗi -> `repository.insert(trimmedName, trimmedEmail, normalizedPhone, CustomerStatus.ACTIVE)`.
+      Thông điệp không chứa giá trị người dùng nhập. `api/CreateCustomerRequest.java` thành
+      `record CreateCustomerRequest(String name, String email, String phone)`. `api/CustomerHandler.java` chỉ sửa route
+      POST: `service.create(body.name(), body.email(), body.phone())`; `handle` giữ nguyên. Mọi call site cũ sửa trong
+      CÙNG task này để biên dịch được: `App.java` seed (dòng 24-25) truyền `null`; `CustomerServiceTest` (dòng 27, 39,
+      49, 57, 59) và `CustomerHandlerTest` `@BeforeEach` (dòng 30) thêm đối số `null`, giữ nguyên hành vi test cũ.
+      Test mới: TC-13..TC-26 trong `CustomerServiceTest` (TC-25 tự dựng `InMemoryCustomerRepository` với
+      `repository.insert("Old", "old@example.com", "0912345678", CustomerStatus.INACTIVE)` rồi tạo `CustomerService` trên
+      chính repository đó; các test có kiểm tra trùng/lưu số hợp lệ có sẵn khách hàng Seed không có số);
+      TC-27..TC-32 trong `CustomerHandlerTest` (HTTP thật qua `App.start(0, service)`, parse bằng `CustomerHandler.JSON`).
+      `@DisplayName("TC-n: ...")` ở mức method.
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/main/java/com/example/crm/api/CreateCustomerRequest.java
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/main/java/com/example/crm/App.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests: [TC-13, TC-14, TC-15, TC-16, TC-17, TC-18, TC-19, TC-20, TC-21, TC-22, TC-23, TC-24, TC-25, TC-26, TC-27, TC-28, TC-29, TC-30, TC-31, TC-32]
+    depends_on: [T1, T2]
+
+  - id: T4
+    type: feat
+    title: fe - thêm formatPhone và cột Điện thoại trong bảng khách hàng
+    description: >-
+      Nhóm FE-1 (design D9). Tạo `src/utils/formatPhone.js` với JSDoc một dòng `/** ... */` và
+      `export function formatPhone(phone)` chỉ dựa vào độ dài: 10 -> `slice(0,4) + ' ' + slice(4,7) + ' ' + slice(7)`;
+      11 -> `slice(0,3) + ' ' + slice(3,7) + ' ' + slice(7)`; khác -> trả nguyên `phone`. `formatPhone` không escape và
+      không tự trả `—`. `src/components/customerTable.js`: import `formatPhone` (đường dẫn tương đối, đuôi `.js`),
+      hằng `NO_PHONE = '—'` (U+2014), header `ID, Họ tên, Email, Điện thoại, Trạng thái`, mỗi dòng thêm
+      `<td>${escapeHtml(c.phone ? formatPhone(c.phone) : NO_PHONE)}</td>` ngay sau ô email — định dạng TRƯỚC, escape SAU.
+      Test mới `test/formatPhone.test.js`: TC-33..TC-35. Thêm TC-36..TC-41 vào `test/customerTable.test.js`; test cũ
+      giữ nguyên và vẫn pass. Tên test `test('TC-n: <tên hàm> ...', ...)`, dùng `node:test` + `node:assert/strict`.
+    allowed_files:
+      - source-fe/src/utils/formatPhone.js
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/formatPhone.test.js
+      - source-fe/test/customerTable.test.js
+    tests: [TC-33, TC-34, TC-35, TC-36, TC-37, TC-38, TC-39, TC-40, TC-41]
+    depends_on: [T3]
+
+  - id: T5
+    type: feat
+    title: fe - thêm ô nhập số điện thoại và gửi phone khi tạo khách hàng
+    description: >-
+      Nhóm FE-2 (design D10). `index.html`: trong `#create-form`, ngay sau ô email và trước nút "Thêm", thêm
+      `<input name="phone" type="tel" placeholder="Điện thoại">`, không `required`. `src/main.js`: submit handler gọi
+      `createCustomer({ name: data.name, email: data.email, phone: data.phone })`; khối `catch` giữ nguyên (lỗi `phone`
+      hiển thị qua cơ chế `fieldErrors` -> `#message` sẵn có). FE không tự chuẩn hoá hay kiểm tra số (AC-16).
+      `src/api/customerApi.js` CỐ Ý không nằm trong allowed_files (design: "Không sửa"); nếu thấy cần sửa thì ghi
+      câu hỏi vào `aiws/work/REQ-001/questions.md` và dừng. Thêm TC-42, TC-43 vào `test/customerApi.test.js` bằng
+      `fakeFetch` có sẵn, test cũ giữ nguyên. `index.html` và `main.js` không có seam unit test (không có DOM),
+      được kiểm bằng review hoặc chạy tay.
+    allowed_files:
+      - source-fe/index.html
+      - source-fe/src/main.js
+      - source-fe/test/customerApi.test.js
+    tests: [TC-42, TC-43]
+    depends_on: [T3]

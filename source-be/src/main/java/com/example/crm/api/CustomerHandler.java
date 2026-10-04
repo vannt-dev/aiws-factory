@@ -54,7 +54,7 @@ public class CustomerHandler implements HttpHandler {
     }
     if (path.equals("/api/customers") && method.equals("POST")) {
       CreateCustomerRequest body = JSON.readValue(exchange.getRequestBody(), CreateCustomerRequest.class);
-      send(exchange, 201, service.create(body.name(), body.email()));
+      send(exchange, 201, service.create(body.name(), body.email(), body.phone()));
       return;
     }
     Matcher byId = BY_ID.matcher(path);
