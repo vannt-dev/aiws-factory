@@ -14,7 +14,8 @@ Setup
   aiws detect [--write] [--force]      recognise the stack of each source-* dir (any language) and propose
                                        sides + build/test commands; --write merges them into policies.yaml
   aiws sync claude                     generate CLAUDE.md + .claude/ (agents, skills, settings, hooks) from aiws/
-  aiws discover                       build aiws/knowledge/ from source-* (run once, and after big changes)
+  aiws discover [--branch[=NAME]]      build aiws/knowledge/ from source-* (run once, and after big changes);
+                                       --branch commits on a new branch, for a pull request
 
 Requirement lifecycle
   aiws new REQ-001 [--worktree PATH]   create aiws/work/REQ-001 and branch aiws/REQ-001
@@ -91,7 +92,7 @@ export async function main(argv) {
       C.sync(a1 ?? 'claude');
       return 0;
     case 'discover':
-      C.discover();
+      C.discover({ branch: flags.branch });
       return 0;
     case 'detect':
       C.detect({ write: Boolean(flags.write), force: Boolean(flags.force) });

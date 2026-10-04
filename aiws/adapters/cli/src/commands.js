@@ -12,7 +12,7 @@ import { requireHuman, inAiSession, currentUser, recordApproval, hashArtifacts, 
 import { buildPrompt } from './prompt.js';
 import { buildTrace, traceMarkdown } from './trace.js';
 import { runStats, statsLine } from './stats.js';
-import { getAdapter } from './adapters/index.js';
+import { getAdapter, preflightAdapters } from './adapters/index.js';
 import * as DS from './diffscope.js';
 import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 
@@ -144,10 +144,29 @@ function printStop(ws, st) {
   if (st.reason) log(`  ${st.reason}`);
 }
 
-export function discover() {
+/**
+ * `aiws discover [--branch[=NAME]]`: builds aiws/knowledge/. By default the result is committed on the
+ * current branch. With --branch it goes to a new branch (default aiws/discover-YYYYMMDD), to be merged
+ * through a pull request: the way to use discovery when the base branch is protected.
+ */
+export function discover({ branch } = {}) {
   const ws = Workspace.open();
+  let target = null;
+  if (branch) {
+    preflightAdapters(ws, ['discover']); // fail before creating a branch nobody will use
+    const from = G.currentBranch(ws.root);
+    target = branch === true ? `aiws/discover-${nowIso().slice(0, 10).replace(/-/g, '')}` : String(branch);
+    if (G.branchExists(ws.root, target)) throw new AiwsError(`Branch ${target} already exists. Pass another name: --branch=NAME.`);
+    G.git(ws.root, ['switch', '-q', '-c', target]);
+    log(`Discovery runs on the new branch ${target} (from ${from}).`);
+  }
   const r = runDiscover(ws);
   if (!r.ok) throw new AiwsError('Discovery failed; see aiws/work/_discover/evidence/runs/.');
+  if (target) {
+    log(
+      `Next: review aiws/knowledge/, push ${target} and open a pull request. Merge it before \`aiws new\`, which needs the knowledge base.`
+    );
+  }
 }
 
 // ---------------------------------------------------------------- status

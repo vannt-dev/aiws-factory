@@ -235,6 +235,34 @@ test('source lock: a second REQ in its own worktree cannot enter implementation'
   assert.match(ok(root, ['status']).stdout, /No REQs on this branch|source lock/);
 });
 
+test('discover --branch commits the knowledge base on a new branch, for a pull request', () => {
+  const root = makeWorkspace();
+  const out = ok(root, ['discover', '--branch']).stdout;
+  const branch = git(root, ['branch', '--show-current']);
+  assert.match(branch, /^aiws\/discover-\d{8}$/);
+  assert.match(out, new RegExp(`runs on the new branch ${branch} \\(from main\\)`));
+  assert.match(out, /open a pull request\. Merge it before `aiws new`/);
+  assert.ok(fs.existsSync(path.join(root, 'aiws/knowledge/system-map.md')));
+  assert.equal(git(root, ['status', '--porcelain']), '', 'the knowledge base is committed');
+  // the base branch is untouched until the pull request is merged
+  git(root, ['switch', '-q', 'main']);
+  assert.ok(!fs.existsSync(path.join(root, 'aiws/knowledge/system-map.md')));
+
+  // a custom name, and no silent reuse of an existing branch
+  ok(root, ['discover', '--branch=aiws/kb-refresh']);
+  assert.equal(git(root, ['branch', '--show-current']), 'aiws/kb-refresh');
+  git(root, ['switch', '-q', 'main']);
+  const again = aiws(root, ['discover', '--branch=aiws/kb-refresh']);
+  assert.notEqual(again.status, 0);
+  assert.match(again.stderr, /already exists/);
+  assert.equal(git(root, ['branch', '--show-current']), 'main');
+
+  // without --branch the behaviour is unchanged: committed on the current branch
+  ok(root, ['discover']);
+  assert.equal(git(root, ['branch', '--show-current']), 'main');
+  assert.ok(fs.existsSync(path.join(root, 'aiws/knowledge/system-map.md')));
+});
+
 test('cost budget: a requirement over budget is blocked until a human raises it', () => {
   const root = makeWorkspace({ discover: true });
   const polFile = path.join(root, 'aiws/config/policies.yaml');
