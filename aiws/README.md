@@ -89,12 +89,15 @@ When the orchestrator stops, `aiws status REQ-001` tells you why and what to run
 | A task failed 3 times | `implementation / blocked` | fix or revert by hand, `aiws resume REQ-001`, then `aiws run` |
 | Review found a `[critical]` issue | back to `planning` automatically | nothing: the planner adds fix tasks |
 | The design changed after approval | back to `design_approval` automatically | approve again |
+| The AI usage limit is reached | same phase, still `running` | nothing to approve: `aiws run REQ-001` again once the limit resets |
 
 Human-only commands (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **refuse to run inside an AI session** and ask you to retype the requirement id. Pass `--yes` in CI scripts.
 
 **Merging the PR:** any merge method works. `aiws approve REQ-001 pr` accepts the merge when the requirement branch is an ancestor of the base (merge commit or fast-forward), or when every file the requirement changed has the same content on the base (squash or rebase). Update your local base branch first. After a squash or rebase the commit ids recorded in `state.yaml` no longer exist on the base, so `aiws trace` finds the task commits by their `Task:` trailer. A merge commit keeps one commit per task and is the best choice for traceability.
 
 **Pausing a run:** `aiws stop REQ-001`, from any terminal or worktree, asks the running `aiws run` to stop after its current step; `aiws run REQ-001` continues later, and no gate command is needed. If the process is killed instead (Ctrl+C, a closed terminal), the task it was working on stays `running` in `state.yaml`: the next `aiws run` keeps the partly written files of that task and tells the developer agent to review them first. Uncommitted files outside the task are still refused.
+
+**AI usage limit:** when the AI answers that the usage limit of the account is reached (for example the session limit of a Claude subscription), the run pauses instead of failing. No attempt is counted and nothing is blocked; `aiws run` exits with code 75 and `aiws status` shows the message of the AI, which includes the reset time. Run `aiws run REQ-001` again once the limit resets: the same step starts over, its partial output is kept and the agent is told to review it first. `aiws discover` pauses the same way.
 
 **Parallel work:** only one requirement may write source code at a time, from implementation until its PR is merged (the source lock). Other requirements can still run analysis and design, each in its own worktree:
 

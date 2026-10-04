@@ -19,7 +19,8 @@ Setup
 
 Requirement lifecycle
   aiws new REQ-001 [--worktree PATH]   create aiws/work/REQ-001 and branch aiws/REQ-001
-  aiws run REQ-001 [--once]            run phases until the next human gate / block / done
+  aiws run REQ-001 [--once]            run phases until the next human gate / block / done; exit 75 when the
+                                       AI usage limit paused it (run it again once the limit resets)
   aiws stop REQ-001                    ask a running \`aiws run\` to stop after its current step
   aiws status [REQ-001]              phase, tasks, recent history, source lock
   aiws prompt REQ-001 PHASE [--task T] print the prompt an agent would receive
@@ -93,7 +94,7 @@ export async function main(argv) {
       return 0;
     case 'discover':
       C.discover({ branch: flags.branch });
-      return 0;
+      return process.exitCode ?? 0;
     case 'detect':
       C.detect({ write: Boolean(flags.write), force: Boolean(flags.force) });
       return 0;
@@ -102,7 +103,7 @@ export async function main(argv) {
       return 0;
     case 'run':
       C.run(a1, { once: Boolean(flags.once) });
-      return 0;
+      return process.exitCode ?? 0;
     case 'stop':
       C.stop(a1);
       return 0;
