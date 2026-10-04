@@ -63,6 +63,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The `requirement-analysis` and `unit-testing` skills, and the analyst and
+  test-designer agents, now guide granularity: one acceptance criterion per
+  behaviour with its data variants listed inside it, and one parameterised test
+  case per behaviour. The demo requirement produced 22 criteria and 43 test
+  cases; the effect of the new guidance has not been measured yet.
 - A Claude Code session outside any requirement phase may now drive
   `aiws new` and `aiws run`, so an assistant can coordinate the workflow. Inside
   a phase they stay blocked, so an agent cannot start a nested run. The gate
