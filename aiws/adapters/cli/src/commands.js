@@ -93,6 +93,7 @@ export function newReq(req, { worktree } = {}) {
     G.git(ws.root, ['worktree', 'add', '-q', '-b', branch, wt]);
     ws = new Workspace(wt);
     log(`Worktree created at ${wt}. Run further commands for ${req} from there.`);
+    installWorktreeCli(wt);
   } else {
     G.git(ws.root, ['switch', '-q', '-c', branch]);
   }
@@ -116,6 +117,18 @@ export function newReq(req, { worktree } = {}) {
   saveState(ws, st);
   G.commit(ws.root, `chore(${req}): start ${st.title}\n\nREQ-ID: ${req}\n`, [ws.workRel(req)]);
   log(`${req} created on branch ${branch} (base ${baseBranch} @ ${baseCommit.slice(0, 7)}). Next: aiws run ${req}`);
+}
+
+/**
+ * A worktree gets its own copy of aiws/adapters/cli but not its node_modules (git-ignored). The guard hook of
+ * agents running there starts from that copy, so its dependencies are installed right away.
+ */
+function installWorktreeCli(wt) {
+  const cli = path.join(wt, 'aiws', 'adapters', 'cli');
+  if (!fs.existsSync(path.join(cli, 'package.json')) || fs.existsSync(path.join(cli, 'node_modules', 'yaml'))) return;
+  const res = runShell('npm ci --omit=dev --no-audit --no-fund', { cwd: cli, timeout: 5 * 60 * 1000 });
+  if (res.status === 0) log('Installed the CLI dependencies of the worktree (needed by the guard hook).');
+  else log(`Could not install the CLI dependencies of the worktree. Run \`npm ci --omit=dev\` in ${cli} before \`aiws run\`.`);
 }
 
 export function run(req, opts) {

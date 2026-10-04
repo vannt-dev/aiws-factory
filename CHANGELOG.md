@@ -29,6 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Agents never start without a working guard hook. `aiws run` and
+  `aiws discover` refuse to start when `.claude/settings.json` is missing, when
+  the workspace's own CLI has no `node_modules` (a new git worktree), or when
+  `aiws` is not on PATH. A crashing hook exits 1, which does not block, so
+  agents used to run with diff-scope as their only check.
+- `aiws new --worktree` installs the CLI dependencies of the new worktree.
+- `aiws sync claude` writes `aiws guard` as the hook command in projects that do
+  not carry the CLI (created with `aiws init`); before, the hook pointed to a
+  file that does not exist there.
 - `aiws approve REQ pr` accepts squash and rebase merges: besides the ancestor
   check it passes when every file the requirement changed has the same content
   on the base. It no longer checks out the base branch, so it works when the
