@@ -5,7 +5,8 @@ branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
 phase: implementation
-status: running
+status: blocked
+reason: "budget exceeded: AI runs cost 20.55 USD of 20.00 USD (list-price equivalent). A human continues with `aiws resume REQ-002` (one more budget) or `aiws resume REQ-002 --budget <USD>`"
 history:
   - phase: new
     result: created
@@ -69,6 +70,11 @@ history:
     result: done
     run: run-0009
     commit: e83a2e9
+    at: 2026-10-04T07:41:24Z
+  - phase: implementation
+    result: budget_exceeded
+    spent_usd: 20.55
+    budget_usd: 20
     at: 2026-10-04T07:41:24Z
 tasks:
   - id: T1
@@ -184,3 +190,4 @@ attempts: {}
 last_failure: {}
 step_index: 0
 run_seq: 9
+blocked_by: budget
