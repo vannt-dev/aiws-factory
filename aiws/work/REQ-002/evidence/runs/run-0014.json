@@ -1,0 +1,41 @@
+{
+  "run_id": "run-0014",
+  "req": "REQ-002",
+  "phase": "review",
+  "agent": "reviewer",
+  "task": null,
+  "attempt": 1,
+  "adapter": "claude",
+  "command": "claude \"-p\" \"--output-format\" \"json\" \"--permission-mode\" \"dontAsk\" \"--allowedTools\" \"Read,Grep,Glob,Write\" \"--model\" \"opus\"",
+  "allowed_tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write"
+  ],
+  "prompt_file": "run-0014.prompt.md",
+  "prompt_sha256": "6976e2c0b2f6414b60285746df57f9ca415dabb3a61dbaa532f0e1f31e759f8b",
+  "started_at": "2026-10-04T07:51:44Z",
+  "duration_ms": 659750,
+  "exit_code": 0,
+  "report": {
+    "is_error": false,
+    "result": "REQ-002 chưa sẵn sàng PR: review tìm thấy 1 critical, 0 major, 4 minor; orchestrator sẽ quay lại planning để thêm task sửa.\n\n**File đã ghi:** chỉ `aiws/work/REQ-002/05-review.md`, đủ bốn heading bắt buộc. Tôi không sửa code.\n\n## Finding critical\n`CustomerService.java:46` — hàm kiểm tra dùng chung có chữ ký `check(name, email, phone, Long ownId)` và rẽ nhánh theo `ownId == null`. Đây là phương án D4 đã loại tường minh, và plan T2 cũng cấm (\"không thêm tham số `Long excludedId`\").\n\n- Developer không ghi `questions.md`, và báo cáo run-0009 ghi \"The design was followed as written\".\n- Hành vi quan sát được không sai; test cũ và mới đều pass.\n- Cách sửa đề xuất gói trong `CustomerService.java`: đổi sang hai `Predicate<String>` như hình dạng của D4, không sửa test.\n\nTôi xếp mức critical vì thiết kế đã duyệt bị đổi khi code mà không qua câu hỏi. Tôi đã cân nhắc mức major vì hành vi và contract không đổi; nếu bạn thấy major mới đúng thì hạ nhãn ở dòng đó để REQ đi tiếp tới PR gate.\n\n## Finding minor\n- **TC-53 và TC-65:** mỗi TC có hai dòng dữ liệu nhưng viết thành một `@Test` chạy hai lượt, không tham số hoá. AC vẫn được chứng minh.\n- **`setUp` của `CustomerServiceTest`:** bị sửa để thêm field `repository`, dù design ghi \"Test cũ không sửa\". Biến cục bộ của TC-25 nay che field này; hành vi không đổi.\n- **`main.js:47`:** không có trạng thái \"đang lưu\". Bấm \"Sửa\" ở dòng khác khi `PUT` chưa về thì form mới mở bị đóng hoặc bị đè. Code đúng nguyên văn D12 và không lưu sai dữ liệu, nên muốn xử lý thì phải bổ sung quyết định vào design.\n\n## Phần còn lại\nD1..D3 và D5..D12 khớp design. BE expose và FE gọi đúng `api-contract.yaml`, kể cả xử lý các mã lỗi. Truy vết đủ 14 AC, TC-44..TC-81 đều có trong code. Sáu commit `feat` chỉ chạm `allowed_files` của task mình.\n\n## Người review PR cần biết\n- **Test:** tôi không tự chạy lại; kết quả lấy từ evidence của orchestrator (BE 226 pass ở run-0010, FE 29 pass ở run-0013). Không commit nào chạm source sau hai lần chạy đó.\n- **Contract:** `api_contract_be` và `api_contract_fe` chưa được cấu hình, nên tôi đối chiếu bằng đọc code và test.\n- **`main.js` và `index.html`:** không có unit test; tôi đối chiếu bằng đọc code theo sáu điểm kiểm tay trong test spec, cả sáu đều có.\n- **Rủi ro đã chấp nhận trong design:** API không có xác thực (R4); `id` vượt `long` hoặc body JSON `null` trả 500 (R10). Tôi không tính là finding.",
+    "num_turns": 46,
+    "cost_usd": 5.1110999999999995,
+    "session_id": "2c872d19-4320-4e24-978f-b50d629fbcec",
+    "model": null
+  },
+  "stderr_tail": null,
+  "files_changed": [
+    "aiws/work/REQ-002/05-review.md"
+  ],
+  "scope_violations_reverted": [],
+  "validation": [
+    {
+      "kind": "critical",
+      "message": "source-be/src/main/java/com/example/crm/service/CustomerService.java:46 — Sai design D4: hàm kiểm tra dùng chung có chữ ký `check(name, email, phone, Long ownId)`, `create` truyền `null` (dòng 33), và `isEmailUsed`/`isPhoneUsed` (dòng 76–86) rẽ nhánh theo `ownId == null`. Đây chính là phương án D4 đã loại ở \"Đã cân nhắc\" (\"Tham số `Long excludedId` (`null` khi tạo) rồi rẽ nhánh bên trong: loại, vì hàm kiểm tra phải biết mình đang tạo hay sửa\") và 04-plan.yaml T2 cấm (\"không thêm tham số `Long excludedId`\"). Tên hàm và record trong D4 là gợi ý, nhưng phương án tham số `Long` nullable đã bị loại tường minh. Không có `questions.md`, trong khi báo cáo run-0009 ghi \"The design was followed as written\" (trái AGENTS.md mục 4). Hành vi quan sát được không đổi: TC-13..TC-32 và TC-48..TC-60 pass — Thêm một task sửa chỉ chạm `CustomerService.java`: đổi chữ ký thành `check(name, email, phone, Predicate<String> emailTaken, Predicate<String> phoneTaken)`; `create` truyền `repository::existsByEmail` và `p -> repository.existsByPhoneAndStatus(p, CustomerStatus.ACTIVE)`; `update` truyền `e -> repository.existsByEmailAndIdNot(e, id)` và `p -> repository.existsByPhoneAndStatusAndIdNot(p, CustomerStatus.ACTIVE, id)`; xoá `isEmailUsed` và `isPhoneUsed`, sửa Javadoc của `check`. Giữ nguyên thứ tự kiểm tra, năm thông điệp lỗi, chữ ký `create` và `update`; không sửa test nào."
+    }
+  ],
+  "outcome": "critical_findings"
+}

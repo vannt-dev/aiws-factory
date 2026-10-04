@@ -4,7 +4,7 @@ requirement: requirements/REQ-002-edit-customer.md
 branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
-phase: review
+phase: planning
 status: running
 history:
   - phase: new
@@ -107,6 +107,12 @@ history:
   - phase: implementation
     result: all_tasks_done
     at: 2026-10-04T07:51:43Z
+  - phase: review
+    agent: reviewer
+    result: critical
+    run: run-0014
+    findings: 1
+    at: 2026-10-04T08:02:44Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -228,9 +234,13 @@ tasks:
     attempts: 1
     test_result: pass
     commit: b27b52d16055888b0feae81f8e4eaff12b285163
-feedback: []
+feedback:
+  - phase: planning
+    source: review critical findings
+    text: 'Add fix tasks for: source-be/src/main/java/com/example/crm/service/CustomerService.java:46 — Sai design D4: hàm kiểm tra dùng chung có chữ ký `check(name, email, phone, Long ownId)`, `create` truyền `null` (dòng 33), và `isEmailUsed`/`isPhoneUsed` (dòng 76–86) rẽ nhánh theo `ownId == null`. Đây chính là phương án D4 đã loại ở "Đã cân nhắc" ("Tham số `Long excludedId` (`null` khi tạo) rồi rẽ nhánh bên trong: loại, vì hàm kiểm tra phải biết mình đang tạo hay sửa") và 04-plan.yaml T2 cấm ("không thêm tham số `Long excludedId`"). Tên hàm và record trong D4 là gợi ý, nhưng phương án tham số `Long` nullable đã bị loại tường minh. Không có `questions.md`, trong khi báo cáo run-0009 ghi "The design was followed as written" (trái AGENTS.md mục 4). Hành vi quan sát được không đổi: TC-13..TC-32 và TC-48..TC-60 pass — Thêm một task sửa chỉ chạm `CustomerService.java`: đổi chữ ký thành `check(name, email, phone, Predicate<String> emailTaken, Predicate<String> phoneTaken)`; `create` truyền `repository::existsByEmail` và `p -> repository.existsByPhoneAndStatus(p, CustomerStatus.ACTIVE)`; `update` truyền `e -> repository.existsByEmailAndIdNot(e, id)` và `p -> repository.existsByPhoneAndStatusAndIdNot(p, CustomerStatus.ACTIVE, id)`; xoá `isEmailUsed` và `isPhoneUsed`, sửa Javadoc của `check`. Giữ nguyên thứ tự kiểm tra, năm thông điệp lỗi, chữ ký `create` và `update`; không sửa test nào.'
+    at: 2026-10-04T08:02:44Z
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 13
+run_seq: 14
 budget_usd: 40
