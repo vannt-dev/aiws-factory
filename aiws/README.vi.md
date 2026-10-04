@@ -39,7 +39,7 @@ Không muốn `npm link` thì gọi `node aiws/adapters/cli/bin/aiws.js <lệnh>
 2. **Khai báo lệnh build/test**: chạy `aiws detect` để xem đề xuất, rồi `aiws detect --write` để ghi vào `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Kiểm tra lại. Lệnh chạy tại gốc workspace; có thể viết riêng cho từng OS: `{windows: ..., posix: ...}`.
 3. **Chốt convention**: mở Claude Code tại gốc, trên `main`, và yêu cầu: *"Đọc source-fe/, điền aiws/skills/fe-conventions/SKILL.md bằng convention THẬT, mỗi ý kèm file ví dụ, chỗ không chắc đánh dấu [CẦN XÁC NHẬN]"*. Làm tương tự với `be-conventions`. Người đọc lại và sửa.
 4. **Sinh cấu hình Claude**: `aiws sync claude`. Lệnh này sinh `CLAUDE.md`, `.claude/agents`, `.claude/skills` và `.claude/settings.json` (deny rules + hook guard). Chạy lại mỗi khi sửa `aiws/`.
-5. **Discovery**: `aiws discover`, sau đó review `aiws/knowledge/*` và sửa chỗ sai. Commit.
+5. **Discovery**: `aiws discover`, sau đó review `aiws/knowledge/*` và sửa chỗ sai. Commit. Kết quả được commit vào nhánh đang đứng. Nếu nhánh đó được bảo vệ, hãy chạy `aiws discover --branch`: knowledge sẽ nằm trên nhánh mới `aiws/discover-YYYYMMDD` (hoặc `--branch=TÊN`), bạn push và merge qua pull request trước lần `aiws new` đầu tiên.
 6. **Viết requirement**: `requirements/REQ-001-<tên>.md`, rồi commit.
 
 ## 2a. Đa ngôn ngữ và chuẩn quốc tế

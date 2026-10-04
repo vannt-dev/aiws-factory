@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shows the budget. Off by default; runs that report no cost never count.
 - `claude.agent_models` in `runtime.yaml` chooses the model of one agent, for
   example `developer: sonnet`, overriding the `model_hint` mapping.
+- `aiws discover --branch[=NAME]` commits the knowledge base on a new branch
+  (default `aiws/discover-YYYYMMDD`) to be merged through a pull request, for
+  workspaces whose base branch is protected. Without the flag nothing changes.
 
 ### Fixed
 
