@@ -4,7 +4,7 @@ requirement: requirements/REQ-002-edit-customer.md
 branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
-phase: planning
+phase: implementation
 status: running
 history:
   - phase: new
@@ -53,9 +53,116 @@ history:
     by: Van Nguyen
     record: design-01.yaml
     at: 2026-10-04T07:30:18Z
-tasks: []
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0007
+    at: 2026-10-04T07:38:00Z
+tasks:
+  - id: T1
+    title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests:
+      - TC-44
+      - TC-45
+      - TC-46
+      - TC-47
+    depends_on: []
+    status: pending
+  - id: T2
+    title: be - tách hàm kiểm tra dùng chung và thêm CustomerService.update
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+    tests:
+      - TC-48
+      - TC-49
+      - TC-50
+      - TC-51
+      - TC-52
+      - TC-53
+      - TC-54
+      - TC-55
+      - TC-56
+      - TC-57
+      - TC-58
+      - TC-59
+      - TC-60
+    depends_on:
+      - T1
+    status: pending
+  - id: T3
+    title: be - thêm endpoint PUT /api/customers/{id} sửa khách hàng
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/api/UpdateCustomerRequest.java
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests:
+      - TC-61
+      - TC-62
+      - TC-63
+      - TC-64
+      - TC-65
+      - TC-66
+      - TC-67
+      - TC-68
+      - TC-69
+    depends_on:
+      - T2
+    status: pending
+  - id: T4
+    title: fe - thêm getCustomer và updateCustomer vào customerApi
+    type: feat
+    allowed_files:
+      - source-fe/src/api/customerApi.js
+      - source-fe/test/customerApi.test.js
+    tests:
+      - TC-70
+      - TC-71
+      - TC-72
+      - TC-73
+    depends_on:
+      - T3
+    status: pending
+  - id: T5
+    title: fe - thêm cột Thao tác với nút Sửa trong bảng khách hàng
+    type: feat
+    allowed_files:
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/customerTable.test.js
+    tests:
+      - TC-74
+      - TC-75
+    depends_on:
+      - T3
+    status: pending
+  - id: T6
+    title: fe - thêm form sửa khách hàng hiện lỗi theo từng trường và nối vào trang
+    type: feat
+    allowed_files:
+      - source-fe/src/components/customerEditForm.js
+      - source-fe/test/customerEditForm.test.js
+      - source-fe/index.html
+      - source-fe/src/main.js
+    tests:
+      - TC-76
+      - TC-77
+      - TC-78
+      - TC-79
+      - TC-80
+      - TC-81
+    depends_on:
+      - T4
+      - T5
+    status: pending
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 6
+run_seq: 7
