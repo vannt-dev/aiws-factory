@@ -4,9 +4,9 @@ requirement: requirements/REQ-002-edit-customer.md
 branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
-phase: design
-status: blocked
-reason: "test-designer failed 3 attempts: agent run failed (exit 1): You've hit your session limit · resets 1:50pm (Asia/Bangkok)"
+phase: design_approval
+status: waiting_human
+reason: 'design ready for review: 02-design.md, 03-test-spec.md, api-contract.yaml. Then run `aiws approve REQ-002 design` or `aiws reject REQ-002 design -m "..."`'
 history:
   - phase: new
     result: created
@@ -40,11 +40,18 @@ history:
     run: run-0005
     attempt: 3
     at: 2026-10-04T03:34:50Z
+  - phase: design
+    result: resumed
+    by: Van Nguyen
+    at: 2026-10-04T07:14:35Z
+  - phase: design
+    agent: test-designer
+    result: ok
+    run: run-0006
+    at: 2026-10-04T07:28:29Z
 tasks: []
 feedback: []
-attempts:
-  design:test-designer: 3
-last_failure:
-  design:test-designer: "- agent run failed (exit 1): You've hit your session limit · resets 1:50pm (Asia/Bangkok)"
-step_index: 1
-run_seq: 5
+attempts: {}
+last_failure: {}
+step_index: 0
+run_seq: 6

@@ -1,0 +1,38 @@
+{
+  "run_id": "run-0006",
+  "req": "REQ-002",
+  "phase": "design",
+  "agent": "test-designer",
+  "task": null,
+  "attempt": 1,
+  "adapter": "claude",
+  "command": "claude \"-p\" \"--output-format\" \"json\" \"--permission-mode\" \"dontAsk\" \"--allowedTools\" \"Read,Grep,Glob,Write,Edit,MultiEdit\" \"--model\" \"opus\"",
+  "allowed_tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write",
+    "Edit",
+    "MultiEdit"
+  ],
+  "prompt_file": "run-0006.prompt.md",
+  "prompt_sha256": "ff116b889be157ddcd015623fedd90c1854e69356dce484bdbf441aa8012032a",
+  "started_at": "2026-10-04T07:15:01Z",
+  "duration_ms": 808519,
+  "exit_code": 0,
+  "report": {
+    "is_error": false,
+    "result": "Đã viết xong test spec của REQ-002: 38 test case (TC-44..TC-81) phủ đủ AC-1..AC-14. Tôi chưa chạy được rule `every_ac_has_tc` của orchestrator vì Bash bị chặn trong run này. Thay vào đó tôi kiểm bằng Grep và đối chiếu tay: đủ heading bắt buộc, mã TC liên tục, mỗi TC đủ trường, ma trận AC khớp các dòng `covers`.\n\n## File đã ghi\n- `aiws/work/REQ-002/03-test-spec.md` (file duy nhất; `02-design.md` và `api-contract.yaml` không đổi).\n\n## Quyết định chính\n- **Đánh số tiếp từ TC-44 (chốt Q8).** Orchestrator tìm mã TC trong toàn bộ nội dung file test mà task sửa (`aiws/adapters/cli/src/engine.js`, `runUnitTests`), và các file đó đã có mã TC của REQ-001. Bắt đầu lại từ TC-1 thì TC mới chưa viết vẫn được tính là có.\n- **TC-36 của REQ-001 không định nghĩa lại.** Nó được sửa trong nhóm FE-2 theo D9; kỳ vọng mới về cột \"Thao tác\" thuộc TC-74.\n- **Mỗi TC nằm trong một file test, theo nhóm task của design:**\n\n  | TC | File test | Nhóm |\n  | --- | --- | --- |\n  | TC-44..TC-47 | `InMemoryCustomerRepositoryTest.java` | BE-1 |\n  | TC-48..TC-60 | `CustomerServiceTest.java` | BE-2 |\n  | TC-61..TC-69 | `CustomerHandlerTest.java` | BE-3 |\n  | TC-70..TC-73 | `customerApi.test.js` | FE-1 |\n  | TC-74..TC-75 | `customerTable.test.js` | FE-2 |\n  | TC-76..TC-81 | `customerEditForm.test.js` (mới) | FE-3 |\n\n- **Bốn hành vi legacy giữ nguyên có chủ ý (D7) đều có TC, để không ai \"sửa\" nhầm:**\n  - (a) không gửi số thì xoá số: TC-50, TC-62\n  - (b) `INACTIVE` vẫn sửa được và vẫn `INACTIVE`: TC-51\n  - (c) `INACTIVE` gửi lại số đã cấp cho khách hàng `ACTIVE` khác vẫn bị từ chối: TC-57\n  - (d) số theo quy tắc cũ bị kiểm tra lại: TC-54\n- **Mọi test đi tới truy vấn trùng số đều có một khách hàng khác không có số trong kho**, để bắt lỗi NPE mà D5 cảnh báo.\n- **\"Không đổi gì\" được kiểm bằng so cả danh sách trước và sau**; lỗi validation so cả map `errors`.\n\n## Reviewer cần biết\n- **TC sinh từ design, không có AC riêng**, được truy vết tới AC gần nhất:\n  - TC-68 (JSON hỏng) và TC-69 (route fallback) → AC-4, AC-9\n  - TC-72, TC-73 (`getCustomer`) → AC-13\n  - TC-44..TC-47 (repository) → các AC mà chúng hiện thực\n- **Biến thể `INACTIVE` chỉ kiểm ở repository và service.** Không có endpoint nào tạo được khách hàng `INACTIVE` qua HTTP; ở tầng HTTP chỉ có TC-63 (`status` trong body bị bỏ qua).\n- **Không đặt kỳ vọng cho hai đầu vào của R10**: `id` vượt `long` và body JSON `null`.\n- **`index.html` và `main.js` không có TC tự động.** Mục Chiến lược có danh sách kiểm tay theo D12.\n- **Một số TC phụ thuộc quyết định đang chờ duyệt.** Nếu người duyệt chọn khác thì phải đổi:\n  - 404 và thứ tự 404 trước 400 (Q2, D2): TC-45, TC-60, TC-67, TC-68\n  - hành vi legacy (Q3, D7): TC-50, TC-51, TC-54, TC-57, TC-62\n  - lỗi dưới ô nhập và bố cục (Q5, Q6, D9, D10): TC-74..TC-81\n  - form điền bằng `GET` (D11): TC-72, TC-73",
+    "num_turns": 37,
+    "cost_usd": 4.994749400000001,
+    "session_id": "3a7e9208-8e26-4520-9479-a2f8de3fe78a",
+    "model": null
+  },
+  "stderr_tail": null,
+  "files_changed": [
+    "aiws/work/REQ-002/03-test-spec.md"
+  ],
+  "scope_violations_reverted": [],
+  "validation": [],
+  "outcome": "ok"
+}
