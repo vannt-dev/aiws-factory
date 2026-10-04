@@ -4,9 +4,8 @@ requirement: requirements/REQ-002-edit-customer.md
 branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
-phase: design_approval
-status: waiting_human
-reason: 'design ready for review: 02-design.md, 03-test-spec.md, api-contract.yaml. Then run `aiws approve REQ-002 design` or `aiws reject REQ-002 design -m "..."`'
+phase: planning
+status: running
 history:
   - phase: new
     result: created
@@ -49,6 +48,11 @@ history:
     result: ok
     run: run-0006
     at: 2026-10-04T07:28:29Z
+  - phase: design_approval
+    result: approved
+    by: Van Nguyen
+    record: design-01.yaml
+    at: 2026-10-04T07:30:18Z
 tasks: []
 feedback: []
 attempts: {}
