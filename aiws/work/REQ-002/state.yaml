@@ -86,6 +86,12 @@ history:
     run: run-0010
     commit: e61ea26
     at: 2026-10-04T07:48:50Z
+  - phase: implementation
+    task: T4
+    result: done
+    run: run-0011
+    commit: b0a3050
+    at: 2026-10-04T07:49:30Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -166,10 +172,10 @@ tasks:
       - TC-73
     depends_on:
       - T3
-    status: running
-    base: 6b373a0884e6866c323472255ec2c1de7e979a6e
+    status: done
     attempts: 1
     test_result: pass
+    commit: b0a305019b68f4d6442875cd0d54b9a3edf07809
   - id: T5
     title: fe - thêm cột Thao tác với nút Sửa trong bảng khách hàng
     type: feat
