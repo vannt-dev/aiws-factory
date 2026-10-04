@@ -12,6 +12,7 @@
     form { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.5rem 0; max-width: 760px; }
     input { padding: .45rem .6rem; border: 1px solid #d1d5db; border-radius: 6px; }
     .error { color: #b91c1c; }
+    .field { display: flex; flex-direction: column; gap: .25rem; }
   </style>
 </head>
 <body>
@@ -23,6 +24,7 @@
     <button type="submit">Thêm</button>
   </form>
   <p id="message" class="error" role="alert"></p>
+  <div id="edit-customer"></div>
   <div id="customers">Đang tải…</div>
   <script type="module" src="./src/main.js"></script>
 </body>
