@@ -98,6 +98,12 @@ history:
     run: run-0012
     commit: 9d9bec3
     at: 2026-10-04T07:50:05Z
+  - phase: implementation
+    task: T6
+    result: done
+    run: run-0013
+    commit: b27b52d
+    at: 2026-10-04T07:51:43Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -215,10 +221,10 @@ tasks:
     depends_on:
       - T4
       - T5
-    status: running
-    base: 0ab559fdb281d0126062193ecc4de6acd23e959d
+    status: done
     attempts: 1
     test_result: pass
+    commit: b27b52d16055888b0feae81f8e4eaff12b285163
 feedback: []
 attempts: {}
 last_failure: {}
