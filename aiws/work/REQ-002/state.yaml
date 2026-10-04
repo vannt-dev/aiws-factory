@@ -5,7 +5,8 @@ branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
 phase: planning
-status: running
+status: blocked
+reason: "planner failed 3 attempts: agent run failed (exit 1): You've hit your session limit · resets 6:50pm (Asia/Bangkok)"
 history:
   - phase: new
     result: created
@@ -113,6 +114,24 @@ history:
     run: run-0014
     findings: 1
     at: 2026-10-04T08:02:44Z
+  - phase: planning
+    agent: planner
+    result: fail
+    run: run-0015
+    attempt: 1
+    at: 2026-10-04T08:03:00Z
+  - phase: planning
+    agent: planner
+    result: fail
+    run: run-0016
+    attempt: 2
+    at: 2026-10-04T08:03:04Z
+  - phase: planning
+    agent: planner
+    result: fail
+    run: run-0017
+    attempt: 3
+    at: 2026-10-04T08:03:08Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -239,8 +258,10 @@ feedback:
     source: review critical findings
     text: 'Add fix tasks for: source-be/src/main/java/com/example/crm/service/CustomerService.java:46 — Sai design D4: hàm kiểm tra dùng chung có chữ ký `check(name, email, phone, Long ownId)`, `create` truyền `null` (dòng 33), và `isEmailUsed`/`isPhoneUsed` (dòng 76–86) rẽ nhánh theo `ownId == null`. Đây chính là phương án D4 đã loại ở "Đã cân nhắc" ("Tham số `Long excludedId` (`null` khi tạo) rồi rẽ nhánh bên trong: loại, vì hàm kiểm tra phải biết mình đang tạo hay sửa") và 04-plan.yaml T2 cấm ("không thêm tham số `Long excludedId`"). Tên hàm và record trong D4 là gợi ý, nhưng phương án tham số `Long` nullable đã bị loại tường minh. Không có `questions.md`, trong khi báo cáo run-0009 ghi "The design was followed as written" (trái AGENTS.md mục 4). Hành vi quan sát được không đổi: TC-13..TC-32 và TC-48..TC-60 pass — Thêm một task sửa chỉ chạm `CustomerService.java`: đổi chữ ký thành `check(name, email, phone, Predicate<String> emailTaken, Predicate<String> phoneTaken)`; `create` truyền `repository::existsByEmail` và `p -> repository.existsByPhoneAndStatus(p, CustomerStatus.ACTIVE)`; `update` truyền `e -> repository.existsByEmailAndIdNot(e, id)` và `p -> repository.existsByPhoneAndStatusAndIdNot(p, CustomerStatus.ACTIVE, id)`; xoá `isEmailUsed` và `isPhoneUsed`, sửa Javadoc của `check`. Giữ nguyên thứ tự kiểm tra, năm thông điệp lỗi, chữ ký `create` và `update`; không sửa test nào.'
     at: 2026-10-04T08:02:44Z
-attempts: {}
-last_failure: {}
+attempts:
+  planning:planner: 3
+last_failure:
+  planning:planner: "- agent run failed (exit 1): You've hit your session limit · resets 6:50pm (Asia/Bangkok)"
 step_index: 0
-run_seq: 14
+run_seq: 17
 budget_usd: 40
