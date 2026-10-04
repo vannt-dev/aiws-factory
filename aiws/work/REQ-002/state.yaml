@@ -58,6 +58,12 @@ history:
     result: ok
     run: run-0007
     at: 2026-10-04T07:38:00Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0008
+    commit: "3443288"
+    at: 2026-10-04T07:39:10Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -72,10 +78,10 @@ tasks:
       - TC-46
       - TC-47
     depends_on: []
-    status: running
-    base: e534901e550d265bd678afdb30e91ab78b5f4541
+    status: done
     attempts: 1
     test_result: pass
+    commit: 344328838ebd18fd01bf5d686a191168115b0e53
   - id: T2
     title: be - tách hàm kiểm tra dùng chung và thêm CustomerService.update
     type: feat
