@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The guard no longer blocks Bash commands that only mention a denied command
+  in literal text, such as a search pattern, a commit message or a
+  here-document for `git commit`. Anything that could run that text (shells,
+  `eval`, interpreters, `$(...)`, variables, aliases, unbalanced quotes) and
+  every PowerShell command is still matched as a whole. Assignments (`X=...`)
+  and git aliases (`!...`) are now recognised as command starts.
 - Agents never start without a working guard hook. `aiws run` and
   `aiws discover` refuse to start when `.claude/settings.json` is missing, when
   the workspace's own CLI has no `node_modules` (a new git worktree), or when
