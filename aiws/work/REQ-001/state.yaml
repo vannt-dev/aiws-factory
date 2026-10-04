@@ -1,12 +1,11 @@
 req_id: REQ-001
 title: Số điện thoại khách hàng
 requirement: requirements/REQ-001-customer-phone.md
-branch: aiws/REQ-001
+branch: aiws/REQ-001-knowledge
 base_branch: demo
 base_commit: 8daa5ec1c217523f8ea18eeb264703ba06163a6f
-phase: pr_approval
-status: waiting_human
-reason: open a PR for the branch; after it is merged run `aiws approve REQ-001 pr` (or `aiws reject REQ-001 pr -m "..."`)
+phase: knowledge_update
+status: running
 history:
   - phase: new
     result: created
@@ -75,6 +74,12 @@ history:
     result: ok
     run: run-0010
     at: 2026-10-03T07:22:27Z
+  - phase: pr_approval
+    result: merged
+    by: Van Nguyen
+    record: pr-01.yaml
+    head: 3cbad85
+    at: 2026-10-04T02:48:44Z
 tasks:
   - id: T1
     title: be - thêm PhoneNumbers port quy tắc chuẩn hoá và hợp lệ số điện thoại của legacy
@@ -198,3 +203,4 @@ attempts: {}
 last_failure: {}
 step_index: 0
 run_seq: 10
+code_head: 3cbad855a938f604ad5ec577d8c3cb5c336ac923
