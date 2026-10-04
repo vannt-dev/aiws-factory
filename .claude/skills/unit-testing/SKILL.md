@@ -23,6 +23,8 @@ Mỗi test case trong 03-test-spec.md có đủ các trường sau:
 
 Kỹ thuật thiết kế test nên dùng: phân vùng tương đương, giá trị biên, bảng quyết định, chuyển trạng thái (ISTQB).
 
+**Độ chi tiết của test case.** Một TC kiểm một hành vi. Các biến thể dữ liệu của hành vi đó là các dòng trong `test data` của cùng TC, không tách thành nhiều TC. Trong code, chúng được hiện thực bằng **test tham số hoá** của framework: `@ParameterizedTest` (JUnit 5), `[Theory]` với `[InlineData]` (xUnit), `@pytest.mark.parametrize`, `test.each` (Jest, Vitest), table-driven test (Go), data provider (PHPUnit). Mã TC gắn vào test tham số hoá đó một lần. Tách TC riêng khi kết quả mong đợi, điều kiện tiên quyết hoặc side khác nhau.
+
 ## Unit test trong code
 - Cấu trúc **Arrange-Act-Assert** (hoặc Given-When-Then). Một hành vi mỗi test; dữ liệu cụ thể.
 - **Tên test theo quy ước của ngôn ngữ/framework**, mô tả hành vi, ví dụ `shouldReturn404WhenUserNotFound`, `test_returns_404_when_user_missing`, `TestGetUser_NotFound`, `GetUser_UnknownId_Returns404`.
