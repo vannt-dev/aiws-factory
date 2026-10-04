@@ -1,6 +1,7 @@
 package com.example.crm.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.example.crm.App;
@@ -13,12 +14,15 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /** Exercises the HTTP layer against a real server on an ephemeral port. */
@@ -50,6 +54,24 @@ class CustomerHandlerTest {
         .POST(HttpRequest.BodyPublishers.ofString(json))
         .build();
     return client.send(request, HttpResponse.BodyHandlers.ofString());
+  }
+
+  private HttpResponse<String> put(String path, String json) throws Exception {
+    HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
+        .header("Content-Type", "application/json")
+        .PUT(HttpRequest.BodyPublishers.ofString(json))
+        .build();
+    return client.send(request, HttpResponse.BodyHandlers.ofString());
+  }
+
+  private JsonNode customers() throws Exception {
+    return CustomerHandler.JSON.readTree(get("").body());
+  }
+
+  private static Map<String, String> errorsOf(JsonNode body) {
+    Map<String, String> errors = new HashMap<>();
+    body.get("errors").fields().forEachRemaining(e -> errors.put(e.getKey(), e.getValue().asText()));
+    return errors;
   }
 
   @Test
@@ -194,5 +216,213 @@ class CustomerHandlerTest {
     JsonNode body = CustomerHandler.JSON.readTree(response.body());
     assertEquals(2, body.get("id").asLong());
     assertEquals("02438251234", body.get("phone").asText());
+  }
+
+  @Test
+  @DisplayName("TC-61: PUT /api/customers/{id} returns 200 with the updated customer and GET reads it back")
+  void updateReturns200AndGetReadsItBack() throws Exception {
+    HttpResponse<String> response =
+        put("/1", "{\"name\":\"  Nguyen Van Anh \",\"email\":\" anh@example.com \",\"phone\":\" 0987.654-321 \"}");
+
+    assertEquals(200, response.statusCode());
+    assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertEquals(1, body.get("id").asLong());
+    assertEquals("Nguyen Van Anh", body.get("name").asText());
+    assertEquals("anh@example.com", body.get("email").asText());
+    assertEquals("0987654321", body.get("phone").asText());
+    assertEquals("ACTIVE", body.get("status").asText());
+
+    JsonNode fetched = CustomerHandler.JSON.readTree(get("/1").body());
+    assertEquals(body, fetched);
+    assertEquals(1, customers().size());
+  }
+
+  @ParameterizedTest(name = "[{index}]")
+  @MethodSource("bodiesWithoutPhoneForUpdate")
+  @DisplayName("TC-62: PUT /api/customers/{id} without a phone number returns 200 with a null phone")
+  void updateWithoutPhoneClearsPhone(String json) throws Exception {
+    assertEquals(201, post("{\"name\":\"Tran Thi Binh\",\"email\":\"binh@example.com\",\"phone\":\"0912345678\"}").statusCode());
+
+    HttpResponse<String> response = put("/2", json);
+
+    assertEquals(200, response.statusCode());
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertTrue(body.has("phone"));
+    assertTrue(body.get("phone").isNull());
+    assertEquals("ACTIVE", body.get("status").asText());
+
+    HttpResponse<String> fetched = get("/2");
+
+    assertEquals(200, fetched.statusCode());
+    assertTrue(CustomerHandler.JSON.readTree(fetched.body()).get("phone").isNull());
+  }
+
+  private static Stream<String> bodiesWithoutPhoneForUpdate() {
+    return Stream.of(
+        "{\"name\":\"Tran Thi Binh\",\"email\":\"binh@example.com\"}",
+        "{\"name\":\"Tran Thi Binh\",\"email\":\"binh@example.com\",\"phone\":null}",
+        "{\"name\":\"Tran Thi Binh\",\"email\":\"binh@example.com\",\"phone\":\"\"}",
+        "{\"name\":\"Tran Thi Binh\",\"email\":\"binh@example.com\",\"phone\":\"   \"}");
+  }
+
+  @Test
+  @DisplayName("TC-63: PUT /api/customers/{id} ignores id and status in the body")
+  void updateIgnoresIdAndStatusInBody() throws Exception {
+    HttpResponse<String> response =
+        put("/1", "{\"id\":99,\"name\":\"Nguyen Van Anh\",\"email\":\"anh@example.com\",\"phone\":\"0987654321\",\"status\":\"INACTIVE\"}");
+
+    assertEquals(200, response.statusCode());
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertEquals(1, body.get("id").asLong());
+    assertEquals("ACTIVE", body.get("status").asText());
+    assertEquals("Nguyen Van Anh", body.get("name").asText());
+
+    JsonNode fetched = CustomerHandler.JSON.readTree(get("/1").body());
+    assertEquals("ACTIVE", fetched.get("status").asText());
+    assertEquals("0987654321", fetched.get("phone").asText());
+    assertEquals(404, get("/99").statusCode());
+    assertEquals(1, customers().size());
+  }
+
+  @ParameterizedTest(name = "[{index}]")
+  @MethodSource("invalidUpdateBodies")
+  @DisplayName("TC-64: PUT /api/customers/{id} with invalid fields returns a 400 problem with errors and changes nothing")
+  void updateInvalidReturnsProblemAndChangesNothing(String json, Map<String, String> expectedErrors) throws Exception {
+    JsonNode before = customers();
+
+    HttpResponse<String> response = put("/1", json);
+
+    assertEquals(400, response.statusCode());
+    assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/problem+json"));
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertEquals("Validation failed", body.get("title").asText());
+    assertEquals(expectedErrors, errorsOf(body));
+    assertEquals(before, customers());
+  }
+
+  private static Stream<Arguments> invalidUpdateBodies() {
+    return Stream.of(
+        Arguments.of("{\"email\":\"an@example.com\"}", Map.of("name", "must not be blank")),
+        Arguments.of("{\"name\":\"Nguyen Van An\"}", Map.of("email", "must be a valid email address")),
+        Arguments.of(
+            "{\"name\":\"Nguyen Van An\",\"email\":\"an@example.com\",\"phone\":\"0412345678\"}",
+            Map.of("phone", "must be a valid phone number")),
+        Arguments.of(
+            "{\"name\":\"\",\"email\":\"x\",\"phone\":\"0412345678\"}",
+            Map.of(
+                "name", "must not be blank",
+                "email", "must be a valid email address",
+                "phone", "must be a valid phone number")));
+  }
+
+  @Test
+  @DisplayName("TC-65: PUT /api/customers/{id} with the email or phone of another customer returns a 400 problem")
+  void updateWithValueOfAnotherCustomerReturnsProblem() throws Exception {
+    assertEquals(201, post("{\"name\":\"Tran Thi Binh\",\"email\":\"binh@example.com\",\"phone\":\"0912345678\"}").statusCode());
+    JsonNode before = customers();
+    assertEquals(2, before.size());
+
+    HttpResponse<String> byEmail = put("/1", "{\"name\":\"Nguyen Van An\",\"email\":\"BINH@Example.com\"}");
+
+    assertEquals(400, byEmail.statusCode());
+    assertTrue(byEmail.headers().firstValue("Content-Type").orElse("").startsWith("application/problem+json"));
+    assertEquals(Map.of("email", "is already used by another customer"), errorsOf(CustomerHandler.JSON.readTree(byEmail.body())));
+
+    HttpResponse<String> byPhone =
+        put("/1", "{\"name\":\"Nguyen Van An\",\"email\":\"an@example.com\",\"phone\":\"+84 912 345 678\"}");
+
+    assertEquals(400, byPhone.statusCode());
+    assertTrue(byPhone.headers().firstValue("Content-Type").orElse("").startsWith("application/problem+json"));
+    assertEquals(Map.of("phone", "is already used by another customer"), errorsOf(CustomerHandler.JSON.readTree(byPhone.body())));
+
+    assertEquals(before, customers());
+  }
+
+  @Test
+  @DisplayName("TC-66: PUT /api/customers/{id} keeps its own email and phone and returns 200")
+  void updateKeepsOwnEmailAndPhone() throws Exception {
+    assertEquals(201, post("{\"name\":\"Tran Thi Binh\",\"email\":\"binh@example.com\",\"phone\":\"0912345678\"}").statusCode());
+
+    HttpResponse<String> response =
+        put("/2", "{\"name\":\"Tran Thi Binh An\",\"email\":\"BINH@Example.com\",\"phone\":\"+84 912 345 678\"}");
+
+    assertEquals(200, response.statusCode());
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertEquals(2, body.get("id").asLong());
+    assertEquals("Tran Thi Binh An", body.get("name").asText());
+    assertEquals("BINH@Example.com", body.get("email").asText());
+    assertEquals("0912345678", body.get("phone").asText());
+
+    JsonNode fetched = CustomerHandler.JSON.readTree(get("/2").body());
+    assertEquals("BINH@Example.com", fetched.get("email").asText());
+    assertEquals("0912345678", fetched.get("phone").asText());
+  }
+
+  @ParameterizedTest(name = "[{index}]")
+  @MethodSource("unknownCustomerBodies")
+  @DisplayName("TC-67: PUT /api/customers/{id} for an unknown id returns a 404 problem before validation")
+  void updateUnknownIdReturns404BeforeValidation(String json) throws Exception {
+    JsonNode before = customers();
+
+    HttpResponse<String> response = put("/999", json);
+
+    assertEquals(404, response.statusCode());
+    assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/problem+json"));
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertEquals("Not Found", body.get("title").asText());
+    assertEquals("Customer 999 not found", body.get("detail").asText());
+    assertFalse(body.has("errors"));
+    assertEquals(before, customers());
+  }
+
+  private static Stream<String> unknownCustomerBodies() {
+    return Stream.of(
+        "{\"name\":\"Nguyen Van Anh\",\"email\":\"anh@example.com\",\"phone\":\"0987654321\"}",
+        "{\"name\":\"\",\"email\":\"x\",\"phone\":\"0412345678\"}");
+  }
+
+  @ParameterizedTest(name = "[{index}]")
+  @MethodSource("malformedUpdateRequests")
+  @DisplayName("TC-68: PUT /api/customers/{id} with a body that is not valid JSON returns 400 Malformed JSON before the lookup")
+  void updateMalformedJsonReturns400(String path) throws Exception {
+    JsonNode before = customers();
+
+    HttpResponse<String> response = put(path, "{\"name\":");
+
+    assertEquals(400, response.statusCode());
+    assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/problem+json"));
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertEquals("Malformed JSON", body.get("title").asText());
+    assertEquals("The request body is not valid JSON", body.get("detail").asText());
+    assertFalse(body.has("errors"));
+    assertEquals(before, customers());
+  }
+
+  private static Stream<String> malformedUpdateRequests() {
+    return Stream.of("/1", "/999");
+  }
+
+  @ParameterizedTest(name = "[{index}]")
+  @MethodSource("unroutedUpdatePaths")
+  @DisplayName("TC-69: PUT on a path that is not /api/customers/{digits} returns the 404 fallback")
+  void updateOnUnroutedPathReturnsFallback(String path, String detail) throws Exception {
+    JsonNode before = customers();
+
+    HttpResponse<String> response = put(path, "{\"name\":\"Nguyen Van Anh\",\"email\":\"anh@example.com\",\"phone\":\"0987654321\"}");
+
+    assertEquals(404, response.statusCode());
+    assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/problem+json"));
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertEquals("Not Found", body.get("title").asText());
+    assertEquals(detail, body.get("detail").asText());
+    assertEquals(before, customers());
+  }
+
+  private static Stream<Arguments> unroutedUpdatePaths() {
+    return Stream.of(
+        Arguments.of("", "No route for PUT /api/customers"),
+        Arguments.of("/abc", "No route for PUT /api/customers/abc"),
+        Arguments.of("/-1", "No route for PUT /api/customers/-1"));
   }
 }

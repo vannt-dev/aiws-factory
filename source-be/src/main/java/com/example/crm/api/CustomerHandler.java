@@ -14,8 +14,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * REST endpoints under /api/customers: GET /api/customers, GET /api/customers/{id} and
- * POST /api/customers. Errors are returned as RFC 9457 problem details.
+ * REST endpoints under /api/customers: GET /api/customers, GET /api/customers/{id},
+ * POST /api/customers and PUT /api/customers/{id}. Errors are returned as RFC 9457 problem details.
  */
 public class CustomerHandler implements HttpHandler {
   private static final Pattern BY_ID = Pattern.compile("^/api/customers/(\\d+)$");
@@ -60,6 +60,11 @@ public class CustomerHandler implements HttpHandler {
     Matcher byId = BY_ID.matcher(path);
     if (byId.matches() && method.equals("GET")) {
       send(exchange, 200, service.get(Long.parseLong(byId.group(1))));
+      return;
+    }
+    if (byId.matches() && method.equals("PUT")) {
+      UpdateCustomerRequest body = JSON.readValue(exchange.getRequestBody(), UpdateCustomerRequest.class);
+      send(exchange, 200, service.update(Long.parseLong(byId.group(1)), body.name(), body.email(), body.phone()));
       return;
     }
     send(exchange, 404, Problem.of(404, "Not Found", "No route for " + method + " " + path));

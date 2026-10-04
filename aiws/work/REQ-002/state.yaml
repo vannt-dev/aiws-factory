@@ -5,8 +5,7 @@ branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
 phase: implementation
-status: blocked
-reason: "budget exceeded: AI runs cost 20.55 USD of 20.00 USD (list-price equivalent). A human continues with `aiws resume REQ-002` (one more budget) or `aiws resume REQ-002 --budget <USD>`"
+status: running
 history:
   - phase: new
     result: created
@@ -76,6 +75,11 @@ history:
     spent_usd: 20.55
     budget_usd: 20
     at: 2026-10-04T07:41:24Z
+  - phase: implementation
+    result: resumed
+    by: Van Nguyen
+    budget_usd: 40
+    at: 2026-10-04T07:45:33Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -139,7 +143,10 @@ tasks:
       - TC-69
     depends_on:
       - T2
-    status: pending
+    status: running
+    base: c2e72ccc6b7ba83f4431006842d670615999b877
+    attempts: 1
+    test_result: pass
   - id: T4
     title: fe - thêm getCustomer và updateCustomer vào customerApi
     type: feat
@@ -189,5 +196,5 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 9
-blocked_by: budget
+run_seq: 10
+budget_usd: 40
