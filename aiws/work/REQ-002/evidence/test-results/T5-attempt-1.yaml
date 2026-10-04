@@ -1,0 +1,129 @@
+req: REQ-002
+task: T5
+attempt: 1
+run: run-0012
+at: 2026-10-04T07:50:05Z
+tests:
+  - TC-74
+  - TC-75
+result: pass
+suites:
+  - side: fe
+    command: npm test --prefix source-fe
+    exit_code: 0
+    duration_ms: 758
+    output_tail: |-
+      ... a problem response
+        ---
+        duration_ms: 0.8272
+        ...
+      # Subtest: TC-42: createCustomer sends the phone value exactly as entered
+      ok 4 - TC-42: createCustomer sends the phone value exactly as entered
+        ---
+        duration_ms: 0.4088
+        ...
+      # Subtest: TC-70: updateCustomer sends PUT /api/customers/{id} with the input exactly as entered
+      ok 5 - TC-70: updateCustomer sends PUT /api/customers/{id} with the input exactly as entered
+        ---
+        duration_ms: 0.5532
+        ...
+      # Subtest: TC-71: updateCustomer throws ApiError with the status and field errors of the problem
+      ok 6 - TC-71: updateCustomer throws ApiError with the status and field errors of the problem
+        ---
+        duration_ms: 0.5909
+        ...
+      # Subtest: TC-72: getCustomer calls GET /api/customers/{id} without a body and returns the customer
+      ok 7 - TC-72: getCustomer calls GET /api/customers/{id} without a body and returns the customer
+        ---
+        duration_ms: 0.3177
+        ...
+      # Subtest: TC-73: getCustomer throws ApiError when the API returns an error
+      ok 8 - TC-73: getCustomer throws ApiError when the API returns an error
+        ---
+        duration_ms: 0.49
+        ...
+      # Subtest: TC-43: createCustomer throws ApiError with the phone field error returned by the API
+      ok 9 - TC-43: createCustomer throws ApiError with the phone field error returned by the API
+        ---
+        duration_ms: 0.792
+        ...
+      # Subtest: renderCustomerTable shows one row per customer with a translated status
+      ok 10 - renderCustomerTable shows one row per customer with a translated status
+        ---
+        duration_ms: 3.4717
+        ...
+      # Subtest: renderCustomerTable escapes HTML in customer data
+      ok 11 - renderCustomerTable escapes HTML in customer data
+        ---
+        duration_ms: 0.4441
+        ...
+      # Subtest: renderCustomerTable shows an empty state
+      ok 12 - renderCustomerTable shows an empty state
+        ---
+        duration_ms: 0.256
+        ...
+      # Subtest: TC-36: renderCustomerTable has a phone column between email and status
+      ok 13 - TC-36: renderCustomerTable has a phone column between email and status
+        ---
+        duration_ms: 0.6882
+        ...
+      # Subtest: TC-37: renderCustomerTable shows a 10-character phone as 4-3-3
+      ok 14 - TC-37: renderCustomerTable shows a 10-character phone as 4-3-3
+        ---
+        duration_ms: 0.3314
+        ...
+      # Subtest: TC-38: renderCustomerTable shows an 11-character phone as 3-4-4
+      ok 15 - TC-38: renderCustomerTable shows an 11-character phone as 3-4-4
+        ---
+        duration_ms: 0.3502
+        ...
+      # Subtest: TC-39: renderCustomerTable shows an em dash when there is no phone
+      ok 16 - TC-39: renderCustomerTable shows an em dash when there is no phone
+        ---
+        duration_ms: 0.4603
+        ...
+      # Subtest: TC-40: renderCustomerTable shows a phone of any other length verbatim and HTML-escaped
+      ok 17 - TC-40: renderCustomerTable shows a phone of any other length verbatim and HTML-escaped
+        ---
+        duration_ms: 0.3754
+        ...
+      # Subtest: TC-41: renderCustomerTable formats the raw phone before escaping it
+      ok 18 - TC-41: renderCustomerTable formats the raw phone before escaping it
+        ---
+        duration_ms: 0.5318
+        ...
+      # Subtest: TC-74: renderCustomerTable adds an action column with one edit button carrying the id per row
+      ok 19 - TC-74: renderCustomerTable adds an action column with one edit button carrying the id per row
+        ---
+        duration_ms: 0.7263
+        ...
+      # Subtest: TC-75: renderCustomerTable escapes the id inside data-edit-id
+      ok 20 - TC-75: renderCustomerTable escapes the id inside data-edit-id
+        ---
+        duration_ms: 0.4006
+        ...
+      # Subtest: TC-33: formatPhone formats a 10-character string as 4-3-3
+      ok 21 - TC-33: formatPhone formats a 10-character string as 4-3-3
+        ---
+        duration_ms: 2.2171
+        ...
+      # Subtest: TC-34: formatPhone formats an 11-character string as 3-4-4
+      ok 22 - TC-34: formatPhone formats an 11-character string as 3-4-4
+        ---
+        duration_ms: 0.2406
+        ...
+      # Subtest: TC-35: formatPhone returns a string of any other length unchanged
+      ok 23 - TC-35: formatPhone returns a string of any other length unchanged
+        ---
+        duration_ms: 0.2831
+        ...
+      1..23
+      # tests 23
+      # suites 0
+      # pass 23
+      # fail 0
+      # cancelled 0
+      # skipped 0
+      # todo 0
+      # duration_ms 170.3631
+problems: []

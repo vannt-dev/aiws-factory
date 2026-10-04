@@ -187,7 +187,10 @@ tasks:
       - TC-75
     depends_on:
       - T3
-    status: pending
+    status: running
+    base: 176bc559a5a133c5a11718cffd5f32561ee0f1e4
+    attempts: 1
+    test_result: pass
   - id: T6
     title: fe - thêm form sửa khách hàng hiện lỗi theo từng trường và nối vào trang
     type: feat
@@ -211,5 +214,5 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 11
+run_seq: 12
 budget_usd: 40
