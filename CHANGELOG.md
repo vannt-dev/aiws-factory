@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-04
+
+Hardening release driven by the first real requirement run on the demo
+workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
+
 ### Added
 
 - `aiws status` shows the AI runs of a requirement: how many, their total time
@@ -124,5 +129,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/vannt-dev/aiws-factory/releases/tag/v0.1.0
