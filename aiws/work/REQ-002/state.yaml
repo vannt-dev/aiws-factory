@@ -64,6 +64,12 @@ history:
     run: run-0008
     commit: "3443288"
     at: 2026-10-04T07:39:10Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0009
+    commit: e83a2e9
+    at: 2026-10-04T07:41:24Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -104,10 +110,10 @@ tasks:
       - TC-60
     depends_on:
       - T1
-    status: running
-    base: 1be8d6e25c61425fde50170e62bb9e476cfa76db
+    status: done
     attempts: 1
     test_result: pass
+    commit: e83a2e9638d1dfe02ad357741309db7d2b0f0d46
   - id: T3
     title: be - thêm endpoint PUT /api/customers/{id} sửa khách hàng
     type: feat
