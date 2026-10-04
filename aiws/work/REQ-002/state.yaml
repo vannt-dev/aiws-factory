@@ -104,7 +104,10 @@ tasks:
       - TC-60
     depends_on:
       - T1
-    status: pending
+    status: running
+    base: 1be8d6e25c61425fde50170e62bb9e476cfa76db
+    attempts: 1
+    test_result: pass
   - id: T3
     title: be - thêm endpoint PUT /api/customers/{id} sửa khách hàng
     type: feat
@@ -174,4 +177,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 8
+run_seq: 9

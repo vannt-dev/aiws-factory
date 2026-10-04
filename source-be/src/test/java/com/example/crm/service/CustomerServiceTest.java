@@ -20,16 +20,19 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CustomerServiceTest {
   // Rows contain control characters, so invocations are named by index only.
   private static final String ROW_NAME = "[{index}]";
 
+  private InMemoryCustomerRepository repository;
   private CustomerService service;
 
   @BeforeEach
   void setUp() {
-    service = new CustomerService(new InMemoryCustomerRepository());
+    repository = new InMemoryCustomerRepository();
+    service = new CustomerService(repository);
   }
 
   @Test
@@ -328,6 +331,289 @@ class CustomerServiceTest {
     return Stream.of(
         arguments("", "x", "0912345678", "is already used by another customer"),
         arguments(" ", "x", "0412345678", "must be a valid phone number"));
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("updatedFields")
+  @DisplayName("TC-48: update stores trimmed name and email, normalized phone, and does not insert a customer")
+  void updateStoresUpdatedFieldsWithoutInserting(
+      String currentPhone, String name, String email, String phone, String expectedName, String expectedEmail, String expectedPhone) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", currentPhone, CustomerStatus.ACTIVE);
+
+    Customer updated = service.update(2, name, email, phone);
+
+    assertEquals(new Customer(2, expectedName, expectedEmail, expectedPhone, CustomerStatus.ACTIVE), updated);
+    assertEquals(updated, service.get(2));
+    assertEquals(2, service.list().size());
+    assertEquals(new Customer(1, "Seed", "seed@example.com", null, CustomerStatus.ACTIVE), service.get(1));
+  }
+
+  private static Stream<Arguments> updatedFields() {
+    return Stream.of(
+        arguments(
+            "0912345678", "  Nguyen Van Anh ", " anh@example.com ", " 0987.654-321 ",
+            "Nguyen Van Anh", "anh@example.com", "0987654321"),
+        arguments(
+            "0912345678", "Nguyen Van Anh", "anh@example.com", "+84 24 3825 1234",
+            "Nguyen Van Anh", "anh@example.com", "02438251234"),
+        arguments(
+            "0912345678", "Nguyen Van Anh", "anh@example.com", "84 987 654 321",
+            "Nguyen Van Anh", "anh@example.com", "0987654321"),
+        arguments(
+            null, "Nguyen Van An", "an@example.com", "0987654321",
+            "Nguyen Van An", "an@example.com", "0987654321"));
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("validNames")
+  @DisplayName("TC-49: update accepts a name at the length boundary, measured after trim")
+  void updateAcceptsNameAtLengthBoundary(String name, String expectedName) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", "0912345678", CustomerStatus.ACTIVE);
+
+    Customer updated = service.update(2, name, "an@example.com", "0912345678");
+
+    assertEquals(expectedName, updated.name());
+    assertEquals(expectedName, service.get(2).name());
+  }
+
+  private static Stream<Arguments> validNames() {
+    return Stream.of(
+        arguments("x", "x"),
+        arguments("x".repeat(100), "x".repeat(100)),
+        arguments(" " + "x".repeat(100) + " ", "x".repeat(100)));
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @NullSource
+  @MethodSource("blankPhones")
+  @DisplayName("TC-50: update with no phone number clears the phone currently stored")
+  void updateWithoutPhoneClearsStoredPhone(String phone) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", "0912345678", CustomerStatus.ACTIVE);
+
+    Customer updated = service.update(2, "Nguyen Van An", "an@example.com", phone);
+
+    assertEquals(new Customer(2, "Nguyen Van An", "an@example.com", null, CustomerStatus.ACTIVE), updated);
+    assertNull(service.get(2).phone());
+    assertEquals(2, service.list().size());
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("statuses")
+  @DisplayName("TC-51: update keeps the status of an ACTIVE or INACTIVE customer")
+  void updateKeepsStatus(CustomerStatus status) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", "0912345678", status);
+
+    Customer updated = service.update(2, "Nguyen Van Anh", "anh@example.com", "0987654321");
+
+    assertEquals(new Customer(2, "Nguyen Van Anh", "anh@example.com", "0987654321", status), updated);
+    assertEquals(updated, service.get(2));
+  }
+
+  private static Stream<CustomerStatus> statuses() {
+    return Stream.of(CustomerStatus.ACTIVE, CustomerStatus.INACTIVE);
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("invalidFieldsWithSingleError")
+  @DisplayName("TC-52: update rejects one field that breaks the create rules, with the same message as create")
+  void updateRejectsSingleInvalidField(String name, String email, String phone, Map<String, String> expectedErrors) {
+    insertSeedAndAn();
+    List<Customer> before = service.list();
+
+    ValidationException error = assertThrows(ValidationException.class, () -> service.update(2, name, email, phone));
+
+    assertEquals(expectedErrors, error.errors());
+    assertEquals(before, service.list());
+  }
+
+  private static Stream<Arguments> invalidFieldsWithSingleError() {
+    String validName = "Nguyen Van Anh";
+    String validEmail = "anh@example.com";
+    String validPhone = "0987654321";
+    Map<String, String> blankName = Map.of("name", "must not be blank");
+    Map<String, String> invalidEmail = Map.of("email", "must be a valid email address");
+    Map<String, String> invalidPhone = Map.of("phone", "must be a valid phone number");
+    return Stream.of(
+        arguments(null, validEmail, validPhone, blankName),
+        arguments("", validEmail, validPhone, blankName),
+        arguments("   ", validEmail, validPhone, blankName),
+        arguments("x".repeat(101), validEmail, validPhone, Map.of("name", "must be at most 100 characters")),
+        arguments(validName, null, validPhone, invalidEmail),
+        arguments(validName, "", validPhone, invalidEmail),
+        arguments(validName, "x", validPhone, invalidEmail),
+        arguments(validName, "a@b", validPhone, invalidEmail),
+        arguments(validName, validEmail, "0412345678", invalidPhone),
+        arguments(validName, validEmail, "091234567", invalidPhone),
+        arguments(validName, validEmail, "0912a45678", invalidPhone),
+        arguments(validName, validEmail, "84 24 3825 1234", invalidPhone),
+        arguments(validName, validEmail, "-", invalidPhone));
+  }
+
+  @Test
+  @DisplayName("TC-53: update reports the errors of all three fields in one ValidationException")
+  void updateCollectsErrorsOfAllFields() {
+    insertSeedAndAn();
+    repository.insert("Tran Thi Binh", "binh@example.com", "0987654321", CustomerStatus.ACTIVE);
+    List<Customer> before = service.list();
+
+    ValidationException error =
+        assertThrows(ValidationException.class, () -> service.update(2, "", "x", "0412345678"));
+    assertEquals(
+        Map.of("name", "must not be blank", "email", "must be a valid email address", "phone", "must be a valid phone number"),
+        error.errors());
+
+    ValidationException duplicatePhone =
+        assertThrows(ValidationException.class, () -> service.update(2, " ", "x", "0987654321"));
+    assertEquals(
+        Map.of("name", "must not be blank", "email", "must be a valid email address", "phone", "is already used by another customer"),
+        duplicatePhone.errors());
+    assertEquals(before, service.list());
+  }
+
+  @Test
+  @DisplayName("TC-54: update validates the stored phone again even when it is unchanged")
+  void updateRevalidatesUnchangedPhone() {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Le Van Cuong", "cuong@example.com", "01234567890", CustomerStatus.ACTIVE);
+    List<Customer> before = service.list();
+
+    ValidationException error =
+        assertThrows(ValidationException.class, () -> service.update(2, "Le Van Cuong Moi", "cuong@example.com", "01234567890"));
+
+    assertEquals(Map.of("phone", "must be a valid phone number"), error.errors());
+    assertEquals(before, service.list());
+    assertEquals("Le Van Cuong", service.get(2).name());
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("duplicateEmails")
+  @DisplayName("TC-55: update rejects an email of another customer, regardless of status and letter case")
+  void updateRejectsEmailOfAnotherCustomer(CustomerStatus binhStatus, String email) {
+    repository.insert("Tran Thi Binh", "binh@example.com", null, binhStatus);
+    repository.insert("Nguyen Van An", "an@example.com", "0912345678", CustomerStatus.ACTIVE);
+    List<Customer> before = service.list();
+
+    ValidationException error =
+        assertThrows(ValidationException.class, () -> service.update(2, "Nguyen Van An", email, "0912345678"));
+
+    assertEquals(Map.of("email", "is already used by another customer"), error.errors());
+    assertEquals(before, service.list());
+  }
+
+  private static Stream<Arguments> duplicateEmails() {
+    return Stream.of(
+        arguments(CustomerStatus.ACTIVE, "binh@example.com"),
+        arguments(CustomerStatus.ACTIVE, "BINH@Example.com"),
+        arguments(CustomerStatus.ACTIVE, " binh@example.com "),
+        arguments(CustomerStatus.INACTIVE, "binh@example.com"),
+        arguments(CustomerStatus.INACTIVE, "BINH@Example.com"));
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("duplicatePhones")
+  @DisplayName("TC-56: update rejects a phone held by another ACTIVE customer after normalization")
+  void updateRejectsPhoneOfAnotherActiveCustomer(CustomerStatus anStatus, String anPhone, String phone) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Tran Thi Binh", "binh@example.com", "0912345678", CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", anPhone, anStatus);
+    List<Customer> before = service.list();
+
+    ValidationException error =
+        assertThrows(ValidationException.class, () -> service.update(3, "Nguyen Van An", "an@example.com", phone));
+
+    assertEquals(Map.of("phone", "is already used by another customer"), error.errors());
+    assertEquals(before, service.list());
+  }
+
+  private static Stream<Arguments> duplicatePhones() {
+    return Stream.of(
+        arguments(CustomerStatus.ACTIVE, "0987654321", "0912345678"),
+        arguments(CustomerStatus.ACTIVE, "0987654321", "+84 912 345 678"),
+        arguments(CustomerStatus.INACTIVE, null, "0912345678"));
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @ValueSource(strings = {"0912345678", "+84 912 345 678"})
+  @DisplayName("TC-57: update rejects an INACTIVE customer that sends back a phone given to an ACTIVE customer")
+  void updateRejectsInactiveCustomerReclaimingPhone(String phone) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", "0912345678", CustomerStatus.INACTIVE);
+    repository.insert("Tran Thi Binh", "binh@example.com", "0912345678", CustomerStatus.ACTIVE);
+    List<Customer> before = service.list();
+
+    ValidationException error =
+        assertThrows(ValidationException.class, () -> service.update(2, "Nguyen Van Anh", "an@example.com", phone));
+
+    assertEquals(Map.of("phone", "is already used by another customer"), error.errors());
+    assertEquals(before, service.list());
+    assertEquals("Nguyen Van An", service.get(2).name());
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("keepOwnFields")
+  @DisplayName("TC-58: update accepts the email and phone already held by the same customer")
+  void updateAcceptsOwnEmailAndPhone(
+      String name, String email, String phone, String expectedEmail, String expectedPhone) {
+    insertSeedAndAn();
+
+    Customer updated = service.update(2, name, email, phone);
+
+    assertEquals(new Customer(2, name, expectedEmail, expectedPhone, CustomerStatus.ACTIVE), updated);
+    assertEquals(updated, service.get(2));
+    assertEquals(2, service.list().size());
+  }
+
+  private static Stream<Arguments> keepOwnFields() {
+    return Stream.of(
+        arguments("Nguyen Van Anh", "an@example.com", "0912345678", "an@example.com", "0912345678"),
+        arguments("Nguyen Van An", "AN@Example.com", "0912345678", "AN@Example.com", "0912345678"),
+        arguments("Nguyen Van An", "an@example.com", "+84 912 345 678", "an@example.com", "0912345678"),
+        arguments("Nguyen Van Anh", "AN@Example.com", "+84 912 345 678", "AN@Example.com", "0912345678"));
+  }
+
+  @Test
+  @DisplayName("TC-59: update accepts a phone held only by an INACTIVE customer")
+  void updateAcceptsPhoneHeldByInactiveCustomer() {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Old", "old@example.com", "0987654321", CustomerStatus.INACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", "0912345678", CustomerStatus.ACTIVE);
+
+    Customer updated = service.update(3, "Nguyen Van An", "an@example.com", "0987654321");
+
+    assertEquals(new Customer(3, "Nguyen Van An", "an@example.com", "0987654321", CustomerStatus.ACTIVE), updated);
+    assertEquals(updated, service.get(3));
+    assertEquals(new Customer(2, "Old", "old@example.com", "0987654321", CustomerStatus.INACTIVE), service.get(2));
+    assertEquals(3, service.list().size());
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("updatedFieldsForUnknownId")
+  @DisplayName("TC-60: update throws NotFoundException for an unknown id before validating the fields")
+  void updateThrowsNotFoundBeforeValidation(String name, String email, String phone) {
+    insertSeedAndAn();
+    List<Customer> before = service.list();
+
+    NotFoundException error = assertThrows(NotFoundException.class, () -> service.update(999, name, email, phone));
+
+    assertEquals("Customer 999 not found", error.getMessage());
+    assertEquals(before, service.list());
+    assertThrows(NotFoundException.class, () -> service.get(999));
+  }
+
+  private static Stream<Arguments> updatedFieldsForUnknownId() {
+    return Stream.of(
+        arguments("Nguyen Van Anh", "anh@example.com", "0987654321"),
+        arguments("", "x", "0412345678"),
+        arguments("Nguyen Van An", "an@example.com", "0912345678"));
+  }
+
+  private void insertSeedAndAn() {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", "0912345678", CustomerStatus.ACTIVE);
   }
 
   @Test
