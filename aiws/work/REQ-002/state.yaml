@@ -72,7 +72,10 @@ tasks:
       - TC-46
       - TC-47
     depends_on: []
-    status: pending
+    status: running
+    base: e534901e550d265bd678afdb30e91ab78b5f4541
+    attempts: 1
+    test_result: pass
   - id: T2
     title: be - tách hàm kiểm tra dùng chung và thêm CustomerService.update
     type: feat
@@ -165,4 +168,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 7
+run_seq: 8
