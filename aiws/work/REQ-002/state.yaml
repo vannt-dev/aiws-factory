@@ -92,6 +92,12 @@ history:
     run: run-0011
     commit: b0a3050
     at: 2026-10-04T07:49:30Z
+  - phase: implementation
+    task: T5
+    result: done
+    run: run-0012
+    commit: 9d9bec3
+    at: 2026-10-04T07:50:05Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -187,10 +193,10 @@ tasks:
       - TC-75
     depends_on:
       - T3
-    status: running
-    base: 176bc559a5a133c5a11718cffd5f32561ee0f1e4
+    status: done
     attempts: 1
     test_result: pass
+    commit: 9d9bec3fa7ec6592dcfac0d9c2348f2027396936
   - id: T6
     title: fe - thêm form sửa khách hàng hiện lỗi theo từng trường và nối vào trang
     type: feat
