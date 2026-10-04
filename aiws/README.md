@@ -113,7 +113,7 @@ A worktree is also the simplest way to let an assistant coordinate a requirement
 | --- | --- |
 | 1. Orchestrator | Agents of a locked phase are never called. Approvals carry the hash of 02/03/api-contract; editing those files invalidates the approval. Retries are capped; beyond the cap the requirement is `blocked`. |
 | 2. Tool permissions | Headless: `claude -p --permission-mode dontAsk --allowedTools …` per contract. The reviewer has no Bash; the developer may only run the build/test commands. |
-| 3. Hook | `aiws guard` (PreToolUse for Edit/Write/Read/Bash/PowerShell) reads the `AIWS_*` environment or the `aiws/REQ-*` branch plus `state.yaml` and blocks writes outside the scope. Nested shells such as `bash -c`, `node …/aiws.js approve` or `git -C . push` are analysed too. |
+| 3. Hook | `aiws guard` (PreToolUse for Edit/Write/Read/Bash/PowerShell) reads the `AIWS_*` environment or the `aiws/REQ-*` branch plus `state.yaml` and blocks writes outside the scope. Nested shells such as `bash -c`, `node …/aiws.js approve` or `git -C . push` are analysed too. Text that only mentions a denied command (a search pattern, a commit message, a here-document for `git commit`) is not blocked; anything that could run that text (shells, `eval`, pipes into an interpreter, `$(...)`, variables, aliases) still is. |
 | 4. Git + diff-scope | After EVERY AI run the orchestrator compares git state before and after: files outside the scope are reverted and the run fails, however they were written. Commits carry trailers; `aiws check …` is meant for CI. |
 
 Diff-scope is the real guarantee; the hook only blocks earlier. Diff-scope **cannot see files ignored by `.gitignore`**, so never keep logic in build output.

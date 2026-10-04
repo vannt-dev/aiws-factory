@@ -157,6 +157,49 @@ test('guard --bash: a maintainer session may commit and drive aiws, but an AI ma
   assert.equal(run('cat source-be/.env'), 2);
 });
 
+test('guard --bash: text that only mentions a denied command is allowed, every way of running it is not', () => {
+  const root = makeWorkspace();
+  const bash = (command, env) => hook(root, { tool_name: 'Bash', tool_input: { command } }, env).status;
+
+  // maintainer session: a gate command named in a search pattern, a commit message or a here-document
+  const mentions = [
+    'grep -n "aiws approve" aiws/README.md',
+    'git commit -q -m "docs: explain the aiws approve gate"',
+    "echo 'ask a human to run aiws approve REQ-001 design'",
+    "git commit -q -F - <<'EOF'\ndocs: describe aiws resume REQ-001\n\nThe body mentions aiws unlock.\nEOF",
+  ];
+  for (const command of mentions) assert.equal(bash(command), 0, command);
+
+  // ...while every way of actually running one stays blocked
+  const runs = [
+    'aiws approve REQ-001 design --yes',
+    '"aiws" approve REQ-001 design', // a quoted command word still runs
+    `'aiws' "approve" REQ-001 design`,
+    'bash -c "aiws approve REQ-001 design"',
+    'echo "aiws approve REQ-001 design --yes" | sh',
+    'eval "aiws approve REQ-001 design"',
+    'echo "$(aiws approve REQ-001 design)"',
+    'X="aiws approve REQ-001 design"; $X',
+    "alias a='aiws approve REQ-001 design'; a",
+    "bash <<'EOF'\naiws approve REQ-001 design\nEOF",
+    'node aiws/adapters/cli/bin/aiws.js approve REQ-001 design',
+    "git -c alias.x='!aiws approve REQ-001 design' x",
+    'grep "aiws approve REQ-001 design', // unbalanced quote: no guessing
+  ];
+  for (const command of runs) assert.equal(bash(command), 2, command);
+
+  // the PowerShell tool has other quoting rules: its commands are always matched as a whole
+  const ps = hook(root, { tool_name: 'PowerShell', tool_input: { command: 'Write-Output "aiws approve REQ-001 design"' } });
+  assert.equal(ps.status, 2);
+
+  // inside a phase the same holds for the rest of the denylist, and secrets are found even when quoted
+  const agent = inPhase('implementation', { AIWS_TASK: 'T1' });
+  assert.equal(bash('grep -rn "git push origin main" source-be', agent), 0);
+  assert.equal(bash(`'git' push origin main`, agent), 2);
+  assert.equal(bash('git commit -m "a message"', agent), 2);
+  assert.equal(bash('cat "source-be/.env"', agent), 2);
+});
+
 test('human-only commands refuse inside an AI session and without a TTY', () => {
   const root = makeWorkspace({ discover: true });
   ok(root, ['new', 'REQ-001']);

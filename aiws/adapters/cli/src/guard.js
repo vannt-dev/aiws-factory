@@ -56,7 +56,11 @@ export function decide(ws, input, env = process.env) {
 
   if (SHELL_TOOLS.has(tool)) {
     const shellCtx = resolveContext(ws, env);
-    return decideBash(pol, ti.command ?? '', { inPhase: Boolean(shellCtx), orchestrated: shellCtx?.source === 'env' });
+    return decideBash(pol, ti.command ?? '', {
+      inPhase: Boolean(shellCtx),
+      orchestrated: shellCtx?.source === 'env',
+      literalAware: tool === 'Bash', // PowerShell quoting differs: always match the whole command there
+    });
   }
 
   const target = ti.file_path ?? ti.notebook_path ?? ti.path;
@@ -148,18 +152,24 @@ function collapseGitOptions(tokens) {
  *  - maintainer session (no requirement): only the human-only gate commands are blocked.
  * The gate commands (approve, reject, ...) and secret paths are blocked for every AI session.
  */
-export function decideBash(pol, command, { inPhase = true, orchestrated = inPhase } = {}) {
-  const norm = ` ${normalizeCommand(command)} `;
+export function decideBash(pol, command, { inPhase = true, orchestrated = inPhase, literalAware = false } = {}) {
+  const full = ` ${normalizeCommand(command)} `;
+  // The denylist is matched against the command without its literal text (search patterns, commit messages)
+  // when that text provably cannot run; otherwise against everything, as before.
+  const code = literalAware ? stripLiteralText(command) : null;
+  const norm = code === null ? full : ` ${normalizeCommand(code)} `;
   for (const entry of pol.bash_denylist ?? []) {
     const e = normalizeCommand(entry);
     if (!e) continue;
     if (!inPhase && !isHumanOnlyEntry(e)) continue;
     if (!orchestrated && isDriverEntry(e)) continue;
-    const re = new RegExp(`(^|\\s|;)${escapeRe(e)}(?=\\s|;|$)`);
+    // `=` and `!` also start a command: X=aiws ... (assignment) and '!aiws ...' (git alias)
+    const re = new RegExp(`(^|[\\s;=!])${escapeRe(e)}(?=\\s|;|$)`);
     if (re.test(norm)) return deny(`command matches bash_denylist entry '${entry}'`);
   }
+  // Secret paths are always looked for in the whole command, quoted or not.
   const readDeny = matcher(pol.read_deny);
-  for (const tok of norm.split(/[\s;<>]+/).filter(Boolean)) {
+  for (const tok of full.split(/[\s;<>]+/).filter(Boolean)) {
     const t = tok.replace(/^\.\//, '');
     if (readDeny(t) || readDeny(path.posix.basename(t))) return deny(`command references a secret path (${tok}) blocked by read_deny`);
   }
@@ -168,6 +178,59 @@ export function decideBash(pol, command, { inPhase = true, orchestrated = inPhas
 
 function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Programs and builtins that can run text handed to them as a string, a pipe or a here-document.
+const EXEC_SINKS = new Set([
+  ...['bash', 'sh', 'zsh', 'dash', 'ksh', 'fish', 'cmd', 'powershell', 'pwsh'],
+  ...['eval', 'source', 'exec', 'xargs', 'alias', 'trap', 'command', 'builtin', 'env', 'sudo', 'nohup', 'watch', 'parallel', 'ssh', 'make'],
+  ...['node', 'npx', 'npm', 'yarn', 'pnpm', 'bun', 'deno', 'python', 'python3', 'py', 'perl', 'ruby', 'php', 'awk'],
+]);
+
+/**
+ * Returns a Bash command without its literal text, i.e. without here-document bodies and quoted strings of
+ * several words, so that a search pattern or a commit message that merely mentions a denied command does not
+ * count as running it. Returns null when literal text could still be executed, in which case the caller
+ * matches the whole command:
+ *  - any expansion or substitution: `$`, backticks, `<(`, `>(`;
+ *  - an unbalanced quote;
+ *  - a program that runs text (shells, eval, xargs, alias, interpreters, package runners...), or a git alias.
+ * A quoted single word is kept, because the shell runs `"git" push` exactly like `git push`.
+ * This is an early block only: the gate commands themselves refuse to run inside an AI session.
+ */
+export function stripLiteralText(command) {
+  const s = String(command);
+  if (/[`$]|[<>]\(/.test(s)) return null;
+  // here-documents: keep the rest of the line after the marker, drop the body
+  const text = s.replace(/<<-?[ \t]*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\1([^\n]*)\r?\n[\s\S]*?\r?\n[ \t]*\2[ \t]*(?=\r?\n|$)/g, ' $3');
+  let out = '';
+  for (let i = 0; i < text.length;) {
+    const ch = text[i];
+    if (ch === '\\') {
+      out += text.slice(i, i + 2);
+      i += 2;
+    } else if (ch === "'" || ch === '"') {
+      let j = i + 1;
+      while (j < text.length && text[j] !== ch) j += ch === '"' && text[j] === '\\' ? 2 : 1;
+      if (j >= text.length) return null;
+      const inner = text.slice(i + 1, j);
+      out += /\s/.test(inner) ? ' ' : inner;
+      i = j + 1;
+    } else {
+      out += ch;
+      i += 1;
+    }
+  }
+  if (/alias\./i.test(out)) return null;
+  for (const word of out.split(/[\s;&|(){}<>]+/).filter(Boolean)) {
+    const base = word
+      .split(/[\\/]/)
+      .pop()
+      .toLowerCase()
+      .replace(/\.(exe|cmd|bat|ps1)$/, '');
+    if (EXEC_SINKS.has(base)) return null;
+  }
+  return out;
 }
 
 /** Hook entry point: reads the tool call JSON from stdin, exits 2 with a reason to block. */
