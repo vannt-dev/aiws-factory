@@ -80,6 +80,12 @@ history:
     by: Van Nguyen
     budget_usd: 40
     at: 2026-10-04T07:45:33Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0010
+    commit: e61ea26
+    at: 2026-10-04T07:48:50Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -143,10 +149,10 @@ tasks:
       - TC-69
     depends_on:
       - T2
-    status: running
-    base: c2e72ccc6b7ba83f4431006842d670615999b877
+    status: done
     attempts: 1
     test_result: pass
+    commit: e61ea261260bad4b31dfe69d7de108dfd053faf4
   - id: T4
     title: fe - thêm getCustomer và updateCustomer vào customerApi
     type: feat
