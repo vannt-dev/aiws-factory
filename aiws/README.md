@@ -39,7 +39,7 @@ Without `npm link`, run `node aiws/adapters/cli/bin/aiws.js <command>` from the 
 2. **Declare build/test commands**: run `aiws detect` to see the proposal, then `aiws detect --write` to merge it into `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Review the result. Commands run from the workspace root and may differ per OS: `{windows: ..., posix: ...}`.
 3. **Pin down conventions**: open Claude Code at the root, on `main`, and ask: *"Read source-fe/ and fill aiws/skills/fe-conventions/SKILL.md with the REAL conventions in use, each with an example file; mark anything uncertain with [CẦN XÁC NHẬN]"*. Do the same for `be-conventions`, then review and correct them.
 4. **Generate the Claude configuration**: `aiws sync claude` writes `CLAUDE.md`, `.claude/agents`, `.claude/skills` and `.claude/settings.json` (deny rules and the guard hook). Re-run it whenever `aiws/` changes.
-5. **Discovery**: run `aiws discover`, then review and correct `aiws/knowledge/*` and commit.
+5. **Discovery**: run `aiws discover`, then review and correct `aiws/knowledge/*` and commit. The result is committed on the current branch. When that branch is protected, run `aiws discover --branch` instead: the knowledge base goes to a new `aiws/discover-YYYYMMDD` branch (or `--branch=NAME`), which you push and merge through a pull request before the first `aiws new`.
 6. **Write a requirement** in `requirements/REQ-001-<name>.md` and commit it.
 
 ## 2a. Any language, international standards
@@ -92,6 +92,10 @@ When the orchestrator stops, `aiws status REQ-001` tells you why and what to run
 
 Human-only commands (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **refuse to run inside an AI session** and ask you to retype the requirement id. Pass `--yes` in CI scripts.
 
+**Merging the PR:** any merge method works. `aiws approve REQ-001 pr` accepts the merge when the requirement branch is an ancestor of the base (merge commit or fast-forward), or when every file the requirement changed has the same content on the base (squash or rebase). Update your local base branch first. After a squash or rebase the commit ids recorded in `state.yaml` no longer exist on the base, so `aiws trace` finds the task commits by their `Task:` trailer. A merge commit keeps one commit per task and is the best choice for traceability.
+
+**Pausing a run:** `aiws stop REQ-001`, from any terminal or worktree, asks the running `aiws run` to stop after its current step; `aiws run REQ-001` continues later, and no gate command is needed. If the process is killed instead (Ctrl+C, a closed terminal), the task it was working on stays `running` in `state.yaml`: the next `aiws run` keeps the partly written files of that task and tells the developer agent to review them first. Uncommitted files outside the task are still refused.
+
 **Parallel work:** only one requirement may write source code at a time, from implementation until its PR is merged (the source lock). Other requirements can still run analysis and design, each in its own worktree:
 
 ```bash
@@ -99,13 +103,17 @@ aiws new REQ-002 --worktree ../ws-REQ-002
 cd ../ws-REQ-002 && aiws run REQ-002
 ```
 
+A worktree is also the simplest way to let an assistant coordinate a requirement: the main checkout stays on its branch, and the requirement runs next to it.
+
+**The guard hook must work before any agent starts.** A hook that crashes does not block anything, so `aiws run` and `aiws discover` first check it and refuse to start otherwise: `.claude/settings.json` must exist (`aiws sync claude`), and the hook command must be runnable. In a workspace that carries its own CLI (`aiws/adapters/cli`, as in this repository), the hook runs from that folder and needs its `node_modules`; every worktree has its own copy, which `aiws new --worktree` installs. In a project created with `aiws init`, the hook is `aiws guard` and `aiws` must be on PATH. Set `claude.guard_command` in `runtime.yaml` to use another command.
+
 ## 4. Enforcement: four layers, each one still blocks if the previous one is bypassed
 
 | Layer | Implementation |
 | --- | --- |
 | 1. Orchestrator | Agents of a locked phase are never called. Approvals carry the hash of 02/03/api-contract; editing those files invalidates the approval. Retries are capped; beyond the cap the requirement is `blocked`. |
 | 2. Tool permissions | Headless: `claude -p --permission-mode dontAsk --allowedTools …` per contract. The reviewer has no Bash; the developer may only run the build/test commands. |
-| 3. Hook | `aiws guard` (PreToolUse for Edit/Write/Read/Bash/PowerShell) reads the `AIWS_*` environment or the `aiws/REQ-*` branch plus `state.yaml` and blocks writes outside the scope. Nested shells such as `bash -c`, `node …/aiws.js approve` or `git -C . push` are analysed too. |
+| 3. Hook | `aiws guard` (PreToolUse for Edit/Write/Read/Bash/PowerShell) reads the `AIWS_*` environment or the `aiws/REQ-*` branch plus `state.yaml` and blocks writes outside the scope. Nested shells such as `bash -c`, `node …/aiws.js approve` or `git -C . push` are analysed too. Text that only mentions a denied command (a search pattern, a commit message, a here-document for `git commit`) is not blocked; anything that could run that text (shells, `eval`, pipes into an interpreter, `$(...)`, variables, aliases) still is. |
 | 4. Git + diff-scope | After EVERY AI run the orchestrator compares git state before and after: files outside the scope are reverted and the run fails, however they were written. Commits carry trailers; `aiws check …` is meant for CI. |
 
 Diff-scope is the real guarantee; the hook only blocks earlier. Diff-scope **cannot see files ignored by `.gitignore`**, so never keep logic in build output.
@@ -129,7 +137,7 @@ Built-in validator rules: `ac_numbered`, `no_blocking_questions`, `every_ac_has_
 Both modes share the same protection:
 
 - **Automatic:** `aiws run`.
-- **Interactive:** open `claude` on branch `aiws/REQ-001` and ask *"use the architect agent for REQ-001"*. The hook infers the phase from `state.yaml` and blocks writes that belong to another phase.
+- **Interactive:** open `claude` on branch `aiws/REQ-001` and ask *"use the architect agent for REQ-001"*. The hook infers the phase from `state.yaml` and blocks writes that belong to another phase. Such a session may also run `aiws run` and `aiws stop`, and write its own notes outside the workspace; git commands and the gate commands stay blocked. Agents started by `aiws run` get none of these allowances.
 
 On `main`, outside any requirement, you may use Claude to maintain `aiws/` itself (agents, skills, config). Claude can also coordinate the workflow by running `aiws new`, `aiws run` or `aiws status`; each run still stops at the human gates. `source-legacy/`, `requirements/`, `state.yaml` and `approvals/` stay locked. An AI can never run the gate commands `approve`, `reject`, `answer`, `redesign`, `resume` or `unlock`, and inside a phase it cannot start a nested `aiws run` either.
 
@@ -140,13 +148,18 @@ To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 - `aiws/work/REQ/evidence/runs/run-NNNN.json` and `.prompt.md` record the adapter, command, allowed tools, prompt hash, duration, turns, estimated cost, changed files, reverted violations and validation errors.
 - `evidence/test-results/<task>-attempt-N.yaml` records the test command, exit code, a log excerpt and the task's test cases.
 - Task commits carry the trailers `REQ-ID`, `Task`, `Tests` and `AIWS-Run`; `git log --grep "REQ-ID: REQ-001"` lists every change of a requirement.
-- CI runs `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (enable `require_signed` to require GPG/SSH-signed approvals via `aiws approve --sign`) and `aiws trace REQ-001`.
+- CI runs `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (enable `require_signed` to require GPG/SSH-signed approvals via `aiws approve --sign`), `aiws trace REQ-001` and `aiws check build`. The last one re-runs every `<side>_build` and `<side>_test` command of `policies.yaml`, so code about to be merged is rebuilt and retested outside the AI run.
 
 ## 8. Cost
 
-`cost_usd` in the evidence is the **API list-price equivalent** reported by Claude Code. With a Claude subscription (Pro/Max) it only counts against your plan's usage limits; with an API key or Console account it is real spend. Run `/status` in Claude Code to see which applies.
+`aiws status REQ-001` shows the number of AI runs, their total time and the cumulative cost of the requirement, broken down by phase. `cost_usd` in the evidence is the **API list-price equivalent** reported by Claude Code. With a Claude subscription (Pro/Max) it only counts against your plan's usage limits; with an API key or Console account it is real spend. Run `/status` in Claude Code to see which applies.
 
-A real run on the sample project (sonnet, a small requirement with 2 tasks) cost about USD 1.30 equivalent over 8 runs. Change `runtime.yaml → claude.models` to reduce it. `npm test` uses the `scripted` adapter and costs nothing.
+Two real runs for reference. With Sonnet, a small requirement with 2 tasks cost about USD 1.30 equivalent over 8 runs. With Opus on the demo workspace, a requirement with 22 acceptance criteria and 5 tasks cost about USD 27.60 over 10 runs, plus USD 2.40 for discovery. `npm test` uses the `scripted` adapter and costs nothing.
+
+Two controls keep cost in hand:
+
+- **Model per agent.** `runtime.yaml → claude.models` maps each `model_hint` to a model, and `claude.agent_models` overrides it for one agent, for example `developer: sonnet` while design and review stay on Opus. Run `aiws sync claude` afterwards.
+- **Budget per requirement.** `policies.yaml → limits.max_cost_usd_per_req` blocks a requirement before its next step once its AI runs reach the budget. Only a human continues: `aiws resume REQ-001` grants one more budget on top of what is spent, and `aiws resume REQ-001 --budget 80` sets a new limit. Runs that report no cost never count. The budget is off by default.
 
 ## 9. Intentional differences from spec V1
 
@@ -183,7 +196,7 @@ CI (GitHub Actions) is a staged pipeline; each stage runs only if the previous o
 3. **Test on Windows and macOS** with Node 22, plus Linux with Node 24.
 4. **CI result**: the single status required by branch protection on `main`.
 
-Docs-only changes skip stages 1–3, and stage 4 still reports success so the pull request is not blocked. Branch protection on `main` requires `4. CI result` and `AIWS gates`, and blocks force pushes and branch deletion. A separate **AIWS gates** workflow re-checks commit trailers, approvals and the traceability matrix on pull requests from `aiws/REQ-*` branches. See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
+Docs-only changes skip stages 1–3, and stage 4 still reports success so the pull request is not blocked. Branch protection on `main` requires `4. CI result` and `AIWS gates`, and blocks force pushes and branch deletion. A separate **AIWS gates** workflow re-checks commit trailers, approvals and the traceability matrix on pull requests from `aiws/REQ-*` branches, then runs the project's own build and tests with `aiws check build`. It sets up Java only when a Maven or Gradle project exists under `source-*`; add the toolchain steps your stack needs. See [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 
 The sample project used by the tests lives in `test/fixtures/sample`; the simulated agents live in `test/fixtures/scripted` (each agent is a Node script that writes its outputs like a well-behaved AI).
 

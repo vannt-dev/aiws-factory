@@ -1,17 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { AiwsError, log, writeText, readTextIfExists, copyDir, nowIso, replaceYamlBlock } from './util.js';
+import { AiwsError, log, writeText, readTextIfExists, copyDir, nowIso, replaceYamlBlock, runShell, osCommand } from './util.js';
 import { Workspace, KIT_DIR, assertReqId, findRoot } from './workspace.js';
 import * as G from './git.js';
 import * as Lock from './lock.js';
 import { loadState, saveState, setPhase, addHistory, addFeedback, listReqs, statePath } from './state.js';
-import { enterPhase, runReq, runDiscover } from './engine.js';
+import { enterPhase, runReq, runDiscover, budgetStatus } from './engine.js';
 import YAML from 'yaml';
 import { detectStacks, reportText } from './stacks.js';
 import { requireHuman, inAiSession, currentUser, recordApproval, hashArtifacts, listApprovals, designApprovalStatus } from './gate.js';
 import { buildPrompt } from './prompt.js';
 import { buildTrace, traceMarkdown } from './trace.js';
-import { getAdapter } from './adapters/index.js';
+import { runStats, statsLine } from './stats.js';
+import { getAdapter, preflightAdapters } from './adapters/index.js';
 import * as DS from './diffscope.js';
 import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 
@@ -92,6 +93,7 @@ export function newReq(req, { worktree } = {}) {
     G.git(ws.root, ['worktree', 'add', '-q', '-b', branch, wt]);
     ws = new Workspace(wt);
     log(`Worktree created at ${wt}. Run further commands for ${req} from there.`);
+    installWorktreeCli(wt);
   } else {
     G.git(ws.root, ['switch', '-q', '-c', branch]);
   }
@@ -117,6 +119,18 @@ export function newReq(req, { worktree } = {}) {
   log(`${req} created on branch ${branch} (base ${baseBranch} @ ${baseCommit.slice(0, 7)}). Next: aiws run ${req}`);
 }
 
+/**
+ * A worktree gets its own copy of aiws/adapters/cli but not its node_modules (git-ignored). The guard hook of
+ * agents running there starts from that copy, so its dependencies are installed right away.
+ */
+function installWorktreeCli(wt) {
+  const cli = path.join(wt, 'aiws', 'adapters', 'cli');
+  if (!fs.existsSync(path.join(cli, 'package.json')) || fs.existsSync(path.join(cli, 'node_modules', 'yaml'))) return;
+  const res = runShell('npm ci --omit=dev --no-audit --no-fund', { cwd: cli, timeout: 5 * 60 * 1000 });
+  if (res.status === 0) log('Installed the CLI dependencies of the worktree (needed by the guard hook).');
+  else log(`Could not install the CLI dependencies of the worktree. Run \`npm ci --omit=dev\` in ${cli} before \`aiws run\`.`);
+}
+
 export function run(req, opts) {
   assertReqId(req);
   const ws = Workspace.open();
@@ -130,10 +144,29 @@ function printStop(ws, st) {
   if (st.reason) log(`  ${st.reason}`);
 }
 
-export function discover() {
+/**
+ * `aiws discover [--branch[=NAME]]`: builds aiws/knowledge/. By default the result is committed on the
+ * current branch. With --branch it goes to a new branch (default aiws/discover-YYYYMMDD), to be merged
+ * through a pull request: the way to use discovery when the base branch is protected.
+ */
+export function discover({ branch } = {}) {
   const ws = Workspace.open();
+  let target = null;
+  if (branch) {
+    preflightAdapters(ws, ['discover']); // fail before creating a branch nobody will use
+    const from = G.currentBranch(ws.root);
+    target = branch === true ? `aiws/discover-${nowIso().slice(0, 10).replace(/-/g, '')}` : String(branch);
+    if (G.branchExists(ws.root, target)) throw new AiwsError(`Branch ${target} already exists. Pass another name: --branch=NAME.`);
+    G.git(ws.root, ['switch', '-q', '-c', target]);
+    log(`Discovery runs on the new branch ${target} (from ${from}).`);
+  }
   const r = runDiscover(ws);
   if (!r.ok) throw new AiwsError('Discovery failed; see aiws/work/_discover/evidence/runs/.');
+  if (target) {
+    log(
+      `Next: review aiws/knowledge/, push ${target} and open a pull request. Merge it before \`aiws new\`, which needs the knowledge base.`
+    );
+  }
 }
 
 // ---------------------------------------------------------------- status
@@ -152,6 +185,10 @@ export function status(req) {
     log(`${st.req_id}  ${st.title}`);
     log(`  branch: ${st.branch}   phase: ${st.phase}   status: ${st.status}`);
     if (st.reason) log(`  reason: ${st.reason}`);
+    const usage = statsLine(runStats(ws, r));
+    if (usage) log(`  ${usage}`);
+    const budget = budgetStatus(ws, st);
+    if (budget.limit !== null) log(`  budget: ${budget.spent.toFixed(2)} of ${budget.limit.toFixed(2)} USD used`);
     if (st.tasks.length) {
       log('  tasks:');
       for (const t of st.tasks) {
@@ -227,29 +264,58 @@ function approvePr(req, opts) {
   const branchHead = G.revParse(ws.root, st.branch);
   const base = st.base_branch ?? ws.baseBranch();
   if (!branchHead) throw new AiwsError(`Branch ${st.branch} not found.`);
-  if (opts.mergeCheck !== false && !G.isAncestor(ws.root, branchHead, base)) {
-    throw new AiwsError(`${st.branch} is not merged into ${base} yet. Merge the PR first (or pass --no-merge-check).`);
+  const merged = opts.mergeCheck === false ? 'not checked' : mergedInto(ws.root, branchHead, base, st.base_commit);
+  if (!merged) {
+    throw new AiwsError(
+      `${st.branch} is not merged into ${base} yet: it is not an ancestor of ${base}, and the files it changed differ on ${base}. ` +
+        `Merge the PR and update your local ${base} first (or pass --no-merge-check).`
+    );
   }
   const dirty = G.dirtyFiles(ws.root);
   if (dirty.length) throw new AiwsError(`Working tree is not clean:\n  ${dirty.join('\n  ')}`);
 
-  // knowledge update happens on its own branch cut from the merged base
+  // The knowledge update happens on its own branch cut from the merged base. The base itself is never
+  // checked out here, so this also works when it is checked out in another worktree.
   const kBranch = `aiws/${req}-knowledge`;
-  G.git(ws.root, ['switch', '-q', base]);
-  G.git(ws.root, ['switch', '-q', '-c', kBranch]);
+  G.git(ws.root, ['switch', '-q', '-c', kBranch, base]);
   ({ ws, st } = openForHuman(req));
   const by = currentUser(ws.root);
   const file = recordApproval(ws, req, { gate: 'pr', decision: 'merged', by, notes: opts.message, artifacts: undefined });
   st.code_head = branchHead;
   st.branch = kBranch;
-  addHistory(st, { phase: def.id, result: 'merged', by, record: path.basename(file), head: branchHead.slice(0, 7) });
+  addHistory(st, { phase: def.id, result: 'merged', by, record: path.basename(file), head: branchHead.slice(0, 7), merge: merged });
   if (def.release_lock) Lock.release(ws.root, req, { force: true });
   enterPhase(ws, st, def.on_approve);
   saveState(ws, st);
   G.commit(ws.root, `chore(${req}): PR merged, approved by ${by}\n\nREQ-ID: ${req}\nAIWS-Approval: ${file}\n`, [ws.workRel(req)], {
     sign: opts.sign,
   });
-  log(`PR approval recorded. Switched to ${kBranch} for the knowledge update. Next: aiws run ${req}`);
+  log(`PR approval recorded (merge: ${merged}). Switched to ${kBranch} for the knowledge update. Next: aiws run ${req}`);
+}
+
+/**
+ * How a requirement branch reached its base, or null when it has not:
+ *  - 'merge commit': the branch head is an ancestor of the base (merge commit or fast-forward);
+ *  - 'squash or rebase': the commit ids differ, but every file the requirement changed has the same
+ *    content on the base as on the branch head.
+ */
+export function mergedInto(root, branchHead, base, baseCommit) {
+  if (G.isAncestor(root, branchHead, base)) return 'merge commit';
+  if (!baseCommit) return null;
+  const files = G.git(root, ['diff', '--name-only', '--no-renames', '-z', baseCommit, branchHead], { allowFail: true })
+    .stdout.split('\0')
+    .filter(Boolean);
+  if (!files.length) return null;
+  const same = G.git(root, ['diff', '--quiet', base, branchHead, '--', ...files], { allowFail: true }).status === 0;
+  return same ? 'squash or rebase' : null;
+}
+
+/** `aiws stop REQ`: asks a running `aiws run` to stop after its current step. Changes no state. */
+export function stop(req) {
+  assertReqId(req);
+  const ws = Workspace.open();
+  Lock.requestStop(ws.root, req);
+  log(`Stop requested: ${req} stops after its current step. Continue later with \`aiws run ${req}\`.`);
 }
 
 export async function reject(req, gate, opts = {}) {
@@ -328,11 +394,24 @@ export async function resume(req, opts = {}) {
       t.attempts = 0;
     }
   }
+  // Only a human raises the budget: explicitly with --budget, or by one more configured budget
+  // (counted from what is already spent) when the block was a budget block.
+  let budgetNote = '';
+  if (opts.budget !== undefined || st.blocked_by === 'budget') {
+    const b = budgetStatus(ws, st);
+    const limit = opts.budget !== undefined ? Number(opts.budget) : b.spent + (b.configured ?? b.limit ?? 0);
+    if (!(limit > b.spent)) {
+      throw new AiwsError(`--budget must be a number of USD above what is already spent (${b.spent.toFixed(2)}).`);
+    }
+    st.budget_usd = Math.round(limit * 100) / 100;
+    budgetNote = ` Budget is now ${st.budget_usd.toFixed(2)} USD (spent ${b.spent.toFixed(2)}).`;
+  }
+  delete st.blocked_by;
   if (opts.message) addFeedback(st, st.phase, `resume note by ${by}`, opts.message);
-  addHistory(st, { phase: st.phase, result: 'resumed', by });
+  addHistory(st, { phase: st.phase, result: 'resumed', by, ...(st.budget_usd ? { budget_usd: st.budget_usd } : {}) });
   setPhase(st, st.phase, 'running');
   saveState(ws, st);
-  log(`${req} resumed at ${st.phase}. Next: aiws run ${req}`);
+  log(`${req} resumed at ${st.phase}.${budgetNote} Next: aiws run ${req}`);
 }
 
 export async function unlock(opts = {}) {
@@ -431,6 +510,50 @@ export function checkApprovals({ req }) {
     bad.forEach((b) => log(b));
     process.exitCode = 1;
   } else log(`approvals ok (${listApprovals(ws, req, 'design').length} design record(s))`);
+}
+
+/**
+ * `aiws check build`: runs every configured `<side>_build` and `<side>_test` command of policies.yaml,
+ * the same commands the orchestrator runs after each task. Meant for CI on requirement pull requests,
+ * so merged code is rebuilt and retested outside the AI run. Does nothing when no command is configured.
+ */
+export function checkBuild() {
+  const ws = Workspace.open();
+  const pol = ws.policies;
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT; // set by an outer `node --test`; it would make a project's own node tests always pass
+  const failed = [];
+  let ran = 0;
+  for (const side of Object.keys(pol.sides ?? {})) {
+    for (const kind of ['build', 'test']) {
+      const name = `${side}_${kind}`;
+      const cmd = osCommand(pol.commands?.[name]);
+      if (!cmd) continue;
+      ran += 1;
+      log(`> ${name}: ${cmd}`);
+      const res = runShell(cmd, { cwd: ws.root, env, timeout: 30 * 60 * 1000 });
+      const output = (res.stdout + '\n' + res.stderr).trim();
+      if (res.status === 0) {
+        log(`  ok${output ? `\n${indentTail(output, 15)}` : ''}`);
+      } else {
+        failed.push(name);
+        log(`  FAILED (exit ${res.status})\n${indentTail(output, 60)}`);
+      }
+    }
+  }
+  if (!ran) return log('No <side>_build or <side>_test command in aiws/config/policies.yaml; nothing to run.');
+  if (failed.length) {
+    log(`\nbuild check FAILED: ${failed.join(', ')}`);
+    process.exitCode = 1;
+  } else log(`\nbuild check ok (${ran} command(s))`);
+}
+
+function indentTail(text, lines) {
+  return text
+    .split(/\r?\n/)
+    .slice(-lines)
+    .map((l) => `    ${l}`)
+    .join('\n');
 }
 
 /**

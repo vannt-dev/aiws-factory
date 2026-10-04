@@ -2,7 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { makeWorkspace, aiws, ok, state, git, scenario, readFile, writeFile, tempDir } from './helpers.js';
+import YAML from 'yaml';
+import { makeWorkspace, aiws, ok, state, git, scenario, readFile, writeFile, tempDir, BIN } from './helpers.js';
+import { Workspace } from '../src/workspace.js';
+import { guardCommand, preflight } from '../src/adapters/claude.js';
+import { preflightAdapters } from '../src/adapters/index.js';
 
 function toImplementation(root, env) {
   ok(root, ['new', 'REQ-001']);
@@ -144,6 +148,70 @@ x
   assert.equal(st.phase, 'design');
 });
 
+test('aiws stop: the run stops after the current step and continues later', () => {
+  const root = makeWorkspace({ discover: true });
+  // while T1 is running, a human asks for a stop from another terminal
+  const t1 = new URL('./fixtures/scripted/developer-T1.js', import.meta.url).href;
+  const env = {
+    ...scenario({
+      'developer-T1.js': `
+        import { spawnSync } from 'node:child_process';
+        await import(${JSON.stringify(t1)});
+        spawnSync(process.execPath, [process.env.AIWS_TEST_BIN, 'stop', 'REQ-001']);
+      `,
+    }),
+    AIWS_TEST_BIN: BIN,
+  };
+  toImplementation(root, env);
+  const first = ok(root, ['run', 'REQ-001'], { env });
+  assert.match(first.stdout, /stop requested/);
+  let st = state(root);
+  assert.equal(st.phase, 'implementation');
+  assert.equal(st.status, 'running', 'a stop is not a block: no human gate command is needed to continue');
+  assert.deepEqual(
+    st.tasks.map((t) => t.status),
+    ['done', 'pending']
+  );
+  assert.equal(git(root, ['status', '--porcelain']), '', 'the tree is clean after a stop');
+
+  // a stop requested while nothing runs is stale: the next run ignores it
+  ok(root, ['stop', 'REQ-001']);
+  ok(root, ['run', 'REQ-001']);
+  st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+});
+
+test('a task interrupted mid-run is resumed with its partial work', () => {
+  const root = makeWorkspace({ discover: true });
+  toImplementation(root);
+  ok(root, ['run', 'REQ-001', '--once']); // planning
+
+  // what a killed `aiws run` leaves behind: T1 saved as running, a half-written file of the task
+  const file = path.join(root, 'aiws/work/REQ-001/state.yaml');
+  const saved = YAML.parse(fs.readFileSync(file, 'utf8'));
+  Object.assign(saved.tasks[0], { status: 'running', in_progress: true, base: git(root, ['rev-parse', 'HEAD']) });
+  fs.writeFileSync(file, YAML.stringify(saved));
+  writeFile(root, 'source-be/test/nickname.test.js', '// half written\n');
+
+  const r = ok(root, ['run', 'REQ-001']);
+  assert.match(r.stdout, /T1 \(attempt 1\/3\) - resuming an interrupted attempt/);
+  const st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+  assert.equal(st.tasks[0].in_progress, undefined);
+  const prompts = fs.readdirSync(path.join(root, 'aiws/work/REQ-001/evidence/runs')).filter((f) => f.endsWith('.prompt.md'));
+  const t1Prompt = prompts.map((f) => readFile(root, `aiws/work/REQ-001/evidence/runs/${f}`)).find((p) => p.includes('task: T1'));
+  assert.match(t1Prompt, /previous attempt was interrupted/);
+
+  // dirty files outside the task are still refused
+  const other = makeWorkspace({ discover: true });
+  toImplementation(other);
+  ok(other, ['run', 'REQ-001', '--once']);
+  writeFile(other, 'source-fe/src/stray.js', 'export const x = 1;\n');
+  const refused = aiws(other, ['run', 'REQ-001']);
+  assert.notEqual(refused.status, 0);
+  assert.match(refused.out, /uncommitted changes outside REQ-001's scope/);
+});
+
 test('source lock: a second REQ in its own worktree cannot enter implementation', () => {
   const root = makeWorkspace({ discover: true });
   writeFile(root, 'requirements/REQ-002-avatar.md', '# REQ-002 — Avatar\n\nUser co avatar.\n');
@@ -165,6 +233,124 @@ test('source lock: a second REQ in its own worktree cannot enter implementation'
   assert.notEqual(r.status, 0);
   assert.match(r.out, /Source lock is held by REQ-001/);
   assert.match(ok(root, ['status']).stdout, /No REQs on this branch|source lock/);
+});
+
+test('discover --branch commits the knowledge base on a new branch, for a pull request', () => {
+  const root = makeWorkspace();
+  const out = ok(root, ['discover', '--branch']).stdout;
+  const branch = git(root, ['branch', '--show-current']);
+  assert.match(branch, /^aiws\/discover-\d{8}$/);
+  assert.match(out, new RegExp(`runs on the new branch ${branch} \\(from main\\)`));
+  assert.match(out, /open a pull request\. Merge it before `aiws new`/);
+  assert.ok(fs.existsSync(path.join(root, 'aiws/knowledge/system-map.md')));
+  assert.equal(git(root, ['status', '--porcelain']), '', 'the knowledge base is committed');
+  // the base branch is untouched until the pull request is merged
+  git(root, ['switch', '-q', 'main']);
+  assert.ok(!fs.existsSync(path.join(root, 'aiws/knowledge/system-map.md')));
+
+  // a custom name, and no silent reuse of an existing branch
+  ok(root, ['discover', '--branch=aiws/kb-refresh']);
+  assert.equal(git(root, ['branch', '--show-current']), 'aiws/kb-refresh');
+  git(root, ['switch', '-q', 'main']);
+  const again = aiws(root, ['discover', '--branch=aiws/kb-refresh']);
+  assert.notEqual(again.status, 0);
+  assert.match(again.stderr, /already exists/);
+  assert.equal(git(root, ['branch', '--show-current']), 'main');
+
+  // without --branch the behaviour is unchanged: committed on the current branch
+  ok(root, ['discover']);
+  assert.equal(git(root, ['branch', '--show-current']), 'main');
+  assert.ok(fs.existsSync(path.join(root, 'aiws/knowledge/system-map.md')));
+});
+
+test('cost budget: a requirement over budget is blocked until a human raises it', () => {
+  const root = makeWorkspace({ discover: true });
+  const polFile = path.join(root, 'aiws/config/policies.yaml');
+  const pol = YAML.parse(fs.readFileSync(polFile, 'utf8'));
+  pol.limits.max_cost_usd_per_req = 5;
+  fs.writeFileSync(polFile, YAML.stringify(pol));
+  git(root, ['commit', '-q', '-am', 'budget of 5 USD per requirement']);
+  ok(root, ['new', 'REQ-001']);
+  const runs = 'aiws/work/REQ-001/evidence/runs';
+
+  // runs that report no cost (scripted adapter) never count against the budget
+  ok(root, ['run', 'REQ-001', '--once']);
+  assert.equal(state(root).phase, 'design');
+
+  // 6 USD spent: the next step does not start
+  writeFile(root, `${runs}/run-9001.json`, JSON.stringify({ phase: 'analysis', duration_ms: 1000, report: { cost_usd: 6 } }));
+  ok(root, ['run', 'REQ-001']);
+  let st = state(root);
+  assert.equal(st.status, 'blocked');
+  assert.equal(st.phase, 'design');
+  assert.match(st.reason, /budget exceeded: AI runs cost 6\.00 USD of 5\.00 USD/);
+  assert.equal(st.history.filter((h) => h.phase === 'design' && h.agent).length, 0, 'no design agent ran');
+  assert.match(ok(root, ['status', 'REQ-001']).stdout, /budget: 6\.00 of 5\.00 USD used/);
+  ok(root, ['run', 'REQ-001']);
+  assert.equal(state(root).status, 'blocked', 'running again does not get past the budget');
+
+  // only a human can raise it, and not below what is already spent
+  assert.equal(aiws(root, ['resume', 'REQ-001', '--yes', '--budget', '50'], { env: { CLAUDECODE: '1' } }).status, 3);
+  const low = aiws(root, ['resume', 'REQ-001', '--yes', '--budget', '3']);
+  assert.notEqual(low.status, 0);
+  assert.match(low.stderr, /above what is already spent/);
+
+  // without --budget the human grants one more configured budget on top of what is spent: 6 + 5
+  assert.match(ok(root, ['resume', 'REQ-001', '--yes']).stdout, /Budget is now 11\.00 USD/);
+  ok(root, ['run', 'REQ-001']);
+  st = state(root);
+  assert.equal(st.phase, 'design_approval', st.reason);
+  assert.equal(st.budget_usd, 11);
+});
+
+test('check build runs every configured build and test command and fails when one fails', () => {
+  const root = makeWorkspace();
+  const pass = ok(root, ['check', 'build']);
+  for (const name of ['be_build', 'be_test', 'fe_build', 'fe_test']) assert.match(pass.stdout, new RegExp(`> ${name}: `));
+  assert.match(pass.stdout, /build check ok \(4 command\(s\)\)/);
+
+  // a failing test fails the check, but the remaining commands still run
+  writeFile(
+    root,
+    'source-be/test/broken.test.js',
+    "import { test } from 'node:test';\ntest('broken', () => { throw new Error('boom'); });\n"
+  );
+  const fail = aiws(root, ['check', 'build']);
+  assert.equal(fail.status, 1);
+  assert.match(fail.stdout, /be_test: .*\n\s+FAILED \(exit 1\)/);
+  assert.match(fail.stdout, /> fe_test: /, 'later commands still run');
+  assert.match(fail.stdout, /build check FAILED: be_test/);
+
+  // a workspace without configured commands (the kit itself) is a no-op
+  const kit = tempDir('aiws-kit-');
+  ok(kit, ['init']);
+  assert.match(ok(kit, ['check', 'build']).stdout, /nothing to run/);
+});
+
+test('status shows the AI runs and the cumulative cost of a requirement', () => {
+  const root = makeWorkspace();
+  ok(root, ['new', 'REQ-001']);
+  assert.doesNotMatch(ok(root, ['status', 'REQ-001']).stdout, /AI runs/, 'nothing to report before the first run');
+
+  const runs = 'aiws/work/REQ-001/evidence/runs';
+  writeFile(root, `${runs}/run-0001.json`, JSON.stringify({ phase: 'analysis', duration_ms: 120000, report: { cost_usd: 1.25 } }));
+  writeFile(root, `${runs}/run-0002.json`, JSON.stringify({ phase: 'design', duration_ms: 180000, report: { cost_usd: 2 } }));
+  writeFile(root, `${runs}/run-0003.json`, JSON.stringify({ phase: 'design', duration_ms: 60000, report: { cost_usd: 0.5 } }));
+  writeFile(root, `${runs}/run-0004.json`, '{ "truncated": '); // interrupted run: ignored
+  writeFile(root, `${runs}/run-0003.prompt.md`, 'prompt'); // not evidence
+  assert.match(
+    ok(root, ['status', 'REQ-001']).stdout,
+    /AI runs: 3 \(6 min\), cost 3\.75 USD list-price equivalent \(analysis 1\.25, design 2\.50\)/
+  );
+
+  // adapters that report no cost (scripted): runs and time only
+  writeFile(root, `${runs}/run-0001.json`, JSON.stringify({ phase: 'analysis', duration_ms: 1000, report: {} }));
+  fs.rmSync(path.join(root, runs, 'run-0002.json'));
+  fs.rmSync(path.join(root, runs, 'run-0003.json'));
+  const line = ok(root, ['status', 'REQ-001'])
+    .stdout.split('\n')
+    .find((l) => l.includes('AI runs'));
+  assert.equal(line.trim(), 'AI runs: 1 (1 min)');
 });
 
 test('init copies the kit into a fresh project and sync claude generates .claude/', () => {
@@ -198,10 +384,60 @@ test('init copies the kit into a fresh project and sync claude generates .claude
     assert.ok(settings.permissions.deny.includes(`Bash(aiws ${gate} *)`), `aiws ${gate} is always denied`);
   }
   assert.equal(settings.hooks.PreToolUse[1].matcher, 'Bash|PowerShell');
-  assert.match(settings.hooks.PreToolUse[0].hooks[0].command, /aiws\.js" guard$/);
+  // a project created with `aiws init` has no CLI of its own, so the hook calls `aiws` from PATH
+  assert.equal(settings.hooks.PreToolUse[0].hooks[0].command, 'aiws guard');
+  assert.equal(settings.hooks.PreToolUse[1].hooks[0].command, 'aiws guard --bash');
   const dev = readFile(dir, '.claude/agents/developer.md');
   assert.match(dev, /^---\nname: developer\n/);
   assert.match(dev, /tools: Read, Grep, Glob, Edit, MultiEdit, Write, Bash/);
   assert.match(dev, /model: opus/);
   assert.ok(fs.existsSync(path.join(dir, '.claude/skills/be-conventions/SKILL.md')));
+
+  // claude.agent_models overrides the model_hint mapping for one agent only
+  const rtFile = path.join(dir, 'aiws/config/runtime.yaml');
+  const rt = YAML.parse(fs.readFileSync(rtFile, 'utf8'));
+  rt.claude.agent_models = { developer: 'sonnet' };
+  fs.writeFileSync(rtFile, YAML.stringify(rt));
+  ok(dir, ['sync', 'claude']);
+  assert.match(readFile(dir, '.claude/agents/developer.md'), /\nmodel: sonnet\n/);
+  assert.match(readFile(dir, '.claude/agents/architect.md'), /\nmodel: opus\n/);
+});
+
+test('agents never start without a working guard hook (Claude adapter preflight)', () => {
+  const dir = tempDir('aiws-pre-');
+  ok(dir, ['init']);
+
+  // 1. hook not installed at all
+  assert.throws(() => preflight(new Workspace(dir)), /\.claude\/settings\.json is missing.*aiws sync claude/);
+  ok(dir, ['sync', 'claude']);
+
+  // 2. project without its own CLI: `aiws` must be on PATH
+  const savedPath = process.env.PATH;
+  try {
+    process.env.PATH = '';
+    assert.throws(() => preflight(new Workspace(dir)), /`aiws` is not on PATH/);
+  } finally {
+    process.env.PATH = savedPath;
+  }
+
+  // 3. workspace that carries its own CLI (the kit, or a git worktree of it): the hook runs from there
+  //    and needs that copy's dependencies, which a new worktree does not have
+  writeFile(dir, 'aiws/adapters/cli/bin/aiws.js', '// stub\n');
+  writeFile(dir, 'aiws/adapters/cli/package.json', '{}\n');
+  assert.match(guardCommand(new Workspace(dir)), /^node "\$\{CLAUDE_PROJECT_DIR\}\/aiws\/adapters\/cli\/bin\/aiws\.js" guard$/);
+  assert.throws(() => preflight(new Workspace(dir)), /dependencies are missing in aiws\/adapters\/cli.*npm ci --omit=dev/);
+  fs.mkdirSync(path.join(dir, 'aiws/adapters/cli/node_modules/yaml'), { recursive: true });
+  assert.doesNotThrow(() => preflight(new Workspace(dir)));
+
+  // 4. a custom guard command is the project's own responsibility
+  fs.rmSync(path.join(dir, 'aiws/adapters/cli/node_modules'), { recursive: true });
+  const rtFile = path.join(dir, 'aiws/config/runtime.yaml');
+  const rt = YAML.parse(fs.readFileSync(rtFile, 'utf8'));
+  rt.claude.guard_command = 'my-guard';
+  fs.writeFileSync(rtFile, YAML.stringify(rt));
+  assert.equal(guardCommand(new Workspace(dir)), 'my-guard');
+  assert.doesNotThrow(() => preflight(new Workspace(dir)));
+
+  // the scripted adapter has no hook and no preflight: tests and demos are unaffected
+  assert.doesNotThrow(() => preflightAdapters({ runtime: { default_adapter: 'scripted' } }, ['analysis']));
 });

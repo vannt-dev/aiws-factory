@@ -12,8 +12,9 @@ import { buildPrompt } from './prompt.js';
 import { validateOutputs, loadPlan } from './validate.js';
 import { designApprovalStatus } from './gate.js';
 import { buildTrace, traceMarkdown } from './trace.js';
-import { adapterName, getAdapter } from './adapters/index.js';
+import { adapterName, getAdapter, preflightAdapters } from './adapters/index.js';
 import { detectStacks, reportText } from './stacks.js';
+import { runStats } from './stats.js';
 
 // Phases that are only legal while the design approval is valid (hash unchanged).
 const AFTER_APPROVAL = new Set(['planning', 'implementation', 'design_change_requested', 'review', 'pr_approval']);
@@ -143,6 +144,32 @@ function formatErrors(errors) {
   return errors.map((e) => `- ${e.message}`).join('\n');
 }
 
+/**
+ * Cost budget of a requirement. The limit is `st.budget_usd` (set by a human with `aiws resume --budget`)
+ * or policies `limits.max_cost_usd_per_req`; no limit when neither is a positive number.
+ * Runs that report no cost (scripted adapter) never count.
+ */
+export function budgetStatus(ws, st) {
+  const configured = Number(ws.policies.limits?.max_cost_usd_per_req);
+  const own = Number(st.budget_usd);
+  const limit = own > 0 ? own : configured > 0 ? configured : null;
+  const spent = runStats(ws, st.req_id).cost_usd;
+  return {
+    limit,
+    spent: spent ?? 0,
+    configured: configured > 0 ? configured : null,
+    exceeded: limit !== null && spent !== null && spent >= limit,
+  };
+}
+
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+
+const INTERRUPTED_NOTE =
+  '- The previous attempt was interrupted before it finished (no error). The files of this task may contain ' +
+  'partial work: read them first, then complete or correct them.';
+
 // ---------------------------------------------------------------- run loop
 
 /** Runs a REQ until the next human gate, a block, or done. Returns the final state. */
@@ -150,10 +177,36 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
   let st = loadState(ws, req);
   assertOnBranch(ws, st);
   assertCleanEnough(ws, st);
+  if (st.status === 'running') {
+    preflightAdapters(
+      ws,
+      ws.workflow.phases.map((p) => p.id)
+    );
+  }
+  Lock.takeStop(ws.root, req); // a stop request left over from an earlier run does not apply to this one
 
   for (let i = 0; i < maxSteps; i++) {
     st = loadState(ws, req);
     if (st.status !== 'running') break;
+    if (Lock.takeStop(ws.root, req)) {
+      log(`[${req}] stop requested: stopped before the next step. Continue with \`aiws run ${req}\`.`);
+      break;
+    }
+    const budget = budgetStatus(ws, st);
+    if (budget.exceeded && ws.phaseDef(st.phase).type !== 'human_gate') {
+      st.blocked_by = 'budget';
+      addHistory(st, { phase: st.phase, result: 'budget_exceeded', spent_usd: round2(budget.spent), budget_usd: budget.limit });
+      setPhase(
+        st,
+        st.phase,
+        'blocked',
+        `budget exceeded: AI runs cost ${budget.spent.toFixed(2)} USD of ${budget.limit.toFixed(2)} USD (list-price equivalent). ` +
+          `A human continues with \`aiws resume ${req}\` (one more budget) or \`aiws resume ${req} --budget <USD>\``
+      );
+      commitWork(ws, st, `chore(${req}): blocked by budget`);
+      log(`[${req}] ${st.reason}`);
+      break;
+    }
 
     if (AFTER_APPROVAL.has(st.phase)) {
       const gateDef = ws.workflow.phases.find((p) => p.gate === 'design');
@@ -479,14 +532,21 @@ function stepLoop(ws, st, def) {
   const testStep = def.steps.find((s) => s.builtin === 'unit_test');
   const contract = ws.contract(devStep.contract);
   const maxAttempts = def.on_fail?.retry ?? contract.max_attempts ?? 3;
+  // The task is saved as running BEFORE the agent starts. If this process is killed mid-task, the next
+  // `aiws run` finds it, accepts the partly written files of the task and tells the developer about them.
+  const interrupted = task.status === 'running' && task.in_progress === true;
   task.status = 'running';
   task.base ??= G.head(ws.root);
+  task.in_progress = true;
+  saveState(ws, st);
   const attempt = (task.attempts ?? 0) + 1;
-  log(`[${req}] implementation / ${task.id} (attempt ${attempt}/${maxAttempts})`);
+  log(`[${req}] implementation / ${task.id} (attempt ${attempt}/${maxAttempts})${interrupted ? ' - resuming an interrupted attempt' : ''}`);
 
   const qRel = ws.workRel(req, 'questions.md');
   const qBefore = readTextIfExists(ws.abs(qRel));
-  const r = executeAgent(ws, st, { req, phase: def.id, agentId: devStep.agent, contract, task, attempt, failure: task.last_failure });
+  const failure = interrupted ? [INTERRUPTED_NOTE, task.last_failure].filter(Boolean).join('\n') : task.last_failure;
+  const r = executeAgent(ws, st, { req, phase: def.id, agentId: devStep.agent, contract, task, attempt, failure });
+  delete task.in_progress;
   const errors = [...r.errors];
 
   const qAfter = readTextIfExists(ws.abs(qRel));
@@ -629,6 +689,7 @@ function runUnitTests(ws, st, task, attempt, runId) {
 /** `aiws discover`: builds (or incrementally refreshes) aiws/knowledge/ outside any REQ. */
 export function runDiscover(ws, { maxAttempts } = {}) {
   const req = '_discover';
+  preflightAdapters(ws, ['discover']);
   const contract = ws.contract('contracts/discover.yaml');
   const max = maxAttempts ?? contract.max_attempts ?? 2;
   const seqFile = path.join(ws.workDir(req), 'seq.yaml');

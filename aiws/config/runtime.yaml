@@ -8,11 +8,16 @@ claude:
   command: claude
   permission_mode: dontAsk      # headless: chỉ các tool trong --allowedTools được chạy
   timeout_minutes: 30
-  # guard_command: 'node "${CLAUDE_PROJECT_DIR}/aiws/adapters/cli/bin/aiws.js" guard'   # mặc định
+  # Lệnh hook bảo vệ. Mặc định tự chọn: workspace có sẵn aiws/adapters/cli thì chạy
+  # 'node "${CLAUDE_PROJECT_DIR}/aiws/adapters/cli/bin/aiws.js" guard', còn không thì 'aiws guard' (cần `aiws` trên PATH).
+  # guard_command: 'aiws guard'
   models:                       # model_hint trong aiws/agents/*.md -> model của Claude Code
     strong-reasoning: opus
     strong-coding: opus
     fast: sonnet
+  # Chọn model riêng cho từng agent (ưu tiên hơn model_hint). Ví dụ giảm chi phí implementation:
+  # agent_models:
+  #   developer: sonnet
   extra_args: []
 
 # Adapter tất định để demo/test không tốn token: chạy node <dir>/<agent>.js thay cho AI.

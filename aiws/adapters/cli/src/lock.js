@@ -29,3 +29,22 @@ export function release(root, req, { force = false } = {}) {
   fs.rmSync(lockFile(root), { force: true });
   return true;
 }
+
+// A stop request is a marker file next to the lock: `aiws stop` writes it from any terminal or worktree,
+// and the running orchestrator picks it up between two steps. No process is killed, so it works the same
+// on Windows, macOS and Linux.
+function stopFile(root, req) {
+  return path.join(commonDir(root), `aiws-stop-${req}`);
+}
+
+export function requestStop(root, req) {
+  fs.writeFileSync(stopFile(root, req), nowIso() + '\n');
+}
+
+/** Removes a pending stop request. Returns true if there was one. */
+export function takeStop(root, req) {
+  const file = stopFile(root, req);
+  if (!fs.existsSync(file)) return false;
+  fs.rmSync(file, { force: true });
+  return true;
+}

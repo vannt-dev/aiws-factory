@@ -39,7 +39,7 @@ Không muốn `npm link` thì gọi `node aiws/adapters/cli/bin/aiws.js <lệnh>
 2. **Khai báo lệnh build/test**: chạy `aiws detect` để xem đề xuất, rồi `aiws detect --write` để ghi vào `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Kiểm tra lại. Lệnh chạy tại gốc workspace; có thể viết riêng cho từng OS: `{windows: ..., posix: ...}`.
 3. **Chốt convention**: mở Claude Code tại gốc, trên `main`, và yêu cầu: *"Đọc source-fe/, điền aiws/skills/fe-conventions/SKILL.md bằng convention THẬT, mỗi ý kèm file ví dụ, chỗ không chắc đánh dấu [CẦN XÁC NHẬN]"*. Làm tương tự với `be-conventions`. Người đọc lại và sửa.
 4. **Sinh cấu hình Claude**: `aiws sync claude`. Lệnh này sinh `CLAUDE.md`, `.claude/agents`, `.claude/skills` và `.claude/settings.json` (deny rules + hook guard). Chạy lại mỗi khi sửa `aiws/`.
-5. **Discovery**: `aiws discover`, sau đó review `aiws/knowledge/*` và sửa chỗ sai. Commit.
+5. **Discovery**: `aiws discover`, sau đó review `aiws/knowledge/*` và sửa chỗ sai. Commit. Kết quả được commit vào nhánh đang đứng. Nếu nhánh đó được bảo vệ, hãy chạy `aiws discover --branch`: knowledge sẽ nằm trên nhánh mới `aiws/discover-YYYYMMDD` (hoặc `--branch=TÊN`), bạn push và merge qua pull request trước lần `aiws new` đầu tiên.
 6. **Viết requirement**: `requirements/REQ-001-<tên>.md`, rồi commit.
 
 ## 2a. Đa ngôn ngữ và chuẩn quốc tế
@@ -92,6 +92,10 @@ Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lện
 
 Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **từ chối chạy trong phiên AI** và đòi gõ lại mã REQ để xác nhận. Trong script CI thì truyền `--yes`.
 
+**Merge PR:** cách merge nào cũng được. `aiws approve REQ-001 pr` chấp nhận khi nhánh REQ là tổ tiên của nhánh gốc (merge commit hoặc fast-forward), hoặc khi mọi file REQ đã sửa có cùng nội dung trên nhánh gốc (squash hoặc rebase). Nhớ cập nhật nhánh gốc ở máy trước. Sau squash hoặc rebase, mã commit ghi trong `state.yaml` không còn trên nhánh gốc, nên `aiws trace` tìm commit của task theo trailer `Task:`. Merge commit giữ mỗi task một commit, vì vậy là lựa chọn tốt nhất cho truy vết.
+
+**Tạm dừng:** `aiws stop REQ-001`, chạy từ terminal hay worktree nào cũng được, yêu cầu `aiws run` đang chạy dừng lại sau bước hiện tại; sau đó `aiws run REQ-001` chạy tiếp, không cần lệnh duyệt nào. Nếu tiến trình bị tắt ngang (Ctrl+C, đóng terminal), task đang làm vẫn ở trạng thái `running` trong `state.yaml`: lần `aiws run` kế tiếp giữ các file viết dở của task đó và dặn agent developer xem lại chúng trước. File chưa commit nằm ngoài task vẫn bị từ chối.
+
 **Chạy song song:** tại một thời điểm chỉ một REQ được ghi source, từ lúc vào implementation tới khi PR merge (source lock). Các REQ khác vẫn làm analysis/design được, mỗi REQ trong worktree riêng:
 
 ```bash
@@ -99,13 +103,17 @@ aiws new REQ-002 --worktree ../ws-REQ-002
 cd ../ws-REQ-002 && aiws run REQ-002
 ```
 
+Worktree cũng là cách đơn giản nhất để một trợ lý AI điều phối requirement: thư mục chính vẫn ở nhánh của nó, còn requirement chạy ở thư mục bên cạnh.
+
+**Hook bảo vệ phải chạy được trước khi agent nào khởi động.** Hook bị lỗi thì không chặn được gì, nên `aiws run` và `aiws discover` kiểm tra hook trước và từ chối chạy nếu không đạt: phải có `.claude/settings.json` (`aiws sync claude`), và lệnh hook phải chạy được. Với workspace mang sẵn CLI (`aiws/adapters/cli`, như repo này), hook chạy từ thư mục đó và cần `node_modules` của nó; mỗi worktree có một bản riêng, và `aiws new --worktree` tự cài. Với dự án tạo bằng `aiws init`, hook là `aiws guard` và `aiws` phải có trên PATH. Muốn dùng lệnh khác thì đặt `claude.guard_command` trong `runtime.yaml`.
+
 ## 4. Enforcement: 4 lớp, lớp sau vẫn chặn khi lớp trước bị vượt
 
 | Lớp | Hiện thực |
 | --- | --- |
 | 1. Orchestrator | Phase bị khoá thì agent không được gọi. Approval gắn hash của 02/03/api-contract; file bị sửa thì approval mất hiệu lực. Có giới hạn retry, vượt thì `blocked`. |
 | 2. Tool permission | Headless: `claude -p --permission-mode dontAsk --allowedTools …` theo contract. Reviewer không có Bash. Developer chỉ được chạy lệnh build/test. |
-| 3. Hook | `aiws guard` (PreToolUse cho Edit/Write/Read/Bash/PowerShell) đọc `AIWS_*` env hoặc nhánh `aiws/REQ-*` + `state.yaml` và chặn ghi ngoài scope. Bash lồng như `bash -c`, `node …/aiws.js approve`, `git -C . push` cũng bị phân tích. |
+| 3. Hook | `aiws guard` (PreToolUse cho Edit/Write/Read/Bash/PowerShell) đọc `AIWS_*` env hoặc nhánh `aiws/REQ-*` + `state.yaml` và chặn ghi ngoài scope. Bash lồng như `bash -c`, `node …/aiws.js approve`, `git -C . push` cũng bị phân tích. Văn bản chỉ nhắc tới một lệnh bị cấm (mẫu tìm kiếm, commit message, here-document cho `git commit`) thì không bị chặn; mọi cách có thể thực thi văn bản đó (shell, `eval`, pipe vào trình thông dịch, `$(...)`, biến, alias) vẫn bị chặn. |
 | 4. Git + diff-scope | Sau MỌI lần chạy AI, orchestrator so trạng thái git trước và sau: file ngoài scope bị revert và lần chạy bị đánh fail, bất kể được ghi bằng cách nào. Commit có trailer. `aiws check …` dùng cho CI. |
 
 Diff-scope là đảm bảo thật; hook chỉ giúp chặn sớm. Diff-scope **không thấy file bị `.gitignore`**, vì vậy đừng để build output làm nơi chứa logic.
@@ -129,7 +137,7 @@ Rule validator có sẵn: `ac_numbered`, `no_blocking_questions`, `every_ac_has_
 Hai chế độ dùng chung một bộ bảo vệ:
 
 - **Tự động:** `aiws run`.
-- **Tương tác:** mở `claude` trên nhánh `aiws/REQ-001` và yêu cầu *"dùng agent architect cho REQ-001"*. Hook suy ra phase từ `state.yaml` và chặn ghi sai phase.
+- **Tương tác:** mở `claude` trên nhánh `aiws/REQ-001` và yêu cầu *"dùng agent architect cho REQ-001"*. Hook suy ra phase từ `state.yaml` và chặn ghi sai phase. Phiên như vậy cũng được chạy `aiws run`, `aiws stop` và ghi ghi chú của riêng nó ra ngoài workspace; lệnh git và các lệnh gate vẫn bị chặn. Agent do `aiws run` khởi động thì không được nới bất kỳ điều nào trong số này.
 
 Trên `main`, không ở REQ nào, bạn được dùng Claude để bảo trì chính `aiws/` (agents, skills, config). Claude cũng có thể điều phối quy trình bằng `aiws new`, `aiws run` hay `aiws status`; mỗi lần chạy vẫn dừng ở các gate của người. Riêng `source-legacy/`, `requirements/`, `state.yaml` và `approvals/` luôn bị khoá. AI không bao giờ được chạy các lệnh gate `approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`, và khi đang ở trong một phase thì cũng không được tự khởi động `aiws run` lồng nhau.
 
@@ -140,13 +148,18 @@ Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
 - `aiws/work/REQ/evidence/runs/run-NNNN.json` + `.prompt.md` ghi: adapter, lệnh, tool được phép, hash prompt, thời gian, số turn, chi phí quy đổi, file đã đổi, vi phạm đã revert, lỗi validate.
 - `evidence/test-results/<task>-attempt-N.yaml` ghi: lệnh test, exit code, log rút gọn, TC của task.
 - Commit của task có các trailer `REQ-ID`, `Task`, `Tests`, `AIWS-Run`. Lệnh `git log --grep "REQ-ID: REQ-001"` liệt kê mọi thay đổi của một REQ.
-- CI chạy `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (bật `require_signed` để bắt buộc approval ký GPG/SSH qua `aiws approve --sign`) và `aiws trace REQ-001`.
+- CI chạy `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (bật `require_signed` để bắt buộc approval ký GPG/SSH qua `aiws approve --sign`), `aiws trace REQ-001` và `aiws check build`. Lệnh cuối chạy lại mọi lệnh `<side>_build` và `<side>_test` trong `policies.yaml`, để code sắp merge được build và test lại bên ngoài lần chạy của AI.
 
 ## 8. Chi phí
 
-`cost_usd` trong evidence là **giá quy đổi theo bảng giá API** mà Claude Code báo. Nếu Claude Code đăng nhập bằng gói Claude (Pro/Max) thì con số này chỉ trừ vào hạn mức của gói. Nếu dùng API key hoặc Console thì đó là tiền thật. Bạn gõ `/status` trong Claude Code để biết mình đang dùng loại nào.
+`aiws status REQ-001` hiển thị số lần AI chạy, tổng thời gian và chi phí cộng dồn của requirement, chia theo phase. `cost_usd` trong evidence là **giá quy đổi theo bảng giá API** mà Claude Code báo. Nếu Claude Code đăng nhập bằng gói Claude (Pro/Max) thì con số này chỉ trừ vào hạn mức của gói. Nếu dùng API key hoặc Console thì đó là tiền thật. Bạn gõ `/status` trong Claude Code để biết mình đang dùng loại nào.
 
-Lần chạy thử thật trên dự án mẫu (sonnet, REQ nhỏ có 2 task) hết khoảng 1,3 USD quy đổi cho 8 lần chạy. Muốn giảm thì đổi `runtime.yaml → claude.models`. `npm test` dùng adapter `scripted` nên không tốn token.
+Hai lần chạy thật để tham khảo. Với Sonnet, một REQ nhỏ có 2 task hết khoảng 1,3 USD quy đổi cho 8 lần chạy. Với Opus trên workspace demo, một REQ có 22 acceptance criteria và 5 task hết khoảng 27,6 USD cho 10 lần chạy, cộng 2,4 USD cho discovery. `npm test` dùng adapter `scripted` nên không tốn token.
+
+Có hai cách kiểm soát chi phí:
+
+- **Chọn model theo agent.** `runtime.yaml → claude.models` ánh xạ từng `model_hint` sang model, còn `claude.agent_models` ghi đè cho riêng một agent, ví dụ `developer: sonnet` trong khi design và review vẫn dùng Opus. Sửa xong thì chạy `aiws sync claude`.
+- **Ngân sách cho mỗi REQ.** `policies.yaml → limits.max_cost_usd_per_req` chặn REQ trước bước kế tiếp khi chi phí AI chạm ngân sách. Chỉ người mới cho chạy tiếp được: `aiws resume REQ-001` cấp thêm một lần ngân sách tính từ mức đã tiêu, còn `aiws resume REQ-001 --budget 80` đặt giới hạn mới. Lần chạy không báo chi phí thì không bị tính. Mặc định không giới hạn.
 
 ## 9. Khác biệt so với Spec V1 (có chủ đích)
 
@@ -183,7 +196,7 @@ CI (GitHub Actions) là pipeline nhiều bước; bước sau chỉ chạy khi b
 3. **Test trên Windows và macOS** với Node 22, kèm Linux với Node 24.
 4. **CI result**: trạng thái duy nhất mà branch protection của `main` bắt buộc.
 
-Sửa tài liệu thuần thì bỏ qua tầng 1–3, nhưng tầng 4 vẫn báo thành công nên PR không bị kẹt. Branch protection của `main` bắt buộc `4. CI result` và `AIWS gates`, đồng thời chặn force-push và chặn xoá nhánh. Workflow riêng **AIWS gates** kiểm lại trailer commit, approval và ma trận truy vết cho PR từ nhánh `aiws/REQ-*`. Cách đóng góp: [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
+Sửa tài liệu thuần thì bỏ qua tầng 1–3, nhưng tầng 4 vẫn báo thành công nên PR không bị kẹt. Branch protection của `main` bắt buộc `4. CI result` và `AIWS gates`, đồng thời chặn force-push và chặn xoá nhánh. Workflow riêng **AIWS gates** kiểm lại trailer commit, approval và ma trận truy vết cho PR từ nhánh `aiws/REQ-*`, rồi chạy build và test của chính dự án bằng `aiws check build`. Workflow chỉ cài Java khi có dự án Maven hoặc Gradle trong `source-*`; với stack khác, bạn thêm bước cài toolchain tương ứng. Cách đóng góp: [.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 
 Dự án mẫu dùng cho test nằm ở `test/fixtures/sample`. Các agent giả lập nằm ở `test/fixtures/scripted` (mỗi agent là một script Node ghi output như một AI "ngoan").
 

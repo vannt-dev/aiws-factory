@@ -14,6 +14,9 @@ sides:
 
 limits:
   max_files_per_task: 10
+  # Ngân sách AI cho mỗi REQ (USD quy đổi theo bảng giá API). Vượt thì REQ bị blocked và chỉ NGƯỜI
+  # chạy tiếp được bằng `aiws resume <REQ> [--budget USD]`. Bỏ trống = không giới hạn.
+  # max_cost_usd_per_req: 30
 
 protected_paths:            # không agent nào được ghi, ở mọi phase
   - source-legacy/**
@@ -128,4 +131,5 @@ bash_denylist:
   - "aiws unlock"
   - "aiws new"
   - "aiws run"
+  - "aiws stop"
   - "cat .env"

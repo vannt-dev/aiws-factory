@@ -69,7 +69,7 @@ test('happy path: REQ-001 from requirement to done with 2 human interventions', 
 
   // human gate 2: merge PR, then knowledge update on its own branch
   mergeToMain(root);
-  ok(root, ['approve', 'REQ-001', 'pr', '--yes']);
+  assert.match(ok(root, ['approve', 'REQ-001', 'pr', '--yes']).stdout, /merge: merge commit/);
   assert.equal(git(root, ['branch', '--show-current']), 'aiws/REQ-001-knowledge');
   ok(root, ['run', 'REQ-001']);
   st = state(root);
@@ -77,6 +77,49 @@ test('happy path: REQ-001 from requirement to done with 2 human interventions', 
   assert.equal(st.status, 'done');
   assert.match(readFile(root, 'aiws/knowledge/api-inventory.md'), /nickname/);
   ok(root, ['status', 'REQ-001']);
+});
+
+test('approve pr accepts a squash merge, and the trace still finds the task commits', () => {
+  const root = makeWorkspace({ discover: true });
+  ok(root, ['new', 'REQ-001']);
+  ok(root, ['run', 'REQ-001']);
+  ok(root, ['approve', 'REQ-001', 'design', '--yes']);
+  ok(root, ['run', 'REQ-001']);
+  assert.equal(state(root).phase, 'pr_approval');
+
+  // squash merge the way GitHub does it: one new commit on the base that lists every commit message
+  const messages = git(root, ['log', '--reverse', '--format=* %B', 'main..aiws/REQ-001']);
+  git(root, ['switch', '-q', 'main']);
+  git(root, ['merge', '-q', '--squash', 'aiws/REQ-001']);
+  git(root, ['commit', '-q', '-m', `feat(REQ-001): user nickname (#1)\n\n${messages}`]);
+  assert.notEqual(git(root, ['rev-parse', 'main']), git(root, ['rev-parse', 'aiws/REQ-001']));
+
+  const approved = ok(root, ['approve', 'REQ-001', 'pr', '--yes']);
+  assert.match(approved.stdout, /merge: squash or rebase/);
+  assert.equal(state(root).history.at(-1).merge, 'squash or rebase');
+  ok(root, ['run', 'REQ-001']);
+  assert.equal(state(root).phase, 'done');
+
+  // the task commit ids of state.yaml are not on main, but the squash commit carries the Task trailers
+  const tr = ok(root, ['trace', 'REQ-001']);
+  assert.match(tr.stdout, /\| AC-1 \| TC-1 \| T1 \| [0-9a-f]{7} \| pass \|/);
+  assert.match(tr.stdout, /- none/);
+  ok(root, ['check', 'commit-trailer', '--req', 'REQ-001']);
+
+  // a base that moved on without the requirement's changes is still refused
+  const other = makeWorkspace({ discover: true });
+  ok(other, ['new', 'REQ-001']);
+  ok(other, ['run', 'REQ-001']);
+  ok(other, ['approve', 'REQ-001', 'design', '--yes']);
+  ok(other, ['run', 'REQ-001']);
+  git(other, ['switch', '-q', 'main']);
+  writeFile(other, 'source-be/src/other.js', 'export const z = 1;\n');
+  git(other, ['add', '-A']);
+  git(other, ['commit', '-q', '-m', 'unrelated change']);
+  git(other, ['switch', '-q', 'aiws/REQ-001']);
+  const refused = aiws(other, ['approve', 'REQ-001', 'pr', '--yes']);
+  assert.notEqual(refused.status, 0);
+  assert.match(refused.out, /not merged into main yet/);
 });
 
 test('design reject keeps every round of feedback and numbers approvals', () => {

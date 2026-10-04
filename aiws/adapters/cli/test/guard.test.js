@@ -56,6 +56,24 @@ test('guard: resolves context from the aiws/REQ branch when no env is set (inter
   assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: abs('source-fe/src/view.js') } }).status, 2);
   assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: abs('aiws/work/REQ-001/01-analysis.md') } }).status, 0);
 
+  // The same interactive session may drive the orchestrator and keep notes outside the workspace...
+  const bash = (command, env) => hook(root, { tool_name: 'Bash', tool_input: { command } }, env).status;
+  const outside = path.join(path.dirname(root), 'notes-outside-workspace.md');
+  for (const command of ['aiws run REQ-001', 'node aiws/adapters/cli/bin/aiws.js new REQ-002', 'aiws stop REQ-001']) {
+    assert.equal(bash(command), 0, command);
+  }
+  assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: outside } }).status, 0);
+  // ...but everything else stays as strict as for an agent: git, gate commands, protected paths
+  for (const command of ['git commit -m x', 'git push', 'aiws approve REQ-001 design --yes', 'aiws resume REQ-001']) {
+    assert.equal(bash(command), 2, command);
+  }
+  assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: abs('aiws/work/REQ-001/state.yaml') } }).status, 2);
+
+  // An agent started by the orchestrator (AIWS_PHASE set) gets none of these allowances.
+  const agent = inPhase('analysis');
+  for (const command of ['aiws run REQ-001', 'aiws new REQ-002', 'aiws stop REQ-001']) assert.equal(bash(command, agent), 2, command);
+  assert.equal(hook(root, { tool_name: 'Write', tool_input: { file_path: outside } }, agent).status, 2);
+
   // on main (maintainer session): aiws/ kit is editable, legacy is not
   git(root, ['switch', '-q', 'main']);
   assert.equal(hook(root, { tool_name: 'Edit', tool_input: { file_path: abs('aiws/agents/developer.md') } }).status, 0);
@@ -91,6 +109,7 @@ test('guard --bash: denylist incl. nested, path-prefixed and option-laden forms'
     // inside a phase an agent may not start or advance the pipeline itself
     'aiws run REQ-001',
     'node aiws/adapters/cli/bin/aiws.js new REQ-002',
+    'aiws stop REQ-001',
   ];
   const phaseEnv = inPhase('implementation', { AIWS_TASK: 'T1' });
   for (const command of blocked) assert.equal(hook(root, { tool_name: 'Bash', tool_input: { command } }, phaseEnv).status, 2, command);
@@ -123,6 +142,7 @@ test('guard --bash: a maintainer session may commit and drive aiws, but an AI ma
   // an assistant may start and advance a requirement; the run still stops at every human gate
   assert.equal(run('aiws new REQ-001'), 0);
   assert.equal(run('node aiws/adapters/cli/bin/aiws.js run REQ-001'), 0);
+  assert.equal(run('aiws stop REQ-001'), 0);
   for (const gate of [
     'approve REQ-001 design --yes',
     'reject REQ-001 design -m x',
@@ -135,6 +155,49 @@ test('guard --bash: a maintainer session may commit and drive aiws, but an AI ma
   }
   assert.equal(run('bash -c "aiws resume REQ-001"'), 2);
   assert.equal(run('cat source-be/.env'), 2);
+});
+
+test('guard --bash: text that only mentions a denied command is allowed, every way of running it is not', () => {
+  const root = makeWorkspace();
+  const bash = (command, env) => hook(root, { tool_name: 'Bash', tool_input: { command } }, env).status;
+
+  // maintainer session: a gate command named in a search pattern, a commit message or a here-document
+  const mentions = [
+    'grep -n "aiws approve" aiws/README.md',
+    'git commit -q -m "docs: explain the aiws approve gate"',
+    "echo 'ask a human to run aiws approve REQ-001 design'",
+    "git commit -q -F - <<'EOF'\ndocs: describe aiws resume REQ-001\n\nThe body mentions aiws unlock.\nEOF",
+  ];
+  for (const command of mentions) assert.equal(bash(command), 0, command);
+
+  // ...while every way of actually running one stays blocked
+  const runs = [
+    'aiws approve REQ-001 design --yes',
+    '"aiws" approve REQ-001 design', // a quoted command word still runs
+    `'aiws' "approve" REQ-001 design`,
+    'bash -c "aiws approve REQ-001 design"',
+    'echo "aiws approve REQ-001 design --yes" | sh',
+    'eval "aiws approve REQ-001 design"',
+    'echo "$(aiws approve REQ-001 design)"',
+    'X="aiws approve REQ-001 design"; $X',
+    "alias a='aiws approve REQ-001 design'; a",
+    "bash <<'EOF'\naiws approve REQ-001 design\nEOF",
+    'node aiws/adapters/cli/bin/aiws.js approve REQ-001 design',
+    "git -c alias.x='!aiws approve REQ-001 design' x",
+    'grep "aiws approve REQ-001 design', // unbalanced quote: no guessing
+  ];
+  for (const command of runs) assert.equal(bash(command), 2, command);
+
+  // the PowerShell tool has other quoting rules: its commands are always matched as a whole
+  const ps = hook(root, { tool_name: 'PowerShell', tool_input: { command: 'Write-Output "aiws approve REQ-001 design"' } });
+  assert.equal(ps.status, 2);
+
+  // inside a phase the same holds for the rest of the denylist, and secrets are found even when quoted
+  const agent = inPhase('implementation', { AIWS_TASK: 'T1' });
+  assert.equal(bash('grep -rn "git push origin main" source-be', agent), 0);
+  assert.equal(bash(`'git' push origin main`, agent), 2);
+  assert.equal(bash('git commit -m "a message"', agent), 2);
+  assert.equal(bash('cat "source-be/.env"', agent), 2);
 });
 
 test('human-only commands refuse inside an AI session and without a TTY', () => {

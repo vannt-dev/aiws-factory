@@ -7,8 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-04
+
+Hardening release driven by the first real requirement run on the demo
+workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
+
+### Added
+
+- `aiws status` shows the AI runs of a requirement: how many, their total time
+  and the cumulative cost (list-price equivalent) per phase.
+- `aiws check build` runs every configured `<side>_build` and `<side>_test`
+  command. The AIWS gates workflow runs it on `aiws/REQ-*` pull requests and
+  sets up Java only when a Maven or Gradle project exists.
+- `aiws stop REQ` asks a running `aiws run` to stop after its current step,
+  through a marker file, so it works the same on Windows, macOS and Linux.
+  Agents inside a phase cannot run it.
+- Interrupted runs are resumable: a task is saved as running before its agent
+  starts, and the next `aiws run` continues it and tells the developer that
+  the task's files may contain partial work.
+- Cost budget per requirement: `limits.max_cost_usd_per_req` in `policies.yaml`
+  blocks a requirement before its next step once its AI runs reach the budget.
+  Only a human continues, with `aiws resume REQ [--budget USD]`; `aiws status`
+  shows the budget. Off by default; runs that report no cost never count.
+- `claude.agent_models` in `runtime.yaml` chooses the model of one agent, for
+  example `developer: sonnet`, overriding the `model_hint` mapping.
+- `aiws discover --branch[=NAME]` commits the knowledge base on a new branch
+  (default `aiws/discover-YYYYMMDD`) to be merged through a pull request, for
+  workspaces whose base branch is protected. Without the flag nothing changes.
+
 ### Fixed
 
+- The guard no longer blocks Bash commands that only mention a denied command
+  in literal text, such as a search pattern, a commit message or a
+  here-document for `git commit`. Anything that could run that text (shells,
+  `eval`, interpreters, `$(...)`, variables, aliases, unbalanced quotes) and
+  every PowerShell command is still matched as a whole. Assignments (`X=...`)
+  and git aliases (`!...`) are now recognised as command starts.
+- Agents never start without a working guard hook. `aiws run` and
+  `aiws discover` refuse to start when `.claude/settings.json` is missing, when
+  the workspace's own CLI has no `node_modules` (a new git worktree), or when
+  `aiws` is not on PATH. A crashing hook exits 1, which does not block, so
+  agents used to run with diff-scope as their only check.
+- `aiws new --worktree` installs the CLI dependencies of the new worktree.
+- `aiws sync claude` writes `aiws guard` as the hook command in projects that do
+  not carry the CLI (created with `aiws init`); before, the hook pointed to a
+  file that does not exist there.
+- `aiws approve REQ pr` accepts squash and rebase merges: besides the ancestor
+  check it passes when every file the requirement changed has the same content
+  on the base. It no longer checks out the base branch, so it works when the
+  base is checked out in another worktree. `aiws trace` falls back to the
+  `Task:` trailer when a recorded commit id is not on the base.
+- `aiws detect` proposes Maven test commands without `-q` (`-B -ntp` instead),
+  so the test evidence keeps the "Tests run: N" summary. Existing policies keep
+  their commands until `aiws detect --write --force`.
 - `aiws detect` now proposes `.\mvnw.cmd` on Windows. A bare `mvnw.cmd` is not
   found by cmd.exe when `NoDefaultCurrentDirectoryInExePath` is set, which
   Claude Code does.
@@ -23,12 +74,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The `requirement-analysis` and `unit-testing` skills, and the analyst and
+  test-designer agents, now guide granularity: one acceptance criterion per
+  behaviour with its data variants listed inside it, and one parameterised test
+  case per behaviour. The demo requirement produced 22 criteria and 43 test
+  cases; the effect of the new guidance has not been measured yet.
 - A Claude Code session outside any requirement phase may now drive
   `aiws new` and `aiws run`, so an assistant can coordinate the workflow. Inside
   a phase they stay blocked, so an agent cannot start a nested run. The gate
   commands `approve`, `reject`, `answer`, `redesign`, `resume` and `unlock`
   remain human-only everywhere, enforced by the guard hook and by static deny
   rules.
+- An interactive session on an `aiws/REQ-*` branch may also run `aiws new`,
+  `aiws run` and `aiws stop`, and may write outside the workspace. Agents
+  started by the orchestrator (`AIWS_PHASE` set) keep every restriction; write
+  scopes, the git denylist and the gate commands are unchanged for both.
 - CI runs as a staged pipeline: change detection → lint and format → Linux tests
   (Node 22) → Windows, macOS and Node 24 tests → a single `4. CI result` status.
   Each stage runs only if the previous one passed; lint runs once instead of in
@@ -69,5 +129,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/vannt-dev/aiws-factory/releases/tag/v0.1.0

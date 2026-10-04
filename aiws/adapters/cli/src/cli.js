@@ -14,12 +14,14 @@ Setup
   aiws detect [--write] [--force]      recognise the stack of each source-* dir (any language) and propose
                                        sides + build/test commands; --write merges them into policies.yaml
   aiws sync claude                     generate CLAUDE.md + .claude/ (agents, skills, settings, hooks) from aiws/
-  aiws discover                       build aiws/knowledge/ from source-* (run once, and after big changes)
+  aiws discover [--branch[=NAME]]      build aiws/knowledge/ from source-* (run once, and after big changes);
+                                       --branch commits on a new branch, for a pull request
 
 Requirement lifecycle
   aiws new REQ-001 [--worktree PATH]   create aiws/work/REQ-001 and branch aiws/REQ-001
   aiws run REQ-001 [--once]            run phases until the next human gate / block / done
-  aiws status [REQ-001]                phase, tasks, recent history, source lock
+  aiws stop REQ-001                    ask a running \`aiws run\` to stop after its current step
+  aiws status [REQ-001]              phase, tasks, recent history, source lock
   aiws prompt REQ-001 PHASE [--task T] print the prompt an agent would receive
 
 Human-only (refuse to run inside an AI session; confirm interactively or pass --yes)
@@ -27,7 +29,8 @@ Human-only (refuse to run inside an AI session; confirm interactively or pass --
   aiws reject  REQ-001 design|pr -m FEEDBACK [--sign]
   aiws answer  REQ-001 -m ANSWER       answer blocking questions / a developer question (design unchanged)
   aiws redesign REQ-001 -m REASON      developer question needs a design change -> back to design
-  aiws resume  REQ-001 [-m NOTE]       continue after a block you have fixed
+  aiws resume  REQ-001 [-m NOTE] [--budget USD]
+                                       continue after a block you have fixed, or raise the cost budget
   aiws unlock                          release a stale source lock
 
 Checks (for CI and debugging)
@@ -35,6 +38,7 @@ Checks (for CI and debugging)
   aiws check diff-scope --req R [--phase P] [--task T] [--base REV]
   aiws check commit-trailer --req R [--range A..B]
   aiws check approvals --req R
+  aiws check build                     run every <side>_build and <side>_test command of policies.yaml
   aiws guard [--bash]                  Claude Code PreToolUse hook (reads tool JSON on stdin)
 `;
 
@@ -42,7 +46,7 @@ export function version() {
   return JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8')).version;
 }
 
-const VALUE_FLAGS = new Set(['-m', '--message', '--task', '--req', '--phase', '--base', '--range', '--worktree']);
+const VALUE_FLAGS = new Set(['-m', '--message', '--task', '--req', '--phase', '--base', '--range', '--worktree', '--budget']);
 
 export function parseArgs(argv) {
   const pos = [];
@@ -88,7 +92,7 @@ export async function main(argv) {
       C.sync(a1 ?? 'claude');
       return 0;
     case 'discover':
-      C.discover();
+      C.discover({ branch: flags.branch });
       return 0;
     case 'detect':
       C.detect({ write: Boolean(flags.write), force: Boolean(flags.force) });
@@ -98,6 +102,9 @@ export async function main(argv) {
       return 0;
     case 'run':
       C.run(a1, { once: Boolean(flags.once) });
+      return 0;
+    case 'stop':
+      C.stop(a1);
       return 0;
     case 'status':
       C.status(a1);
@@ -118,7 +125,7 @@ export async function main(argv) {
       await C.redesign(a1, human);
       return 0;
     case 'resume':
-      await C.resume(a1, human);
+      await C.resume(a1, { ...human, budget: flags.budget });
       return 0;
     case 'unlock':
       await C.unlock(human);
@@ -130,7 +137,8 @@ export async function main(argv) {
       if (a1 === 'diff-scope') C.checkDiffScope(flags);
       else if (a1 === 'commit-trailer') C.checkCommitTrailers(flags);
       else if (a1 === 'approvals') C.checkApprovals(flags);
-      else throw new AiwsError(`Unknown check '${a1}'. Use diff-scope | commit-trailer | approvals`);
+      else if (a1 === 'build') C.checkBuild();
+      else throw new AiwsError(`Unknown check '${a1}'. Use diff-scope | commit-trailer | approvals | build`);
       return process.exitCode ?? 0;
     case 'guard': {
       let ws;

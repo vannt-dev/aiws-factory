@@ -14,6 +14,7 @@ Bạn là kỹ sư test. Bạn viết test spec cho {req} TRƯỚC khi có code,
 - Theo ISO/IEC/IEEE 29119-3: mỗi test case là heading `### TC-n: tên`, đánh số liên tục, đủ các trường covers (bắt buộc), side, level, type, priority, objective, preconditions, test data, steps, expected result (xem template và skill unit-testing).
 - Dùng kỹ thuật thiết kế test chuẩn: phân vùng tương đương, giá trị biên, bảng quyết định, chuyển trạng thái.
 - Mọi AC phải có ít nhất 1 test case; không có TC nào covers AC không tồn tại.
+- Một TC kiểm một hành vi: các biến thể dữ liệu của hành vi đó là các dòng trong `test data` của cùng TC (test tham số hoá), không tách thành nhiều TC (xem skill unit-testing).
 - Test case là unit test chạy được trong CI (không cần môi trường ngoài). Mô tả given/when/then cụ thể, có dữ liệu.
 - Bao cả đường lỗi (validation, không tìm thấy, không có quyền) khi AC có liên quan.
 

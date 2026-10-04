@@ -40,13 +40,14 @@ const DETECTORS = [
     if (has(d, 'mvnw')) {
       // `.\` is required on Windows: with NoDefaultCurrentDirectoryInExePath set (Claude Code sets it),
       // cmd.exe does not look up bare `mvnw.cmd` in the current directory.
+      // Tests run without -q so the evidence keeps Maven's "Tests run: N" summary (-B -ntp keeps it short).
       return {
         stack: 'java-maven',
         build: { windows: `cd ${rel} && .\\mvnw.cmd -q -DskipTests package`, posix: `cd ${rel} && ./mvnw -q -DskipTests package` },
-        test: { windows: `cd ${rel} && .\\mvnw.cmd -q test`, posix: `cd ${rel} && ./mvnw -q test` },
+        test: { windows: `cd ${rel} && .\\mvnw.cmd -B -ntp test`, posix: `cd ${rel} && ./mvnw -B -ntp test` },
       };
     }
-    return { stack: 'java-maven', build: `mvn -q -f ${rel}/pom.xml -DskipTests package`, test: `mvn -q -f ${rel}/pom.xml test` };
+    return { stack: 'java-maven', build: `mvn -q -f ${rel}/pom.xml -DskipTests package`, test: `mvn -B -ntp -f ${rel}/pom.xml test` };
   },
   (d, rel) => {
     if (!has(d, 'build.gradle') && !has(d, 'build.gradle.kts')) return null;
