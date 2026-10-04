@@ -1,6 +1,6 @@
 {
   "name": "aiws",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AI Software Factory - deterministic orchestrator that turns a requirement into tested code through gated phases (Claude Code first).",
   "keywords": [
     "ai-agents",
