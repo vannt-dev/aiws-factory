@@ -5,7 +5,8 @@ branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
 phase: design
-status: running
+status: blocked
+reason: "test-designer failed 3 attempts: agent run failed (exit 1): You've hit your session limit · resets 1:50pm (Asia/Bangkok)"
 history:
   - phase: new
     result: created
@@ -21,9 +22,29 @@ history:
     result: ok
     run: run-0002
     at: 2026-10-04T03:30:50Z
+  - phase: design
+    agent: test-designer
+    result: fail
+    run: run-0003
+    attempt: 1
+    at: 2026-10-04T03:34:43Z
+  - phase: design
+    agent: test-designer
+    result: fail
+    run: run-0004
+    attempt: 2
+    at: 2026-10-04T03:34:46Z
+  - phase: design
+    agent: test-designer
+    result: fail
+    run: run-0005
+    attempt: 3
+    at: 2026-10-04T03:34:50Z
 tasks: []
 feedback: []
-attempts: {}
-last_failure: {}
+attempts:
+  design:test-designer: 3
+last_failure:
+  design:test-designer: "- agent run failed (exit 1): You've hit your session limit · resets 1:50pm (Asia/Bangkok)"
 step_index: 1
-run_seq: 2
+run_seq: 5
