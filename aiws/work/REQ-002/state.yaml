@@ -166,7 +166,10 @@ tasks:
       - TC-73
     depends_on:
       - T3
-    status: pending
+    status: running
+    base: 6b373a0884e6866c323472255ec2c1de7e979a6e
+    attempts: 1
+    test_result: pass
   - id: T5
     title: fe - thêm cột Thao tác với nút Sửa trong bảng khách hàng
     type: feat
@@ -202,5 +205,5 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 10
+run_seq: 11
 budget_usd: 40
