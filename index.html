@@ -358,13 +358,43 @@ AIWS-Run: run-0005</pre>
   <div class="wrap">
     <p class="kicker" data-i18n="rs.k">Real run</p>
     <h2 data-i18n="rs.h2">Results on a sample requirement with Claude Code</h2>
-    <p class="sub" data-i18n="rs.sub">A small frontend + backend requirement run from discovery to knowledge update, headless, with the guard hook enabled.</p>
+    <p class="sub" data-i18n="rs.sub">A requirement on a Java backend, a JavaScript frontend and a PHP legacy system, run headless from discovery to the pull request with the guard hook enabled.</p>
     <div class="stats">
-      <div class="card stat"><div class="v">2/2</div><div class="l" data-i18n="rs.1">tasks passed on the first attempt</div></div>
-      <div class="card stat"><div class="v">11 → 17</div><div class="l" data-i18n="rs.2">ACs traced to test cases, 100%</div></div>
+      <div class="card stat"><div class="v">5/5</div><div class="l" data-i18n="rs.1">tasks passed on the first attempt</div></div>
+      <div class="card stat"><div class="v">22 → 43</div><div class="l" data-i18n="rs.2">ACs traced to test cases, 100%</div></div>
       <div class="card stat"><div class="v">0</div><div class="l" data-i18n="rs.3">out-of-scope writes</div></div>
       <div class="card stat"><div class="v">2</div><div class="l" data-i18n="rs.4">human interventions: design approval, PR merge</div></div>
-      <div class="card stat"><div class="v">22</div><div class="l" data-i18n="rs.5">automated tests, CI on Windows, Linux and macOS</div></div>
+      <div class="card stat"><div class="v">33</div><div class="l" data-i18n="rs.5">automated tests, CI on Windows, Linux and macOS</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="control">
+  <div class="wrap">
+    <p class="kicker" data-i18n="ct.k">Cost and control</p>
+    <h2 data-i18n="ct.h2">You decide how much the AI may spend and when it stops</h2>
+    <p class="sub" data-i18n="ct.sub">New in 0.2.0, from the first real requirement run on a three-language demo workspace.</p>
+    <div class="grid g4">
+      <div class="card feature">
+        <div class="icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg></div>
+        <h3 data-i18n="ct.1.h">Cost at a glance</h3>
+        <p data-i18n="ct.1"><code>aiws status</code> shows the AI runs of a requirement, their total time and the cumulative cost per phase.</p>
+      </div>
+      <div class="card feature">
+        <div class="icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1 1-1.8 2.5-1.8s2.5.8 2.5 1.9c0 2.4-5 1.4-5 3.9 0 1.1 1 1.9 2.5 1.9s2.5-.8 2.5-1.8"/></svg></div>
+        <h3 data-i18n="ct.2.h">Budget per requirement</h3>
+        <p data-i18n="ct.2">Set a limit in <code>policies.yaml</code>. Once it is reached the requirement is blocked, and only a human can raise it.</p>
+      </div>
+      <div class="card feature">
+        <div class="icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><path d="M16.5 13v7M13 16.5h7"/></svg></div>
+        <h3 data-i18n="ct.3.h">Model per agent</h3>
+        <p data-i18n="ct.3">Use a stronger model for design and review and a cheaper one for implementation, with one line in <code>runtime.yaml</code>.</p>
+      </div>
+      <div class="card feature">
+        <div class="icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></svg></div>
+        <h3 data-i18n="ct.4.h">Pause and resume</h3>
+        <p data-i18n="ct.4"><code>aiws stop</code> ends a run after its current step. A run that was interrupted continues where it left off.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -404,7 +434,7 @@ AIWS-Run: run-0005</pre>
 
 <footer>
   <div class="wrap">
-    <span>AIWS — AI Software Factory · v0.1.0 · <a href="https://github.com/vannt-dev/aiws-factory/blob/main/LICENSE">MIT License</a></span>
+    <span>AIWS — AI Software Factory · v0.2.0 · <a href="https://github.com/vannt-dev/aiws-factory/blob/main/LICENSE">MIT License</a></span>
     <span>
       <a href="https://github.com/vannt-dev/aiws-factory">GitHub</a> ·
       <a class="guide" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.md" data-i18n="cta.guide">Operations guide</a> ·
@@ -455,7 +485,18 @@ AIWS-Run: run-0005</pre>
       'tr.sub': 'Chỉ dùng ID nhất quán, commit trailer và file evidence trong repo. <code>aiws trace</code> sinh ma trận; AC nào thiếu test hoặc test nào thiếu commit sẽ chặn phase review.',
       'tr.result': 'Kết quả',
       'rs.k': 'Đã chạy thật', 'rs.h2': 'Kết quả trên REQ mẫu với Claude Code',
-      'rs.sub': 'Một requirement nhỏ (FE + BE) chạy từ discovery tới knowledge update, headless, hook guard bật.',
+      'rs.sub': 'Một requirement trên backend Java, frontend JavaScript và hệ thống legacy PHP, chạy headless từ discovery tới pull request, hook guard bật.',
+      'ct.k': 'Chi phí và kiểm soát',
+      'ct.h2': 'Bạn quyết định AI được tiêu bao nhiêu và dừng khi nào',
+      'ct.sub': 'Mới trong bản 0.2.0, rút ra từ lần chạy requirement thật đầu tiên trên workspace demo ba ngôn ngữ.',
+      'ct.1.h': 'Chi phí nhìn là thấy',
+      'ct.1': '<code>aiws status</code> hiển thị số lần AI chạy của một requirement, tổng thời gian và chi phí cộng dồn theo từng phase.',
+      'ct.2.h': 'Ngân sách cho mỗi requirement',
+      'ct.2': 'Đặt giới hạn trong <code>policies.yaml</code>. Khi chạm giới hạn, requirement bị chặn và chỉ người mới nâng được.',
+      'ct.3.h': 'Chọn model theo agent',
+      'ct.3': 'Dùng model mạnh cho thiết kế và review, model rẻ hơn cho implementation, chỉ bằng một dòng trong <code>runtime.yaml</code>.',
+      'ct.4.h': 'Tạm dừng và chạy tiếp',
+      'ct.4': '<code>aiws stop</code> dừng lần chạy sau bước hiện tại. Lần chạy bị ngắt giữa chừng sẽ tiếp tục từ chỗ dở.',
       'rs.1': 'task pass ngay lần đầu', 'rs.2': 'AC truy vết tới test case, đủ 100%', 'rs.3': 'lần ghi ngoài phạm vi',
       'rs.4': 'lần người can thiệp: duyệt design, merge PR', 'rs.5': 'test tự động, CI trên Windows, Linux và macOS',
       'gs.h2': 'Chạy trong vài lệnh',
@@ -502,7 +543,18 @@ AIWS-Run: run-0005</pre>
       'tr.sub': '一貫した ID、コミットトレーラー、リポジトリ内のエビデンスファイルだけを使います。<code>aiws trace</code> がマトリクスを生成し、テストのない AC やコミットのないテストがあればレビューフェーズを止めます。',
       'tr.result': '結果',
       'rs.k': '実際の実行結果', 'rs.h2': 'Claude Code によるサンプル要件での結果',
-      'rs.sub': 'フロントエンドとバックエンドにまたがる小さな要件を、discovery から knowledge update まで、ガードフックを有効にしたヘッドレスモードで実行しました。',
+      'rs.sub': 'Java のバックエンド、JavaScript のフロントエンド、PHP のレガシーシステムにまたがる要件を、ガードフックを有効にしたヘッドレスモードで discovery からプルリクエストまで実行しました。',
+      'ct.k': 'コストと制御',
+      'ct.h2': 'AI がどこまで使い、いつ止まるかは人が決めます',
+      'ct.sub': '0.2.0 の新機能です。3 つの言語で構成されたデモワークスペースで、初めて実際の要件を実行した経験から生まれました。',
+      'ct.1.h': 'コストをひと目で',
+      'ct.1': '<code>aiws status</code> が、要件ごとの AI 実行回数、合計時間、フェーズ別の累計コストを表示します。',
+      'ct.2.h': '要件ごとの予算',
+      'ct.2': '<code>policies.yaml</code> で上限を設定します。上限に達すると要件はブロックされ、引き上げられるのは人だけです。',
+      'ct.3.h': 'エージェントごとのモデル',
+      'ct.3': '設計とレビューには高性能なモデル、実装には低コストのモデルを、<code>runtime.yaml</code> の 1 行で使い分けられます。',
+      'ct.4.h': '一時停止と再開',
+      'ct.4': '<code>aiws stop</code> は現在のステップの後で実行を止めます。中断された実行は、途中から続行できます。',
       'rs.1': '初回で合格したタスク', 'rs.2': 'AC からテストケースへの追跡率 100%', 'rs.3': '範囲外への書き込み',
       'rs.4': '人の介入：設計承認と PR マージ', 'rs.5': '自動テスト、Windows・Linux・macOS で CI',
       'gs.h2': '数コマンドで動かせます',
@@ -549,7 +601,18 @@ AIWS-Run: run-0005</pre>
       'tr.sub': '只依靠一致的编号、提交 trailer 和仓库中的证据文件。<code>aiws trace</code> 生成追溯矩阵；缺少测试的验收标准或缺少提交的测试都会阻止评审阶段。',
       'tr.result': '结果',
       'rs.k': '真实运行', 'rs.h2': '使用 Claude Code 运行示例需求的结果',
-      'rs.sub': '一个涉及前端和后端的小需求，以无头模式并启用守卫钩子，从 discovery 一直运行到 knowledge update。',
+      'rs.sub': '一个涉及 Java 后端、JavaScript 前端和 PHP 遗留系统的需求，以无头模式并启用守卫钩子，从 discovery 一直运行到拉取请求。',
+      'ct.k': '成本与控制',
+      'ct.h2': 'AI 能花多少、何时停下，由你决定',
+      'ct.sub': '0.2.0 新增功能，源自在三种语言的演示工作区上首次真实运行需求的经验。',
+      'ct.1.h': '成本一目了然',
+      'ct.1': '<code>aiws status</code> 显示一个需求的 AI 运行次数、总耗时以及各阶段的累计成本。',
+      'ct.2.h': '按需求设定预算',
+      'ct.2': '在 <code>policies.yaml</code> 中设置上限。达到上限后需求会被阻塞，只有人才能提高上限。',
+      'ct.3.h': '按智能体选择模型',
+      'ct.3': '设计和评审使用更强的模型，实现使用更便宜的模型，只需在 <code>runtime.yaml</code> 中写一行。',
+      'ct.4.h': '暂停与继续',
+      'ct.4': '<code>aiws stop</code> 会在当前步骤结束后停止运行。被中断的运行会从中断处继续。',
       'rs.1': '首次尝试即通过的任务', 'rs.2': '验收标准到测试用例的追溯率 100%', 'rs.3': '越界写入',
       'rs.4': '次人工介入：设计审批和 PR 合并', 'rs.5': '项自动化测试，在 Windows、Linux 和 macOS 上运行 CI',
       'gs.h2': '几条命令即可运行',
@@ -596,7 +659,18 @@ AIWS-Run: run-0005</pre>
       'tr.sub': '일관된 ID, 커밋 트레일러, 저장소의 증거 파일만 사용합니다. <code>aiws trace</code>가 매트릭스를 만들며, 테스트 없는 AC나 커밋 없는 테스트가 있으면 리뷰 단계를 막습니다.',
       'tr.result': '결과',
       'rs.k': '실제 실행', 'rs.h2': 'Claude Code로 샘플 요구사항을 실행한 결과',
-      'rs.sub': '프론트엔드와 백엔드에 걸친 작은 요구사항을 가드 훅을 켠 헤드리스 모드로 discovery부터 knowledge update까지 실행했습니다.',
+      'rs.sub': 'Java 백엔드, JavaScript 프론트엔드, PHP 레거시 시스템에 걸친 요구사항을 가드 훅을 켠 헤드리스 모드로 discovery부터 풀 리퀘스트까지 실행했습니다.',
+      'ct.k': '비용과 제어',
+      'ct.h2': 'AI가 얼마나 쓰고 언제 멈출지는 사람이 정합니다',
+      'ct.sub': '0.2.0의 새 기능으로, 세 가지 언어로 구성된 데모 워크스페이스에서 처음으로 실제 요구사항을 실행하며 얻은 결과입니다.',
+      'ct.1.h': '한눈에 보는 비용',
+      'ct.1': '<code>aiws status</code>가 요구사항별 AI 실행 횟수, 총 소요 시간, 단계별 누적 비용을 보여 줍니다.',
+      'ct.2.h': '요구사항별 예산',
+      'ct.2': '<code>policies.yaml</code>에서 한도를 설정합니다. 한도에 도달하면 요구사항이 차단되며, 사람만 한도를 올릴 수 있습니다.',
+      'ct.3.h': '에이전트별 모델',
+      'ct.3': '설계와 리뷰에는 강력한 모델을, 구현에는 더 저렴한 모델을 <code>runtime.yaml</code> 한 줄로 지정합니다.',
+      'ct.4.h': '일시 중지와 재개',
+      'ct.4': '<code>aiws stop</code>은 현재 단계가 끝난 뒤 실행을 멈춥니다. 중단된 실행은 멈춘 지점부터 이어집니다.',
       'rs.1': '첫 시도에 통과한 태스크', 'rs.2': 'AC에서 테스트 케이스로 100% 추적', 'rs.3': '범위 밖 쓰기',
       'rs.4': '사람 개입: 설계 승인, PR 병합', 'rs.5': '자동화 테스트, Windows·Linux·macOS에서 CI',
       'gs.h2': '몇 개의 명령으로 바로 시작',
