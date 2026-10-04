@@ -16,7 +16,7 @@ limits:
   max_files_per_task: 10
   # Ngân sách AI cho mỗi REQ (USD quy đổi theo bảng giá API). Vượt thì REQ bị blocked và chỉ NGƯỜI
   # chạy tiếp được bằng `aiws resume <REQ> [--budget USD]`. Bỏ trống = không giới hạn.
-  # max_cost_usd_per_req: 30
+  max_cost_usd_per_req: 20
 
 protected_paths:            # không agent nào được ghi, ở mọi phase
   - source-legacy/**
@@ -99,8 +99,8 @@ commands:
     windows: cd source-be && .\mvnw.cmd -q -DskipTests package
     posix: cd source-be && ./mvnw -q -DskipTests package
   be_test:
-    windows: cd source-be && .\mvnw.cmd -q test
-    posix: cd source-be && ./mvnw -q test
+    windows: cd source-be && .\mvnw.cmd -B -ntp test
+    posix: cd source-be && ./mvnw -B -ntp test
   fe_build: npm run build --prefix source-fe
   fe_test: npm test --prefix source-fe
 
