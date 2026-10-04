@@ -4,7 +4,7 @@ requirement: requirements/REQ-002-edit-customer.md
 branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
-phase: implementation
+phase: review
 status: running
 history:
   - phase: new
@@ -103,6 +103,9 @@ history:
     result: done
     run: run-0013
     commit: b27b52d
+    at: 2026-10-04T07:51:43Z
+  - phase: implementation
+    result: all_tasks_done
     at: 2026-10-04T07:51:43Z
 tasks:
   - id: T1
