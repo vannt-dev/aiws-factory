@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { makeWorkspace, aiws, ok, state, git, scenario, readFile, writeFile, tempDir, BIN } from './helpers.js';
+import { Workspace } from '../src/workspace.js';
+import { guardCommand, preflight } from '../src/adapters/claude.js';
+import { preflightAdapters } from '../src/adapters/index.js';
 
 function toImplementation(root, env) {
   ok(root, ['new', 'REQ-001']);
@@ -353,7 +356,9 @@ test('init copies the kit into a fresh project and sync claude generates .claude
     assert.ok(settings.permissions.deny.includes(`Bash(aiws ${gate} *)`), `aiws ${gate} is always denied`);
   }
   assert.equal(settings.hooks.PreToolUse[1].matcher, 'Bash|PowerShell');
-  assert.match(settings.hooks.PreToolUse[0].hooks[0].command, /aiws\.js" guard$/);
+  // a project created with `aiws init` has no CLI of its own, so the hook calls `aiws` from PATH
+  assert.equal(settings.hooks.PreToolUse[0].hooks[0].command, 'aiws guard');
+  assert.equal(settings.hooks.PreToolUse[1].hooks[0].command, 'aiws guard --bash');
   const dev = readFile(dir, '.claude/agents/developer.md');
   assert.match(dev, /^---\nname: developer\n/);
   assert.match(dev, /tools: Read, Grep, Glob, Edit, MultiEdit, Write, Bash/);
@@ -368,4 +373,43 @@ test('init copies the kit into a fresh project and sync claude generates .claude
   ok(dir, ['sync', 'claude']);
   assert.match(readFile(dir, '.claude/agents/developer.md'), /\nmodel: sonnet\n/);
   assert.match(readFile(dir, '.claude/agents/architect.md'), /\nmodel: opus\n/);
+});
+
+test('agents never start without a working guard hook (Claude adapter preflight)', () => {
+  const dir = tempDir('aiws-pre-');
+  ok(dir, ['init']);
+
+  // 1. hook not installed at all
+  assert.throws(() => preflight(new Workspace(dir)), /\.claude\/settings\.json is missing.*aiws sync claude/);
+  ok(dir, ['sync', 'claude']);
+
+  // 2. project without its own CLI: `aiws` must be on PATH
+  const savedPath = process.env.PATH;
+  try {
+    process.env.PATH = '';
+    assert.throws(() => preflight(new Workspace(dir)), /`aiws` is not on PATH/);
+  } finally {
+    process.env.PATH = savedPath;
+  }
+
+  // 3. workspace that carries its own CLI (the kit, or a git worktree of it): the hook runs from there
+  //    and needs that copy's dependencies, which a new worktree does not have
+  writeFile(dir, 'aiws/adapters/cli/bin/aiws.js', '// stub\n');
+  writeFile(dir, 'aiws/adapters/cli/package.json', '{}\n');
+  assert.match(guardCommand(new Workspace(dir)), /^node "\$\{CLAUDE_PROJECT_DIR\}\/aiws\/adapters\/cli\/bin\/aiws\.js" guard$/);
+  assert.throws(() => preflight(new Workspace(dir)), /dependencies are missing in aiws\/adapters\/cli.*npm ci --omit=dev/);
+  fs.mkdirSync(path.join(dir, 'aiws/adapters/cli/node_modules/yaml'), { recursive: true });
+  assert.doesNotThrow(() => preflight(new Workspace(dir)));
+
+  // 4. a custom guard command is the project's own responsibility
+  fs.rmSync(path.join(dir, 'aiws/adapters/cli/node_modules'), { recursive: true });
+  const rtFile = path.join(dir, 'aiws/config/runtime.yaml');
+  const rt = YAML.parse(fs.readFileSync(rtFile, 'utf8'));
+  rt.claude.guard_command = 'my-guard';
+  fs.writeFileSync(rtFile, YAML.stringify(rt));
+  assert.equal(guardCommand(new Workspace(dir)), 'my-guard');
+  assert.doesNotThrow(() => preflight(new Workspace(dir)));
+
+  // the scripted adapter has no hook and no preflight: tests and demos are unaffected
+  assert.doesNotThrow(() => preflightAdapters({ runtime: { default_adapter: 'scripted' } }, ['analysis']));
 });

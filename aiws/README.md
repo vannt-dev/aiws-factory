@@ -103,6 +103,10 @@ aiws new REQ-002 --worktree ../ws-REQ-002
 cd ../ws-REQ-002 && aiws run REQ-002
 ```
 
+A worktree is also the simplest way to let an assistant coordinate a requirement: the main checkout stays on its branch, and the requirement runs next to it.
+
+**The guard hook must work before any agent starts.** A hook that crashes does not block anything, so `aiws run` and `aiws discover` first check it and refuse to start otherwise: `.claude/settings.json` must exist (`aiws sync claude`), and the hook command must be runnable. In a workspace that carries its own CLI (`aiws/adapters/cli`, as in this repository), the hook runs from that folder and needs its `node_modules`; every worktree has its own copy, which `aiws new --worktree` installs. In a project created with `aiws init`, the hook is `aiws guard` and `aiws` must be on PATH. Set `claude.guard_command` in `runtime.yaml` to use another command.
+
 ## 4. Enforcement: four layers, each one still blocks if the previous one is bypassed
 
 | Layer | Implementation |

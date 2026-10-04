@@ -103,6 +103,10 @@ aiws new REQ-002 --worktree ../ws-REQ-002
 cd ../ws-REQ-002 && aiws run REQ-002
 ```
 
+Worktree cũng là cách đơn giản nhất để một trợ lý AI điều phối requirement: thư mục chính vẫn ở nhánh của nó, còn requirement chạy ở thư mục bên cạnh.
+
+**Hook bảo vệ phải chạy được trước khi agent nào khởi động.** Hook bị lỗi thì không chặn được gì, nên `aiws run` và `aiws discover` kiểm tra hook trước và từ chối chạy nếu không đạt: phải có `.claude/settings.json` (`aiws sync claude`), và lệnh hook phải chạy được. Với workspace mang sẵn CLI (`aiws/adapters/cli`, như repo này), hook chạy từ thư mục đó và cần `node_modules` của nó; mỗi worktree có một bản riêng, và `aiws new --worktree` tự cài. Với dự án tạo bằng `aiws init`, hook là `aiws guard` và `aiws` phải có trên PATH. Muốn dùng lệnh khác thì đặt `claude.guard_command` trong `runtime.yaml`.
+
 ## 4. Enforcement: 4 lớp, lớp sau vẫn chặn khi lớp trước bị vượt
 
 | Lớp | Hiện thực |

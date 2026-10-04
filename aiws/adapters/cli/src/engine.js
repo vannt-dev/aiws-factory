@@ -12,7 +12,7 @@ import { buildPrompt } from './prompt.js';
 import { validateOutputs, loadPlan } from './validate.js';
 import { designApprovalStatus } from './gate.js';
 import { buildTrace, traceMarkdown } from './trace.js';
-import { adapterName, getAdapter } from './adapters/index.js';
+import { adapterName, getAdapter, preflightAdapters } from './adapters/index.js';
 import { detectStacks, reportText } from './stacks.js';
 import { runStats } from './stats.js';
 
@@ -177,6 +177,12 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
   let st = loadState(ws, req);
   assertOnBranch(ws, st);
   assertCleanEnough(ws, st);
+  if (st.status === 'running') {
+    preflightAdapters(
+      ws,
+      ws.workflow.phases.map((p) => p.id)
+    );
+  }
   Lock.takeStop(ws.root, req); // a stop request left over from an earlier run does not apply to this one
 
   for (let i = 0; i < maxSteps; i++) {
@@ -683,6 +689,7 @@ function runUnitTests(ws, st, task, attempt, runId) {
 /** `aiws discover`: builds (or incrementally refreshes) aiws/knowledge/ outside any REQ. */
 export function runDiscover(ws, { maxAttempts } = {}) {
   const req = '_discover';
+  preflightAdapters(ws, ['discover']);
   const contract = ws.contract('contracts/discover.yaml');
   const max = maxAttempts ?? contract.max_attempts ?? 2;
   const seqFile = path.join(ws.workDir(req), 'seq.yaml');
