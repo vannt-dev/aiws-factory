@@ -15,10 +15,12 @@ import java.util.regex.Pattern;
 
 /**
  * REST endpoints under /api/customers: GET /api/customers, GET /api/customers/{id},
- * POST /api/customers and PUT /api/customers/{id}. Errors are returned as RFC 9457 problem details.
+ * POST /api/customers, PUT /api/customers/{id} and PUT /api/customers/{id}/status.
+ * Errors are returned as RFC 9457 problem details.
  */
 public class CustomerHandler implements HttpHandler {
   private static final Pattern BY_ID = Pattern.compile("^/api/customers/(\\d+)$");
+  private static final Pattern STATUS_BY_ID = Pattern.compile("^/api/customers/(\\d+)/status$");
   static final ObjectMapper JSON =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -65,6 +67,12 @@ public class CustomerHandler implements HttpHandler {
     if (byId.matches() && method.equals("PUT")) {
       UpdateCustomerRequest body = JSON.readValue(exchange.getRequestBody(), UpdateCustomerRequest.class);
       send(exchange, 200, service.update(Long.parseLong(byId.group(1)), body.name(), body.email(), body.phone()));
+      return;
+    }
+    Matcher statusById = STATUS_BY_ID.matcher(path);
+    if (statusById.matches() && method.equals("PUT")) {
+      UpdateCustomerStatusRequest body = JSON.readValue(exchange.getRequestBody(), UpdateCustomerStatusRequest.class);
+      send(exchange, 200, service.updateStatus(Long.parseLong(statusById.group(1)), body.status()));
       return;
     }
     send(exchange, 404, Problem.of(404, "Not Found", "No route for " + method + " " + path));
