@@ -5,7 +5,7 @@ import path from 'node:path';
 import YAML from 'yaml';
 import { makeWorkspace, aiws, ok, state, git, scenario, readFile, writeFile, tempDir, mergeToMain, BIN } from './helpers.js';
 import { Workspace } from '../src/workspace.js';
-import { guardCommand, preflight, usageLimit } from '../src/adapters/claude.js';
+import { guardCommand, modelFor, preflight, usageLimit } from '../src/adapters/claude.js';
 import { preflightAdapters } from '../src/adapters/index.js';
 
 function toImplementation(root, env) {
@@ -546,6 +546,18 @@ test('init copies the kit into a fresh project and sync claude generates .claude
   ok(dir, ['sync', 'claude']);
   assert.match(readFile(dir, '.claude/agents/developer.md'), /\nmodel: sonnet\n/);
   assert.match(readFile(dir, '.claude/agents/architect.md'), /\nmodel: opus\n/);
+
+  // claude.phase_models wins for one phase: the same agent runs on another model there only
+  rt.claude.phase_models = { knowledge_update: 'sonnet', review: 'haiku' };
+  fs.writeFileSync(rtFile, YAML.stringify(rt));
+  const ws = new Workspace(dir);
+  assert.equal(modelFor(ws, ws.agent('discovery'), 'knowledge_update'), 'sonnet');
+  assert.equal(modelFor(ws, ws.agent('discovery'), 'discover'), 'opus', 'full discovery keeps the model of the agent');
+  assert.equal(modelFor(ws, ws.agent('developer'), 'implementation'), 'sonnet', 'agent_models still applies');
+  assert.equal(modelFor(ws, ws.agent('reviewer'), 'review'), 'haiku');
+  // interactive subagents have no phase, so sync keeps the model of the agent
+  ok(dir, ['sync', 'claude']);
+  assert.match(readFile(dir, '.claude/agents/discovery.md'), /\nmodel: opus\n/);
 });
 
 test('agents never start without a working guard hook (Claude adapter preflight)', () => {
