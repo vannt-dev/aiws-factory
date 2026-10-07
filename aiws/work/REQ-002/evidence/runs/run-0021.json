@@ -1,0 +1,42 @@
+{
+  "run_id": "run-0021",
+  "req": "REQ-002",
+  "phase": "knowledge_update",
+  "agent": "discovery",
+  "task": null,
+  "attempt": 1,
+  "adapter": "claude",
+  "command": "claude \"-p\" \"--output-format\" \"json\" \"--permission-mode\" \"dontAsk\" \"--allowedTools\" \"Read,Grep,Glob,Write,Edit,MultiEdit\" \"--model\" \"opus\"",
+  "allowed_tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write",
+    "Edit",
+    "MultiEdit"
+  ],
+  "prompt_file": "run-0021.prompt.md",
+  "prompt_sha256": "b1f28282e05b92a0d43147d269334eb6e8230ec8832ebd05f34988cf420f235f",
+  "started_at": "2026-10-07T14:20:07Z",
+  "duration_ms": 630492,
+  "exit_code": 0,
+  "report": {
+    "is_error": false,
+    "result": "Đã cập nhật xong cả 5 file trong `aiws/knowledge/` cho REQ-002, sửa tại chỗ từng đoạn và giữ nguyên mọi heading của template. Không chạy build hay test vì phase này chỉ sửa tài liệu.\n\n## File đã ghi\n- **`system-map.md`**: thêm luồng 4 \"Sửa khách hàng\" (mở form, lưu, kết quả ở FE), các luồng sau đó lùi một số. Bảng Thành phần có thêm `customerEditForm.js`, `UpdateCustomerRequest`, vùng `#edit-customer`. Bảng Legacy → Hành vi: dòng \"Sửa\" chuyển từ \"Chưa có\" sang \"Đã thay\".\n- **`api-inventory.md`**: thêm dòng `PUT /api/customers/{id}` và thứ tự xử lý 5 bước. `GET /api/customers/{id}` nay ghi là được FE gọi qua `getCustomer`. Mục validation viết lại cho cả `POST` và `PUT`.\n- **`db-schema.md`**: danh sách method của `CustomerRepository` thành bảng 8 method, đối chiếu với câu SQL legacy. Câu \"chưa có update/delete\" thành \"chưa có delete và chưa có thao tác đổi `status`\".\n- **`glossary.md`**: thêm ba thuật ngữ \"Sửa khách hàng\", \"Thao tác\", \"Khách hàng khác\"; cập nhật các dòng Email, Số điện thoại, BR-09, Lỗi theo field.\n- **`conventions.md`**: thêm các pattern FE mới (event delegation, `data-*` mang `id`, hai cách hiện lỗi theo field) và BE mới (hàm `check` dùng chung nhận hai `Predicate`, hậu tố `AndIdNot`). Mục Test thêm bảng TC-44..TC-81.\n\n## Quyết định chính\n- **Đã đóng một `[CẦN XÁC NHẬN]`**: mã TC đánh số tiếp qua các REQ, theo `aiws/work/REQ-002/03-test-spec.md`. Câu \"REQ kế tiếp từ TC-82\" là suy ra từ quy tắc này, không file nào ghi sẵn.\n- **Thêm `[CẦN XÁC NHẬN]` mới**:\n  - Comment `// Arrange / Act / Assert` nay không đồng đều giữa các class test, nên cần chốt quy ước mong muốn.\n  - Bố cục form sửa là đề xuất của REQ-002, vì legacy không có màn hình sửa.\n  - `PUT` với `id` vượt `long` hoặc body JSON `null` trả 500: suy ra từ code, chưa có test.\n- **Sửa hai mô tả cũ đã sai**: câu \"chỉ `insert` có Javadoc\" và câu `ROW_NAME` chỉ dùng khi có ký tự điều khiển. Cả hai nay mô tả theo từng class.\n- **Điểm lệch có chủ ý so với legacy** được ghi trong bảng Legacy của `system-map.md`: `id` không tồn tại trả 404, thêm và sửa là hai endpoint riêng.\n\n## Reviewer cần biết\n- **Rủi ro cho việc migrate**: `update` kiểm tra lại số đang lưu ở mọi lần sửa (TC-54). Khách hàng migrate từ legacy với số theo quy tắc cũ sẽ không lưu được thay đổi nào, kể cả chỉ đổi họ tên, cho tới khi sửa hoặc xoá số. Tôi ghi điều này ở `db-schema.md` → Migration và `api-inventory.md`.\n- **Ba finding minor của `05-review.md` được ghi là hiện trạng, không phải mẫu để theo**: TC-53 và TC-65 gộp hai dòng dữ liệu trong một `@Test`; biến cục bộ `repository` của TC-25 che field cùng tên; `main.js` không có trạng thái \"đang lưu\".\n- File chưa track `aiws/work/REQ-002/evidence/runs/run-0021.prompt.md` là của orchestrator, tôi không đụng tới. `git status` chỉ có 5 file knowledge thay đổi.",
+    "num_turns": 105,
+    "cost_usd": 5.114568200000001,
+    "session_id": "fe20f4c7-3ea0-420e-ae25-8740ee6a293e",
+    "model": null
+  },
+  "stderr_tail": null,
+  "files_changed": [
+    "aiws/knowledge/api-inventory.md",
+    "aiws/knowledge/conventions.md",
+    "aiws/knowledge/db-schema.md",
+    "aiws/knowledge/glossary.md",
+    "aiws/knowledge/system-map.md"
+  ],
+  "scope_violations_reverted": [],
+  "validation": [],
+  "outcome": "ok"
+}

@@ -10,16 +10,29 @@ source-be không có DB, ORM hay JDBC (`source-be/pom.xml` chỉ có `jackson-da
 | Khách hàng (in-memory) | `Map<Long, Customer>` (`ConcurrentSkipListMap`), sinh `id` bằng `AtomicLong.incrementAndGet()` (bắt đầu từ 1) | `id` | `source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java` |
 
 Model lưu trữ là `Customer(long id, String name, String email, String phone, CustomerStatus status)` (`source-be/src/main/java/com/example/crm/domain/Customer.java`).
-- `phone` là `null` khi khách hàng không có số. Khi có, `CustomerService.create` chỉ lưu dạng đã chuẩn hoá: chỉ chữ số, bắt đầu bằng `0`, dài 10 hoặc 11 chữ số (`source-be/src/main/java/com/example/crm/service/PhoneNumbers.java`).
-- `status` là `ACTIVE` hoặc `INACTIVE`. Repository lưu đúng `phone` và `status` được truyền vào `insert` mà không tự kiểm tra; `CustomerService.create` luôn truyền `ACTIVE`.
+- `phone` là `null` khi khách hàng không có số. Khi có, `CustomerService.create` và `CustomerService.update` chỉ lưu dạng đã chuẩn hoá: chỉ chữ số, bắt đầu bằng `0`, dài 10 hoặc 11 chữ số (`source-be/src/main/java/com/example/crm/service/PhoneNumbers.java`).
+- `status` là `ACTIVE` hoặc `INACTIVE`. Repository lưu đúng `phone` và `status` được truyền vào `insert` mà không tự kiểm tra; `CustomerService.create` luôn truyền `ACTIVE`. `update` không nhận `status` và giữ nguyên `status` đang lưu, nên không có đường nào đổi `status` sau khi `insert`.
 
-Không có ràng buộc lưu trữ nào. Tính duy nhất được kiểm tra ở tầng service (`source-be/src/main/java/com/example/crm/service/CustomerService.java:create`), kiểm tra rồi mới `insert` nên không nguyên tử:
-- **Email**: `CustomerRepository.existsByEmail`, không phân biệt hoa thường (`equalsIgnoreCase`).
-- **Số điện thoại** (BR-09): `CustomerRepository.existsByPhoneAndStatus(phone, CustomerStatus.ACTIVE)`, so sánh chính xác bằng `phone.equals(c.phone())` trên số đã chuẩn hoá. Chỉ khách hàng `ACTIVE` giữ số; số của khách hàng `INACTIVE` dùng lại được. Nhiều khách hàng cùng có `phone = null` là hợp lệ.
+Không có ràng buộc lưu trữ nào. Tính duy nhất được kiểm tra ở tầng service (hàm private `source-be/src/main/java/com/example/crm/service/CustomerService.java:check`, dùng chung cho `create` và `update`), kiểm tra rồi mới `insert`/`update` nên không nguyên tử: hai request đồng thời có thể cùng lấy một email hoặc một số (`aiws/work/REQ-002/02-design.md` R3).
+- **Email**: không phân biệt hoa thường (`equalsIgnoreCase`), bất kể trạng thái. Thêm mới: `CustomerRepository.existsByEmail(email)`. Sửa: `existsByEmailAndIdNot(email, id)`, bỏ qua khách hàng có `id` đó.
+- **Số điện thoại** (BR-09): so sánh chính xác bằng `phone.equals(c.phone())` trên số đã chuẩn hoá. Thêm mới: `CustomerRepository.existsByPhoneAndStatus(phone, CustomerStatus.ACTIVE)`. Sửa: `existsByPhoneAndStatusAndIdNot(phone, CustomerStatus.ACTIVE, id)`, bỏ qua khách hàng có `id` đó. Chỉ khách hàng `ACTIVE` giữ số; số của khách hàng `INACTIVE` dùng lại được. Nhiều khách hàng cùng có `phone = null` là hợp lệ.
 
-Cả hai truy vấn đều duyệt tuyến tính toàn bộ map, không có index.
+Cả bốn truy vấn trùng đều duyệt tuyến tính toàn bộ map, không có index.
 
-Interface lưu trữ: `source-be/src/main/java/com/example/crm/repository/CustomerRepository.java` (`findAll`, `findById`, `existsByEmail`, `existsByPhoneAndStatus`, `insert(name, email, phone, status)`). Hiện chưa có update/delete.
+Interface lưu trữ: `source-be/src/main/java/com/example/crm/repository/CustomerRepository.java`.
+
+| Method | Hành vi của `InMemoryCustomerRepository` | Câu SQL legacy tương ứng (`source-legacy/customer_save.php`, `source-legacy/customer_list.php`) |
+| --- | --- | --- |
+| `findAll()` | Mọi khách hàng, tăng dần theo `id` | `SELECT ... FROM customers ORDER BY id` |
+| `findById(id)` | `Optional<Customer>` | — |
+| `existsByEmail(email)` | Có khách hàng nào dùng email, không phân biệt hoa thường | — (legacy dựa vào `uq_customers_email`) |
+| `existsByPhoneAndStatus(phone, status)` | Có khách hàng nào có đúng số và đúng trạng thái | `WHERE phone = ? AND status = 1` (legacy luôn kèm `AND id <> ?`, với `id = 0` khi thêm mới) |
+| `existsByEmailAndIdNot(email, id)` | Như `existsByEmail`, bỏ qua khách hàng `id` | — |
+| `existsByPhoneAndStatusAndIdNot(phone, status, id)` | Như `existsByPhoneAndStatus`, bỏ qua khách hàng `id` | `WHERE phone = ? AND status = 1 AND id <> ?` |
+| `insert(name, email, phone, status)` | Gán `id` mới, lưu đúng giá trị nhận được | `INSERT INTO customers (...)` |
+| `update(id, name, email, phone)` | `computeIfPresent`: thay `name`, `email`, `phone`; giữ `id` và `status` đang lưu. Trả `Optional<Customer>` sau khi sửa, hoặc `Optional.empty()` khi không có `id` đó. **Không bao giờ thêm mới** | `UPDATE customers SET full_name = ?, email = ?, phone = ? WHERE id = ?` |
+
+Hiện chưa có delete và chưa có thao tác đổi `status`.
 
 Dữ liệu seed khi chạy `App.main`: 2 khách hàng, đều `phone = null` (`source-be/src/main/java/com/example/crm/App.java`).
 
@@ -46,4 +59,5 @@ Nguồn: `source-legacy/sql/schema.sql`, `ENGINE=InnoDB DEFAULT CHARSET=utf8`.
 - **Legacy**: không có công cụ migration. Chỉ có một file DDL `source-legacy/sql/schema.sql`.
 - **Migrate dữ liệu legacy → mới**: `source-legacy/README.md` nói dữ liệu `customers` sẽ được migrate, nhưng repo chưa có script hay kế hoạch nào. Mapping cột xem `aiws/knowledge/system-map.md` → Legacy → Dữ liệu.
   - `customers.phone` và `Customer.phone` lưu cùng dạng (chuỗi chữ số đã chuẩn hoá hoặc null), và `CustomerRepository.insert` nhận `status` nên nhập được cả dòng `status = 0` (`INACTIVE`).
-  - [CẦN XÁC NHẬN] dữ liệu `customers.phone` đang có ở legacy có khớp quy tắc BR-07 hiện tại hay không: quy tắc đầu số được cập nhật năm 2018 (`source-legacy/lib/phone.php`), nên có thể còn số lưu theo quy tắc cũ. `aiws/work/REQ-001/api-contract.yaml` không đặt `pattern` cho `phone` trong response vì lý do này.
+  - [CẦN XÁC NHẬN] dữ liệu `customers.phone` đang có ở legacy có khớp quy tắc BR-07 hiện tại hay không: quy tắc đầu số được cập nhật năm 2018 (`source-legacy/lib/phone.php`), nên có thể còn số lưu theo quy tắc cũ. `aiws/work/REQ-001/api-contract.yaml` không đặt `pattern` cho `phone` trong response vì lý do này. Hệ quả từ REQ-002: `CustomerService.update` kiểm tra lại số đang lưu ở mọi lần sửa, nên khách hàng được migrate với số theo quy tắc cũ (vd. `01234567890`) **không lưu được bất kỳ thay đổi nào**, kể cả chỉ đổi họ tên, cho tới khi số được sửa hoặc xoá (`source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java` TC-54; `aiws/knowledge/api-inventory.md` → Endpoints → riêng `PUT`). Hành vi này giống legacy và được giữ có chủ ý (`aiws/work/REQ-002/02-design.md` D7(d)).
+  - Thao tác sửa không cần cột hay index mới: khi có DB thật, `update` và hai truy vấn `…AndIdNot` tương ứng với các câu SQL legacy đang chạy trên `uq_customers_email` và `idx_customers_phone` (`aiws/work/REQ-002/02-design.md` → DB change).

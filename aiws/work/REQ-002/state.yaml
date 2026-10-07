@@ -4,8 +4,8 @@ requirement: requirements/REQ-002-edit-customer.md
 branch: aiws/REQ-002-knowledge
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
-phase: knowledge_update
-status: running
+phase: done
+status: done
 history:
   - phase: new
     result: created
@@ -162,6 +162,11 @@ history:
     head: 0f439fc
     merge: merge commit
     at: 2026-10-07T14:19:44Z
+  - phase: knowledge_update
+    agent: discovery
+    result: ok
+    run: run-0021
+    at: 2026-10-07T14:30:37Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -293,6 +298,6 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 20
+run_seq: 21
 budget_usd: 40
 code_head: 0f439fc0e67ea81218006c8123bdd4b568afdaf9
