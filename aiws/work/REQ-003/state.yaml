@@ -170,9 +170,12 @@ tasks:
     depends_on:
       - T4
       - T5
-    status: pending
+    status: running
+    base: 11bfdcf4978f3453e8ca06a50e60483bc8dcbf2d
+    attempts: 1
+    test_result: pass
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 9
+run_seq: 10
