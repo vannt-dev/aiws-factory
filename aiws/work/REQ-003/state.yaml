@@ -4,7 +4,7 @@ requirement: requirements/REQ-003-customer-status.md
 branch: aiws/REQ-003
 base_branch: demo
 base_commit: 7a881facf3a7612174a8390700c161fc4e7f2cc3
-phase: planning
+phase: implementation
 status: running
 history:
   - phase: new
@@ -31,9 +31,103 @@ history:
     by: Van Nguyen
     record: design-01.yaml
     at: 2026-10-07T16:29:26Z
-tasks: []
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0004
+    at: 2026-10-07T16:35:12Z
+tasks:
+  - id: T1
+    title: be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests:
+      - TC-82
+      - TC-83
+    depends_on: []
+    status: pending
+  - id: T2
+    title: be - thêm CustomerService.updateStatus với kiểm tra trùng số khi kích hoạt lại
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+    tests:
+      - TC-84
+      - TC-85
+      - TC-86
+      - TC-87
+      - TC-88
+      - TC-89
+      - TC-90
+    depends_on:
+      - T1
+    status: pending
+  - id: T3
+    title: be - thêm endpoint PUT /api/customers/{id}/status đổi trạng thái khách hàng
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/api/UpdateCustomerStatusRequest.java
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests:
+      - TC-91
+      - TC-92
+      - TC-93
+      - TC-94
+      - TC-95
+      - TC-96
+      - TC-97
+      - TC-98
+      - TC-99
+      - TC-100
+    depends_on:
+      - T2
+    status: pending
+  - id: T4
+    title: fe - thêm updateCustomerStatus vào customerApi
+    type: feat
+    allowed_files:
+      - source-fe/src/api/customerApi.js
+      - source-fe/test/customerApi.test.js
+    tests:
+      - TC-101
+      - TC-102
+    depends_on:
+      - T3
+    status: pending
+  - id: T5
+    title: fe - thêm nút đổi trạng thái vào ô Thao tác của bảng khách hàng
+    type: feat
+    allowed_files:
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/customerTable.test.js
+    tests:
+      - TC-103
+      - TC-104
+      - TC-105
+    depends_on:
+      - T3
+    status: pending
+  - id: T6
+    title: fe - thêm describeStatusError và nối nút đổi trạng thái vào trang
+    type: feat
+    allowed_files:
+      - source-fe/src/utils/describeStatusError.js
+      - source-fe/test/describeStatusError.test.js
+      - source-fe/src/main.js
+    tests:
+      - TC-106
+      - TC-107
+    depends_on:
+      - T4
+      - T5
+    status: pending
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 3
+run_seq: 4
