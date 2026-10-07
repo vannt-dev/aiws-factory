@@ -54,6 +54,12 @@ history:
     run: run-0007
     commit: b16ba82
     at: 2026-10-07T16:44:05Z
+  - phase: implementation
+    task: T4
+    result: done
+    run: run-0008
+    commit: 4529e7c
+    at: 2026-10-07T16:45:05Z
 tasks:
   - id: T1
     title: be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
@@ -125,10 +131,10 @@ tasks:
       - TC-102
     depends_on:
       - T3
-    status: running
-    base: f972e9568a5870da66892d5fc5257d2b6f9af44f
+    status: done
     attempts: 1
     test_result: pass
+    commit: 4529e7c09f70428ade1b417080373fde308e12a8
   - id: T5
     title: fe - thêm nút đổi trạng thái vào ô Thao tác của bảng khách hàng
     type: feat
