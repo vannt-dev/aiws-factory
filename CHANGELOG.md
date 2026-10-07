@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `claude.phase_models` in `runtime.yaml` chooses the model of one phase for
+  `aiws run`, ahead of `agent_models` and the `model_hint` mapping. An agent
+  can then run on a cheaper model in one phase only, for example
+  `knowledge_update: sonnet` while `aiws discover` keeps the model of the
+  discovery agent.
+
 ### Fixed
 
 - Reaching the AI usage limit (for example the session limit of a Claude
