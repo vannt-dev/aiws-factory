@@ -141,6 +141,12 @@ history:
     result: ok
     run: run-0018
     at: 2026-10-07T14:07:40Z
+  - phase: implementation
+    task: T7
+    result: done
+    run: run-0019
+    commit: 880857d
+    at: 2026-10-07T14:11:33Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -264,10 +270,10 @@ tasks:
     tests: []
     depends_on:
       - T2
-    status: running
-    base: f5605e839be9b5170fc922ab7a04d272be624534
+    status: done
     attempts: 1
     test_result: pass
+    commit: 880857d83215723005808fba6af7be17b4502a26
 feedback: []
 attempts: {}
 last_failure: {}
