@@ -4,8 +4,9 @@ requirement: requirements/REQ-003-customer-status.md
 branch: aiws/REQ-003
 base_branch: demo
 base_commit: 7a881facf3a7612174a8390700c161fc4e7f2cc3
-phase: review
-status: running
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-003 pr` (or `aiws reject REQ-003 pr -m "..."`)
 history:
   - phase: new
     result: created
@@ -75,6 +76,11 @@ history:
   - phase: implementation
     result: all_tasks_done
     at: 2026-10-07T16:48:43Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0011
+    at: 2026-10-07T17:03:22Z
 tasks:
   - id: T1
     title: be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
@@ -187,4 +193,8 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 10
+run_seq: 11
+last_review:
+  run: run-0011
+  head: 5e1278a508abf8d4d886725bdcea39d24073635e
+  approval: design-01.yaml
