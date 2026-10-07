@@ -446,6 +446,43 @@ test('cost budget: a requirement over budget is blocked until a human raises it'
   st = state(root);
   assert.equal(st.phase, 'design_approval', st.reason);
   assert.equal(st.budget_usd, 11);
+  assert.match(ok(root, ['status', 'REQ-001']).stdout, /budget: 6\.00 of 11\.00 USD used \(55%\)/);
+
+  // at a human gate the budget can be raised ahead of time, and nothing else changes
+  const refused = aiws(root, ['resume', 'REQ-001', '--yes']);
+  assert.notEqual(refused.status, 0);
+  assert.match(refused.stderr, /not blocked \(status waiting_human\)\. To raise its budget now, pass --budget/);
+  assert.match(ok(root, ['resume', 'REQ-001', '--yes', '--budget', '20']).stdout, /Budget of REQ-001 is now 20\.00 USD \(spent 6\.00\)/);
+  st = state(root);
+  assert.equal(st.phase, 'design_approval');
+  assert.equal(st.status, 'waiting_human');
+  assert.equal(st.budget_usd, 20);
+  assert.equal(st.history.at(-1).result, 'budget_set');
+  assert.equal(git(root, ['status', '--porcelain']), '', 'the change is committed');
+  assert.match(git(root, ['log', '-1', '--format=%B']), /^chore\(REQ-001\): budget set to 20\.00 USD by .*\n\nREQ-ID: REQ-001/);
+
+  // from 80% of the budget, a run that stops at a gate says how to raise it
+  assert.doesNotMatch(ok(root, ['run', 'REQ-001']).stdout, /budget:/);
+  writeFile(root, `${runs}/run-9002.json`, JSON.stringify({ phase: 'design', duration_ms: 1000, report: { cost_usd: 11 } }));
+  const near = ok(root, ['run', 'REQ-001']).stdout;
+  assert.match(
+    near,
+    /budget: 17\.00 of 20\.00 USD used \(85%\)\. The budget is checked before each step; raise it now with `aiws resume REQ-001 --budget <USD>`/
+  );
+});
+
+test('cost budget: at the PR gate the budget cannot be raised ahead of time', () => {
+  const root = makeWorkspace({ discover: true });
+  toImplementation(root);
+  ok(root, ['run', 'REQ-001']);
+  assert.equal(state(root).phase, 'pr_approval');
+  // the requirement branch must stay exactly what the pull request merges
+  const head = git(root, ['rev-parse', 'HEAD']);
+  const r = aiws(root, ['resume', 'REQ-001', '--yes', '--budget', '50']);
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /waits for its pull request.*Approve the PR first/);
+  assert.equal(git(root, ['rev-parse', 'HEAD']), head);
+  assert.equal(state(root).budget_usd, undefined);
 });
 
 test('check build runs every configured build and test command and fails when one fails', () => {
