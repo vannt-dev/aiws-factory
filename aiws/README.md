@@ -87,7 +87,7 @@ When the orchestrator stops, `aiws status REQ-001` tells you why and what to run
 | Design is ready | `design_approval / waiting_human` | `aiws approve … design` or `aiws reject … design -m` |
 | Developer wrote `questions.md` | `design_change_requested` | `aiws answer … -m` (keep the design) or `aiws redesign … -m` (back to design, needs a new approval) |
 | A task failed 3 times | `implementation / blocked` | fix or revert by hand, `aiws resume REQ-001`, then `aiws run` |
-| Review found a `[critical]` issue | back to `planning` automatically | nothing: the planner adds fix tasks |
+| Review found a `[critical]` issue | back to `planning` automatically | nothing: the planner adds fix tasks. The review after them is a follow-up: it checks the earlier findings and reads in full only what changed since |
 | The design changed after approval | back to `design_approval` automatically | approve again |
 | The AI usage limit is reached | same phase, still `running` | nothing to approve: `aiws run REQ-001` again once the limit resets |
 
