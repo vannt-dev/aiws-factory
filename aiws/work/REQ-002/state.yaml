@@ -4,8 +4,9 @@ requirement: requirements/REQ-002-edit-customer.md
 branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
-phase: review
-status: running
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-002 pr` (or `aiws reject REQ-002 pr -m "..."`)
 history:
   - phase: new
     result: created
@@ -150,6 +151,11 @@ history:
   - phase: implementation
     result: all_tasks_done
     at: 2026-10-07T14:11:34Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0020
+    at: 2026-10-07T14:15:48Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -281,5 +287,5 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 19
+run_seq: 20
 budget_usd: 40
