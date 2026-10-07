@@ -1,0 +1,291 @@
+req_id: REQ-002
+title: Sửa thông tin khách hàng
+requirement: requirements/REQ-002-edit-customer.md
+branch: aiws/REQ-002
+base_branch: demo
+base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-002 pr` (or `aiws reject REQ-002 pr -m "..."`)
+history:
+  - phase: new
+    result: created
+    by: Van Nguyen
+    at: 2026-10-04T03:04:01Z
+  - phase: analysis
+    agent: analyst
+    result: ok
+    run: run-0001
+    at: 2026-10-04T03:15:46Z
+  - phase: design
+    agent: architect
+    result: ok
+    run: run-0002
+    at: 2026-10-04T03:30:50Z
+  - phase: design
+    agent: test-designer
+    result: fail
+    run: run-0003
+    attempt: 1
+    at: 2026-10-04T03:34:43Z
+  - phase: design
+    agent: test-designer
+    result: fail
+    run: run-0004
+    attempt: 2
+    at: 2026-10-04T03:34:46Z
+  - phase: design
+    agent: test-designer
+    result: fail
+    run: run-0005
+    attempt: 3
+    at: 2026-10-04T03:34:50Z
+  - phase: design
+    result: resumed
+    by: Van Nguyen
+    at: 2026-10-04T07:14:35Z
+  - phase: design
+    agent: test-designer
+    result: ok
+    run: run-0006
+    at: 2026-10-04T07:28:29Z
+  - phase: design_approval
+    result: approved
+    by: Van Nguyen
+    record: design-01.yaml
+    at: 2026-10-04T07:30:18Z
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0007
+    at: 2026-10-04T07:38:00Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0008
+    commit: "3443288"
+    at: 2026-10-04T07:39:10Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0009
+    commit: e83a2e9
+    at: 2026-10-04T07:41:24Z
+  - phase: implementation
+    result: budget_exceeded
+    spent_usd: 20.55
+    budget_usd: 20
+    at: 2026-10-04T07:41:24Z
+  - phase: implementation
+    result: resumed
+    by: Van Nguyen
+    budget_usd: 40
+    at: 2026-10-04T07:45:33Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0010
+    commit: e61ea26
+    at: 2026-10-04T07:48:50Z
+  - phase: implementation
+    task: T4
+    result: done
+    run: run-0011
+    commit: b0a3050
+    at: 2026-10-04T07:49:30Z
+  - phase: implementation
+    task: T5
+    result: done
+    run: run-0012
+    commit: 9d9bec3
+    at: 2026-10-04T07:50:05Z
+  - phase: implementation
+    task: T6
+    result: done
+    run: run-0013
+    commit: b27b52d
+    at: 2026-10-04T07:51:43Z
+  - phase: implementation
+    result: all_tasks_done
+    at: 2026-10-04T07:51:43Z
+  - phase: review
+    agent: reviewer
+    result: critical
+    run: run-0014
+    findings: 1
+    at: 2026-10-04T08:02:44Z
+  - phase: planning
+    agent: planner
+    result: fail
+    run: run-0015
+    attempt: 1
+    at: 2026-10-04T08:03:00Z
+  - phase: planning
+    agent: planner
+    result: fail
+    run: run-0016
+    attempt: 2
+    at: 2026-10-04T08:03:04Z
+  - phase: planning
+    agent: planner
+    result: fail
+    run: run-0017
+    attempt: 3
+    at: 2026-10-04T08:03:08Z
+  - phase: planning
+    result: resumed
+    by: Van Nguyen
+    budget_usd: 40
+    at: 2026-10-07T14:04:47Z
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0018
+    at: 2026-10-07T14:07:40Z
+  - phase: implementation
+    task: T7
+    result: done
+    run: run-0019
+    commit: 880857d
+    at: 2026-10-07T14:11:33Z
+  - phase: implementation
+    result: all_tasks_done
+    at: 2026-10-07T14:11:34Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0020
+    at: 2026-10-07T14:15:48Z
+tasks:
+  - id: T1
+    title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests:
+      - TC-44
+      - TC-45
+      - TC-46
+      - TC-47
+    depends_on: []
+    status: done
+    commit: 344328838ebd18fd01bf5d686a191168115b0e53
+    test_result: pass
+  - id: T2
+    title: be - tách hàm kiểm tra dùng chung và thêm CustomerService.update
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+    tests:
+      - TC-48
+      - TC-49
+      - TC-50
+      - TC-51
+      - TC-52
+      - TC-53
+      - TC-54
+      - TC-55
+      - TC-56
+      - TC-57
+      - TC-58
+      - TC-59
+      - TC-60
+    depends_on:
+      - T1
+    status: done
+    commit: e83a2e9638d1dfe02ad357741309db7d2b0f0d46
+    test_result: pass
+  - id: T3
+    title: be - thêm endpoint PUT /api/customers/{id} sửa khách hàng
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/api/UpdateCustomerRequest.java
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests:
+      - TC-61
+      - TC-62
+      - TC-63
+      - TC-64
+      - TC-65
+      - TC-66
+      - TC-67
+      - TC-68
+      - TC-69
+    depends_on:
+      - T2
+    status: done
+    commit: e61ea261260bad4b31dfe69d7de108dfd053faf4
+    test_result: pass
+  - id: T4
+    title: fe - thêm getCustomer và updateCustomer vào customerApi
+    type: feat
+    allowed_files:
+      - source-fe/src/api/customerApi.js
+      - source-fe/test/customerApi.test.js
+    tests:
+      - TC-70
+      - TC-71
+      - TC-72
+      - TC-73
+    depends_on:
+      - T3
+    status: done
+    commit: b0a305019b68f4d6442875cd0d54b9a3edf07809
+    test_result: pass
+  - id: T5
+    title: fe - thêm cột Thao tác với nút Sửa trong bảng khách hàng
+    type: feat
+    allowed_files:
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/customerTable.test.js
+    tests:
+      - TC-74
+      - TC-75
+    depends_on:
+      - T3
+    status: done
+    commit: 9d9bec3fa7ec6592dcfac0d9c2348f2027396936
+    test_result: pass
+  - id: T6
+    title: fe - thêm form sửa khách hàng hiện lỗi theo từng trường và nối vào trang
+    type: feat
+    allowed_files:
+      - source-fe/src/components/customerEditForm.js
+      - source-fe/test/customerEditForm.test.js
+      - source-fe/index.html
+      - source-fe/src/main.js
+    tests:
+      - TC-76
+      - TC-77
+      - TC-78
+      - TC-79
+      - TC-80
+      - TC-81
+    depends_on:
+      - T4
+      - T5
+    status: done
+    commit: b27b52d16055888b0feae81f8e4eaff12b285163
+    test_result: pass
+  - id: T7
+    title: be - đổi hàm kiểm tra dùng chung của CustomerService sang nhận hai predicate theo D4
+    type: refactor
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+    tests: []
+    depends_on:
+      - T2
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 880857d83215723005808fba6af7be17b4502a26
+feedback: []
+attempts: {}
+last_failure: {}
+step_index: 0
+run_seq: 20
+budget_usd: 40

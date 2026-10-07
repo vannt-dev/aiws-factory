@@ -1,0 +1,352 @@
+# OpenAPI 3 cho MỌI endpoint mới/đổi của REQ-002. Cầu nối FE-BE: BE phải expose đúng, FE phải gọi đúng.
+# REQ-002 THÊM đúng một endpoint: PUT /api/customers/{id}. Không endpoint cũ nào đổi path, method, schema,
+# mã trạng thái hay format lỗi (RFC 9457); ba endpoint cũ xem aiws/work/REQ-001/api-contract.yaml.
+# GET /api/customers/{id} được chép lại ở đây, KHÔNG ĐỔI ở BE, chỉ vì từ REQ-002 FE bắt đầu gọi nó để điền
+# form sửa (02-design.md D11).
+openapi: 3.0.3
+info:
+  title: REQ-002 API contract
+  version: 1.0.0
+  description: >-
+    CRM customers API (source-be, CustomerHandler). REQ-002 thêm thao tác sửa họ tên, email và số điện thoại
+    của khách hàng đã có. Ngữ nghĩa port từ nhánh có id của source-legacy/customer_save.php; quy tắc kiểm tra
+    là quy tắc đang chạy ở POST /api/customers (xem 02-design.md D1, D2, D4).
+paths:
+  /api/customers/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CustomerId"
+    get:
+      operationId: getCustomer
+      summary: Một khách hàng theo id (KHÔNG ĐỔI ở BE; từ REQ-002 FE gọi để điền form sửa)
+      responses:
+        "200":
+          description: Khách hàng. `phone` ở dạng đã chuẩn hoá, chưa định dạng hiển thị, hoặc `null`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+              example:
+                id: 7
+                name: "Nguyen Van An"
+                email: "an@example.com"
+                phone: "0912345678"
+                status: "ACTIVE"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: updateCustomer
+      summary: Sửa họ tên, email và số điện thoại của một khách hàng đã có (MỚI, REQ-002)
+      description: >-
+        Thay thế TOÀN BỘ ba trường name, email, phone của khách hàng `id`; trường không gửi KHÔNG giữ giá trị cũ
+        (không gửi phone thì số đang có bị xoá). `id` và `status` của khách hàng không bao giờ đổi; khách hàng
+        INACTIVE vẫn sửa được. Không bao giờ tạo khách hàng mới. Lặp lại cùng một request cho cùng kết quả
+        (idempotent).
+        Thứ tự xử lý: (1) khớp route, id phải gồm toàn chữ số, nếu không thì 404 "No route for ...";
+        (2) đọc body JSON, hỏng thì 400 "Malformed JSON" kể cả khi id không tồn tại;
+        (3) tìm khách hàng, không có thì 404 "Customer {id} not found" kể cả khi các field trong body không hợp lệ;
+        (4) kiểm tra dữ liệu, mọi lỗi của name, email, phone được gom vào MỘT Problem 400 và không ghi gì;
+        (5) ghi và trả 200.
+        Kiểm tra trùng không tính chính khách hàng đang sửa: email không được trùng khách hàng KHÁC (bất kể
+        trạng thái, không phân biệt hoa thường); phone sau chuẩn hoá không được trùng khách hàng ACTIVE KHÁC.
+        Trạng thái của chính khách hàng đang sửa không được xét.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCustomerRequest"
+            examples:
+              rawValues:
+                summary: Giá trị thô có dấu cách và ký tự phân cách; lưu "Nguyen Van Anh", "anh@example.com", "0987654321"
+                value:
+                  name: "  Nguyen Van Anh "
+                  email: " anh@example.com "
+                  phone: " 0987.654-321 "
+              countryCode:
+                summary: Mã quốc gia +84; lưu "02438251234"
+                value:
+                  name: "Nguyen Van An"
+                  email: "an@example.com"
+                  phone: "+84 24 3825 1234"
+              ownValues:
+                summary: Giữ email và số của chính mình (viết khác hoa thường, khác định dạng), chỉ đổi tên; không báo trùng
+                value:
+                  name: "Nguyen Van Anh"
+                  email: "AN@Example.com"
+                  phone: "+84 912 345 678"
+              noPhone:
+                summary: Không gửi phone (hoặc null, "", chỉ gồm dấu cách); số đang có bị xoá, phone thành null
+                value:
+                  name: "Nguyen Van An"
+                  email: "an@example.com"
+              statusIgnored:
+                summary: Field lạ (status, id) bị bỏ qua; status của khách hàng không đổi
+                value:
+                  name: "Nguyen Van An"
+                  email: "an@example.com"
+                  phone: "0912345678"
+                  status: "INACTIVE"
+      responses:
+        "200":
+          description: >-
+            Đã sửa. Body là khách hàng sau khi sửa: `id` và `status` như trước khi sửa, `name` và `email` đã trim,
+            `phone` ở dạng chuẩn hoá hoặc `null`. Các lần GET sau đó trả đúng các giá trị này.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+              examples:
+                updated:
+                  summary: Kết quả của request rawValues trên khách hàng 7
+                  value:
+                    id: 7
+                    name: "Nguyen Van Anh"
+                    email: "anh@example.com"
+                    phone: "0987654321"
+                    status: "ACTIVE"
+                phoneCleared:
+                  summary: Kết quả của request noPhone
+                  value:
+                    id: 7
+                    name: "Nguyen Van An"
+                    email: "an@example.com"
+                    phone: null
+                    status: "ACTIVE"
+                inactiveCustomer:
+                  summary: Khách hàng INACTIVE vẫn sửa được và vẫn INACTIVE
+                  value:
+                    id: 3
+                    name: "Tran Thi Binh"
+                    email: "binh@example.com"
+                    phone: "0987654321"
+                    status: "INACTIVE"
+        "400":
+          description: >-
+            Validation lỗi (`title` "Validation failed", có `errors` theo field; thông điệp giống hệt
+            POST /api/customers) hoặc body không phải JSON hợp lệ (`title` "Malformed JSON", không có `errors`).
+            Khách hàng không đổi gì. Thứ tự key trong `errors` không cố định.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                blankName:
+                  summary: name thiếu, null, "" hoặc chỉ gồm dấu cách
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      name: "must not be blank"
+                tooLongName:
+                  summary: name dài hơn 100 ký tự sau khi trim
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      name: "must be at most 100 characters"
+                invalidEmail:
+                  summary: email thiếu hoặc sai định dạng
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      email: "must be a valid email address"
+                duplicateEmail:
+                  summary: email đang được một khách hàng KHÁC dùng (ACTIVE hay INACTIVE, không phân biệt hoa thường)
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      email: "is already used by another customer"
+                invalidPhone:
+                  summary: Số sai đầu số, sai độ dài, chứa ký tự lạ, mã quốc gia không khớp, hoặc chỉ gồm ký tự phân cách
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      phone: "must be a valid phone number"
+                duplicatePhone:
+                  summary: Số (sau chuẩn hoá) đang được một khách hàng ACTIVE KHÁC dùng
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      phone: "is already used by another customer"
+                multipleFields:
+                  summary: Lỗi của mọi field được gom trong một response
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      name: "must not be blank"
+                      email: "must be a valid email address"
+                      phone: "must be a valid phone number"
+                malformedJson:
+                  summary: Body không phải JSON hợp lệ (trả trước cả khi tìm khách hàng)
+                  value:
+                    type: "about:blank"
+                    title: "Malformed JSON"
+                    status: 400
+                    detail: "The request body is not valid JSON"
+        "404":
+          description: >-
+            Không có khách hàng với id này (được kiểm tra TRƯỚC validation), hoặc id trong path không phải chuỗi
+            chữ số nên rơi vào route fallback. Không tạo khách hàng mới và không sửa ai.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unknownCustomer:
+                  summary: PUT /api/customers/999 khi không có khách hàng 999
+                  value:
+                    type: "about:blank"
+                    title: "Not Found"
+                    status: 404
+                    detail: "Customer 999 not found"
+                noRoute:
+                  summary: PUT /api/customers/abc (id không phải chuỗi chữ số)
+                  value:
+                    type: "about:blank"
+                    title: "Not Found"
+                    status: 404
+                    detail: "No route for PUT /api/customers/abc"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  parameters:
+    CustomerId:
+      name: id
+      in: path
+      required: true
+      description: >-
+        Mã khách hàng, chỉ gồm chữ số (regex \d+ trong CustomerHandler.BY_ID). Giá trị không phải chuỗi chữ số
+        rơi vào route fallback và trả 404. `id` chỉ lấy từ path; `id` trong body bị bỏ qua.
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+      example: 7
+  responses:
+    NotFound:
+      description: Không có khách hàng với id này.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: "about:blank"
+            title: "Not Found"
+            status: 404
+            detail: "Customer 42 not found"
+    InternalError:
+      description: Lỗi không mong đợi (RuntimeException khác).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: "about:blank"
+            title: "Internal Server Error"
+            status: 500
+            detail: "Unexpected error"
+  schemas:
+    CustomerStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    Customer:
+      type: object
+      description: >-
+        Khách hàng (record source-be domain/Customer.java). KHÔNG ĐỔI so với REQ-001; mọi field luôn có mặt
+        trong JSON.
+      required: [id, name, email, phone, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+          description: >-
+            Số điện thoại ở dạng đã chuẩn hoá, chưa định dạng hiển thị: chỉ gồm chữ số, bắt đầu bằng 0
+            (vd. "0912345678", "02438251234"). `null` khi khách hàng không có số. Không đặt `pattern` vì dữ liệu
+            migrate từ legacy có thể theo quy tắc cũ (vd. "01234567890"). Form sửa của FE điền nguyên giá trị
+            này vào ô nhập, không định dạng.
+          example: "0912345678"
+        status:
+          $ref: "#/components/schemas/CustomerStatus"
+    UpdateCustomerRequest:
+      type: object
+      description: >-
+        Body của PUT /api/customers/{id} (MỚI, REQ-002). Giá trị thô người dùng nhập; FE gửi nguyên văn, BE trim
+        và chuẩn hoá. Field lạ (kể cả `id`, `status`) bị bỏ qua. Cùng quy tắc kiểm tra với body của
+        POST /api/customers; chỉ khác ở kiểm tra trùng (không tính chính khách hàng đang sửa).
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          description: Được trim; không rỗng, tối đa 100 ký tự. Thiếu field hoặc null được coi là rỗng.
+          example: "Nguyen Van Anh"
+        email:
+          type: string
+          description: >-
+            Được trim; phải là email hợp lệ và không trùng email của khách hàng KHÁC (không phân biệt hoa thường).
+            Email của chính khách hàng đang sửa được chấp nhận, kể cả khi viết khác hoa thường; giá trị gửi lên
+            (sau trim) là giá trị được lưu.
+          example: "anh@example.com"
+        phone:
+          type: string
+          nullable: true
+          description: >-
+            Tuỳ chọn. Thiếu field, null, hoặc rỗng sau trim (kiểu PHP) nghĩa là khách hàng KHÔNG CÓ SỐ: số đang
+            có bị xoá (lưu null). Khi có giá trị: BE chuẩn hoá theo legacy phone_normalize (bỏ khoảng trắng ASCII,
+            ".", "-", "(", ")"; "+84" thành "0"; "84" thành "0" khi dài 11 ký tự); sau chuẩn hoá phải là di động
+            10 chữ số đầu 03/05/07/08/09 hoặc cố định 11 chữ số đầu 02, và không trùng số của khách hàng ACTIVE
+            KHÁC; nếu không trả 400 với errors.phone. Số của chính khách hàng đang sửa được chấp nhận.
+          example: "+84 987 654 321"
+    Problem:
+      type: object
+      description: >-
+        RFC 9457 problem details (source-be api/Problem.java), Content-Type application/problem+json.
+        KHÔNG ĐỔI so với REQ-001.
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          description: Luôn "about:blank".
+          example: "about:blank"
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        errors:
+          type: object
+          description: >-
+            Chỉ có khi validation lỗi. Map field -> message (key có thể là name, email, phone).
+            Thứ tự key không cố định.
+          additionalProperties:
+            type: string

@@ -29,3 +29,13 @@ export function listCustomers(options) {
 export function createCustomer(customer, options) {
   return request('/customers', { ...options, method: 'POST', body: JSON.stringify(customer) });
 }
+
+/** Fetches one customer by id, used to fill the edit form with current values. */
+export function getCustomer(id, options) {
+  return request(`/customers/${encodeURIComponent(id)}`, options);
+}
+
+/** Replaces name, email and phone of customer `id`; the body is sent exactly as given. */
+export function updateCustomer(id, customer, options) {
+  return request(`/customers/${encodeURIComponent(id)}`, { ...options, method: 'PUT', body: JSON.stringify(customer) });
+}

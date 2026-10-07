@@ -1,0 +1,41 @@
+{
+  "run_id": "run-0017",
+  "req": "REQ-002",
+  "phase": "planning",
+  "agent": "planner",
+  "task": null,
+  "attempt": 3,
+  "adapter": "claude",
+  "command": "claude \"-p\" \"--output-format\" \"json\" \"--permission-mode\" \"dontAsk\" \"--allowedTools\" \"Read,Grep,Glob,Write,Edit,MultiEdit\" \"--model\" \"opus\"",
+  "allowed_tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write",
+    "Edit",
+    "MultiEdit"
+  ],
+  "prompt_file": "run-0017.prompt.md",
+  "prompt_sha256": "4c776e545f0dc857b8b32e73e127f8e8b83aa37f6c5c2a60cdb337cdb15b5066",
+  "started_at": "2026-10-04T08:03:04Z",
+  "duration_ms": 3765,
+  "exit_code": 1,
+  "report": {
+    "is_error": true,
+    "result": "You've hit your session limit · resets 6:50pm (Asia/Bangkok)",
+    "num_turns": 1,
+    "cost_usd": 0,
+    "session_id": "2362387d-a2de-4af5-b787-10db683af423",
+    "model": null
+  },
+  "stderr_tail": null,
+  "files_changed": [],
+  "scope_violations_reverted": [],
+  "validation": [
+    {
+      "kind": "invalid",
+      "message": "agent run failed (exit 1): You've hit your session limit · resets 6:50pm (Asia/Bangkok)"
+    }
+  ],
+  "outcome": "failed"
+}

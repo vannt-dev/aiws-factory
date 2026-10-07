@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ApiError, createCustomer, listCustomers } from '../src/api/customerApi.js';
+import { ApiError, createCustomer, getCustomer, listCustomers, updateCustomer } from '../src/api/customerApi.js';
 
 function fakeFetch(status, body, calls = []) {
   return async (url, init) => {
@@ -56,6 +56,96 @@ test('TC-42: createCustomer sends the phone value exactly as entered', async () 
   });
   assert.equal(JSON.parse(calls[0].init.body).phone, '0912 345 678');
   assert.equal(JSON.parse(calls[1].init.body).phone, '');
+});
+
+test('TC-70: updateCustomer sends PUT /api/customers/{id} with the input exactly as entered', async () => {
+  const apiCustomer = { id: 7, name: 'Nguyen Van An', email: 'an@example.com', phone: '0912345678', status: 'ACTIVE' };
+  const rows = [
+    { id: 7, input: { name: 'Nguyen Van An', email: 'an@example.com', phone: '0912 345 678' } },
+    { id: '7', input: { name: 'Nguyen Van An', email: 'an@example.com', phone: '' } },
+  ];
+
+  for (const { id, input } of rows) {
+    const calls = [];
+    const result = await updateCustomer(id, input, { fetchImpl: fakeFetch(200, apiCustomer, calls) });
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, '/api/customers/7');
+    assert.equal(calls[0].init.method, 'PUT');
+    assert.equal(calls[0].init.headers['Content-Type'], 'application/json');
+    assert.deepEqual(JSON.parse(calls[0].init.body), input);
+    assert.deepEqual(result, apiCustomer);
+  }
+});
+
+test('TC-71: updateCustomer throws ApiError with the status and field errors of the problem', async () => {
+  const rows = [
+    {
+      status: 400,
+      problem: {
+        type: 'about:blank',
+        title: 'Validation failed',
+        status: 400,
+        detail: 'The request has invalid fields',
+        errors: { name: 'must not be blank', email: 'must be a valid email address', phone: 'must be a valid phone number' },
+      },
+      fieldErrors: { name: 'must not be blank', email: 'must be a valid email address', phone: 'must be a valid phone number' },
+    },
+    {
+      status: 404,
+      problem: { type: 'about:blank', title: 'Not Found', status: 404, detail: 'Customer 7 not found' },
+      fieldErrors: {},
+    },
+  ];
+
+  for (const row of rows) {
+    await assert.rejects(
+      updateCustomer(7, { name: '', email: 'x', phone: '0412345678' }, { fetchImpl: fakeFetch(row.status, row.problem) }),
+      (error) => {
+        assert.ok(error instanceof ApiError);
+        assert.equal(error.status, row.status);
+        assert.deepEqual(error.fieldErrors, row.fieldErrors);
+        return true;
+      }
+    );
+  }
+});
+
+test('TC-72: getCustomer calls GET /api/customers/{id} without a body and returns the customer', async () => {
+  const rows = [
+    { id: 7, body: { id: 7, name: 'Nguyen Van An', email: 'an@example.com', phone: '0912345678', status: 'ACTIVE' } },
+    { id: '7', body: { id: 7, name: 'Nguyen Van An', email: 'an@example.com', phone: null, status: 'INACTIVE' } },
+  ];
+
+  for (const { id, body } of rows) {
+    const calls = [];
+    const result = await getCustomer(id, { fetchImpl: fakeFetch(200, body, calls) });
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, '/api/customers/7');
+    assert.equal(calls[0].init.method, undefined);
+    assert.equal(calls[0].init.headers['Content-Type'], undefined);
+    assert.deepEqual(result, body);
+  }
+});
+
+test('TC-73: getCustomer throws ApiError when the API returns an error', async () => {
+  const rows = [
+    { status: 404, problem: { type: 'about:blank', title: 'Not Found', status: 404, detail: 'Customer 7 not found' } },
+    { status: 500, problem: { type: 'about:blank', title: 'Internal Server Error', status: 500, detail: 'Unexpected error' } },
+  ];
+
+  for (const { status, problem } of rows) {
+    await assert.rejects(
+      getCustomer(7, { fetchImpl: fakeFetch(status, problem) }),
+      (error) => {
+        assert.ok(error instanceof ApiError);
+        assert.equal(error.status, status);
+        assert.deepEqual(error.fieldErrors, {});
+        return true;
+      }
+    );
+  }
 });
 
 test('TC-43: createCustomer throws ApiError with the phone field error returned by the API', async () => {

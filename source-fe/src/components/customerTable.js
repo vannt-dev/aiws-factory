@@ -12,8 +12,9 @@ export function renderCustomerTable(customers) {
       (c) =>
         `<tr><td>${escapeHtml(c.id)}</td><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.email)}</td>` +
         `<td>${escapeHtml(c.phone ? formatPhone(c.phone) : NO_PHONE)}</td>` +
-        `<td>${escapeHtml(STATUS_LABELS[c.status] ?? c.status)}</td></tr>`
+        `<td>${escapeHtml(STATUS_LABELS[c.status] ?? c.status)}</td>` +
+        `<td><button type="button" data-edit-id="${escapeHtml(c.id)}">Sửa</button></td></tr>`
     )
     .join('');
-  return `<table><thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Điện thoại</th><th>Trạng thái</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table><thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Điện thoại</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${rows}</tbody></table>`;
 }

@@ -1,0 +1,270 @@
+# REQ-002 — Plan. Mỗi task nhỏ: <= 10 file, có test riêng. Mọi TC trong 03-test-spec.md thuộc đúng 1 task.
+# allowed_files: đường dẫn chính xác (hoặc glob hẹp) trong các thư mục source_paths, gồm cả file test,
+#   đặt đúng cấu trúc hiện có của dự án (không tạo cấu trúc mới, không đổi tên/di chuyển file).
+# type: loại commit theo Conventional Commits (feat | fix | refactor | perf | test | docs | build | chore...).
+#
+# Chia theo nhóm biên dịch của 02-design.md (BE change -> BE-1/BE-2/BE-3, FE change -> FE-1/FE-2/FE-3) và bảng
+# "Phân bổ TC theo file và nhóm task" của 03-test-spec.md. Sau mỗi task orchestrator chạy toàn bộ `be_test`
+# hoặc `fe_test` của side bị chạm, nên mọi trạng thái trung gian phải biên dịch và pass cả test cũ: mỗi task
+# BE chỉ thêm public API (T2 tách hàm private nhưng giữ nguyên chữ ký và hành vi của `create`), và TC-36 của
+# REQ-001 được sửa trong chính task đổi `customerTable.js` (T5).
+# Thứ tự: BE trước FE (design -> Migration: deploy BE trước, FE sau).
+# TC-36 thuộc REQ-001, không được định nghĩa lại trong 03-test-spec.md của REQ-002, nên KHÔNG nằm trong `tests`
+# của task nào (design D9).
+#
+# Re-plan sau review (05-review.md, 1 critical): T1..T6 đã DONE và giữ nguyên id, allowed_files, tests. T7 là
+# task sửa cho finding D4 ở `CustomerService.java:46`. T7 không đổi hành vi quan sát được và không thêm hay sửa
+# test, nên `tests: []`: TC-48..TC-60 vẫn thuộc T2; toàn bộ `be_test` chạy lại sau T7 là bằng chứng không hồi quy.
+# Bốn finding minor của 05-review.md không có trong feedback của vòng này và không có task: để người review PR
+# quyết định.
+tasks:
+  - id: T1
+    type: feat
+    title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
+    description: >-
+      Nhóm BE-1 (design D5, D6). Chỉ THÊM method, không đổi method cũ.
+      `repository/CustomerRepository.java`: thêm ba method, mỗi method một dòng Javadoc như `insert`:
+      `boolean existsByEmailAndIdNot(String email, long id)`,
+      `boolean existsByPhoneAndStatusAndIdNot(String phone, CustomerStatus status, long id)`,
+      `Optional<Customer> update(long id, String name, String email, String phone)`. Năm method cũ (`findAll`,
+      `findById`, `existsByEmail`, `existsByPhoneAndStatus`, `insert`) giữ nguyên chữ ký và Javadoc.
+      `repository/InMemoryCustomerRepository.java`: cài đặt ba method.
+      `existsByEmailAndIdNot` là `anyMatch(c -> c.id() != id && c.email().equalsIgnoreCase(email))`.
+      `existsByPhoneAndStatusAndIdNot` là `anyMatch(c -> c.id() != id && phone.equals(c.phone()) && c.status() == status)` —
+      BẮT BUỘC viết `phone.equals(c.phone())`, không viết ngược, vì `c.phone()` có thể `null`. Cả hai duyệt toàn bộ
+      kho, không tìm một bản ghi rồi so `id` (kho không có ràng buộc duy nhất, có thể có nhiều bản ghi cùng giá trị).
+      `update` là `Optional.ofNullable(customers.computeIfPresent(id, (key, c) -> new Customer(c.id(), name, email, phone, c.status())))`:
+      thay `name`, `email`, `phone` (kể cả ghi `null`), GIỮ NGUYÊN `id` và `status` đang lưu; `id` không có thì trả
+      `Optional.empty()` và KHÔNG BAO GIỜ thêm mới. Không dùng `customers.put`/upsert, không đụng `sequence`; hàm
+      truyền vào `computeIfPresent` phải thuần (`ConcurrentSkipListMap` có thể gọi lại nó khi có tranh chấp).
+      Repository chỉ lưu đúng giá trị nhận được: không trim, không kiểm tra, không quyết định nghiệp vụ.
+      Không sửa file nào khác: `CustomerService` chưa gọi ba method này (việc của T2); mọi test cũ phải biên dịch
+      và pass không đổi.
+      Test: thêm TC-44..TC-47 vào `InMemoryCustomerRepositoryTest.java` theo đúng preconditions và bảng dữ liệu
+      trong 03-test-spec.md; TC-11, TC-12 giữ nguyên. Mỗi test tự tạo `InMemoryCustomerRepository` mới; thứ tự
+      `insert` quyết định `id` (TC-47 chèn C có `phone = null` đầu tiên; TC-46 có hai khách hàng cùng
+      `dup@example.com`; TC-45 chụp `findAll()` trước khi gọi `update`). Bảng dữ liệu dùng `@ParameterizedTest` +
+      `@MethodSource`, provider `private static` đặt ngay sau test. `@DisplayName("TC-n: ...")` ở mức method bằng
+      câu tiếng Anh; tên method camelCase, không chứa mã TC.
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests: [TC-44, TC-45, TC-46, TC-47]
+    depends_on: []
+
+  - id: T2
+    type: feat
+    title: be - tách hàm kiểm tra dùng chung và thêm CustomerService.update
+    description: >-
+      Nhóm BE-2 (design D2 bước 3-5, D4, D7). `service/CustomerService.java`: tách khối kiểm tra của `create`
+      (dòng 33-58) thành MỘT hàm private mà `create` và `update` cùng gọi, ví dụ
+      `validate(name, email, phone, Predicate<String> emailTaken, Predicate<String> phoneTaken)` trả record private
+      lồng trong class `ValidatedFields(String name, String email, String phone)` (`name`, `email` đã trim; `phone`
+      đã chuẩn hoá hoặc `null`); tên hàm và record là gợi ý. Hàm chứa NGUYÊN khối kiểm tra hiện có, chỉ thay hai
+      lệnh gọi repository bằng hai predicate. KHÔNG chép quy tắc sang `update`, không tách class validator, không
+      thêm tham số `Long excludedId`, không gộp thành `save`.
+      BẮT BUỘC giữ: thứ tự kiểm tra name -> email -> phone; nguyên văn năm thông điệp (`must not be blank`,
+      `must be at most 100 characters`, `must be a valid email address`, `must be a valid phone number`,
+      `is already used by another customer`); các field kiểm tra độc lập và gom vào một `ValidationException`;
+      truy vấn trùng chỉ chạy khi giá trị đã qua kiểm tra định dạng; `phone` rỗng sau `PhoneNumbers.trim` thì bỏ
+      qua mọi kiểm tra và là `null`.
+      `create(String name, String email, String phone)` giữ chữ ký và hành vi: truyền `repository::existsByEmail` và
+      `p -> repository.existsByPhoneAndStatus(p, CustomerStatus.ACTIVE)`, rồi `repository.insert(..., CustomerStatus.ACTIVE)`.
+      Thêm `public Customer update(long id, String name, String email, String phone)`: gọi `get(id)` TRƯỚC khi kiểm
+      tra dữ liệu (id không tồn tại -> `NotFoundException("Customer <id> not found")` kể cả khi dữ liệu sai); kiểm
+      tra bằng `e -> repository.existsByEmailAndIdNot(e, id)` và
+      `p -> repository.existsByPhoneAndStatusAndIdNot(p, CustomerStatus.ACTIVE, id)`; rồi
+      `repository.update(id, name, email, phone).orElseThrow(() -> new NotFoundException("Customer " + id + " not found"))`.
+      `update` KHÔNG đọc `status` của khách hàng đang sửa và không truyền `status` xuống thao tác ghi.
+      KHÔNG "sửa" các hành vi legacy giữ có chủ ý (D7): (a) không gửi số thì số đang có bị xoá; (b) khách hàng
+      `INACTIVE` vẫn sửa được và vẫn `INACTIVE`; (c) kiểm tra trùng số không xét trạng thái của khách hàng đang
+      sửa; (d) mọi lần lưu đều kiểm tra lại số, kể cả khi số không đổi.
+      `list`, `get`, `PhoneNumbers.java` và hai file repository (xong ở T1) không sửa.
+      Test: thêm TC-48..TC-60 vào `CustomerServiceTest.java` theo đúng preconditions và bảng dữ liệu trong
+      03-test-spec.md. Mỗi test tự dựng `InMemoryCustomerRepository` bằng `repository.insert(...)` theo đúng thứ tự
+      của preconditions (thứ tự quyết định `id`) rồi tạo `new CustomerService(repository)` trên chính repository đó,
+      như TC-25. Chèn ĐÚNG và CHỈ các khách hàng mà preconditions của từng TC liệt kê: Seed `ACTIVE` không có số là
+      id 1 ở TC-48..TC-54 và TC-56..TC-60; TC-55 KHÔNG có Seed (B là id 1, A là id 2). Mỗi dòng dữ liệu chạy
+      trên kho mới. "Không đổi gì" = `service.list()` bằng đúng danh sách chụp trước khi gọi; lỗi validation so cả
+      map `errors()`. Bảng dữ liệu dùng `@ParameterizedTest` + `@MethodSource` (thêm `@NullSource` khi cần ca
+      `null`); dòng có ký tự điều khiển (TC-50) dùng `name = ROW_NAME` có sẵn. `@DisplayName("TC-n: ...")` ở mức
+      method. Test cũ (TC-13..TC-26 và 5 test không mã TC) KHÔNG sửa và phải pass: chúng bảo vệ việc tách hàm.
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+    tests: [TC-48, TC-49, TC-50, TC-51, TC-52, TC-53, TC-54, TC-55, TC-56, TC-57, TC-58, TC-59, TC-60]
+    depends_on: [T1]
+
+  - id: T3
+    type: feat
+    title: "be - thêm endpoint PUT /api/customers/{id} sửa khách hàng"
+    description: >-
+      Nhóm BE-3 (design D1, D2 bước 1-2, D3; api-contract.yaml -> `updateCustomer`). Tạo
+      `api/UpdateCustomerRequest.java`: `public record UpdateCustomerRequest(String name, String email, String phone) {}`
+      với Javadoc một dòng "Request body of PUT /api/customers/{id}."; không có `id`, không có `status`. Không dùng
+      lại hay đổi tên `CreateCustomerRequest`.
+      `api/CustomerHandler.java`: trong `route`, ngay sau nhánh `GET` của `BY_ID`, thêm nhánh
+      `byId.matches() && method.equals("PUT")`: đọc body bằng
+      `JSON.readValue(exchange.getRequestBody(), UpdateCustomerRequest.class)` TRƯỚC khi gọi service (JSON hỏng trả
+      400 `Malformed JSON` kể cả khi `id` không tồn tại), rồi
+      `send(exchange, 200, service.update(Long.parseLong(byId.group(1)), body.name(), body.email(), body.phone()))`.
+      `id` chỉ lấy từ path; field lạ trong body (`id`, `status`) đã bị bỏ qua nhờ `FAIL_ON_UNKNOWN_PROPERTIES = false`.
+      Cập nhật Javadoc của class để liệt kê `PUT /api/customers/{id}`. `handle`, `send`, `BY_ID`, `JSON` và ba route
+      cũ không đổi; không thêm mã lỗi hay `title` mới (404 và 400 đi qua bảng map exception có sẵn).
+      `PUT /api/customers`, `/abc`, `/-1` rơi vào fallback `No route for PUT <path>` có sẵn, không thêm nhánh nào.
+      Không xử lý riêng `id` vượt `long` hay body JSON `null` (design R10) và không viết test cho hai đầu vào này.
+      Không sửa: `CreateCustomerRequest.java`, `Problem.java`, `App.java`, `CustomerService.java`, repository.
+      Test: thêm TC-61..TC-69 vào `CustomerHandlerTest.java` theo đúng dữ liệu trong 03-test-spec.md. Thêm helper
+      `put(String path, String json)` theo mẫu `post` (URL `baseUrl + path`, header `Content-Type: application/json`,
+      `.PUT(HttpRequest.BodyPublishers.ofString(json))`); TC-69 gọi cả path rỗng (`PUT /api/customers`). Server và
+      seed id 1 lấy từ `@BeforeEach` có sẵn; khách hàng id 2 tạo bằng `post(...)`. Parse response bằng
+      `CustomerHandler.JSON.readTree`. "Không đổi gì" = body của `GET /api/customers` (so `JsonNode`) bằng đúng body
+      chụp trước yêu cầu. Bảng dữ liệu dùng `@ParameterizedTest(name = "[{index}]")` + `@MethodSource` như các test
+      hiện có trong file. `@DisplayName("TC-n: ...")` ở mức method. Test cũ không sửa.
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/api/UpdateCustomerRequest.java
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests: [TC-61, TC-62, TC-63, TC-64, TC-65, TC-66, TC-67, TC-68, TC-69]
+    depends_on: [T2]
+
+  - id: T4
+    type: feat
+    title: fe - thêm getCustomer và updateCustomer vào customerApi
+    description: >-
+      Nhóm FE-1 (design D8; api-contract.yaml -> `getCustomer`, `updateCustomer`). `src/api/customerApi.js`: thêm hai
+      hàm public đi qua `request()` có sẵn, mỗi hàm một dòng JSDoc `/** ... */`:
+      `getCustomer(id, options)` trả `request('/customers/' + encodeURIComponent(id), options)` (không `method`, không
+      `body`);
+      `updateCustomer(id, customer, options)` trả
+      `request('/customers/' + encodeURIComponent(id), { ...options, method: 'PUT', body: JSON.stringify(customer) })`.
+      Body là ĐÚNG object nhận vào: không thêm `id`, không chuẩn hoá, không kiểm tra (FE gửi nguyên giá trị nhân viên
+      nhập). Lỗi non-2xx ném `ApiError` qua `request()`. `request`, `ApiError`, `API_BASE`, `listCustomers`,
+      `createCustomer` KHÔNG sửa. Không gộp thêm và sửa thành một hàm `saveCustomer`.
+      Test: thêm TC-70..TC-73 vào `test/customerApi.test.js` bằng `fakeFetch` có sẵn (bổ sung `getCustomer`,
+      `updateCustomer` vào dòng import). Bảng dữ liệu là một mảng, lặp bằng `for...of` trong MỘT `test(...)`; mỗi dòng
+      dùng mảng `calls` mới. Tên test `test('TC-n: <tên hàm> ...', ...)` bằng câu tiếng Anh. Test cũ (TC-42, TC-43 và
+      3 test không mã TC) không sửa.
+    allowed_files:
+      - source-fe/src/api/customerApi.js
+      - source-fe/test/customerApi.test.js
+    tests: [TC-70, TC-71, TC-72, TC-73]
+    depends_on: [T3]
+
+  - id: T5
+    type: feat
+    title: fe - thêm cột Thao tác với nút Sửa trong bảng khách hàng
+    description: >-
+      Nhóm FE-2 (design D9). `src/components/customerTable.js`: header thêm `<th>Thao tác</th>` ngay sau
+      `<th>Trạng thái</th>`; mỗi dòng thêm ô
+      `<td><button type="button" data-edit-id="${escapeHtml(c.id)}">Sửa</button></td>` ngay sau ô trạng thái. Năm cột
+      hiện có giữ nguyên nội dung và thứ tự; không thêm `<tr>`; trạng thái rỗng `<p>Chưa có khách hàng.</p>` không
+      đổi. Ô mới là `<td>` thường và có `<th>` tương ứng: KHÔNG né assertion cũ bằng `<td class="...">` hay bỏ `<th>`.
+      Không gắn sự kiện ở đây (việc của `main.js` trong T6).
+      `test/customerTable.test.js`: PHẢI sửa TC-36 của REQ-001 trong chính task này, nếu không `fe_test` fail. Sửa
+      ĐÚNG hai assertion: regex tiêu đề thành
+      `...<th>Trạng thái<\/th><th>Thao tác<\/th><\/tr><\/thead>`, và số `<td>` mỗi dòng từ 5 thành 6. Giữ nguyên mã
+      TC-36, tên hiển thị và mọi assertion khác của nó. TC-36 không nằm trong `tests` của task này vì thuộc REQ-001.
+      Mọi test khác trong file (3 test không mã TC, TC-37..TC-41) không sửa và phải pass.
+      Thêm TC-74, TC-75 theo 03-test-spec.md, so chuỗi HTML bằng `assert.match`/`assert.doesNotMatch`. Tên test
+      `test('TC-n: renderCustomerTable ...', ...)` bằng câu tiếng Anh.
+    allowed_files:
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/customerTable.test.js
+    tests: [TC-74, TC-75]
+    depends_on: [T3]
+
+  - id: T6
+    type: feat
+    title: fe - thêm form sửa khách hàng hiện lỗi theo từng trường và nối vào trang
+    description: >-
+      Nhóm FE-3 (design D10, D11, D12). Tạo `src/components/customerEditForm.js`: JSDoc một dòng,
+      `export function renderCustomerEditForm(customer, fieldErrors = {})` là hàm thuần trả chuỗi HTML, import
+      `escapeHtml` bằng đường dẫn tương đối có đuôi `.js`. HTML viết liền, không xuống dòng, đúng thứ tự thuộc tính:
+      `<h2>Sửa khách hàng #{id}</h2><form id="edit-form" data-id="{id}" novalidate>`, rồi ba khối
+      `<div class="field"><label for="edit-{field}">{nhãn}</label><input id="edit-{field}" name="{field}" type="{type}" value="{value}"></div>`
+      cho `name`/`email`/`phone` với nhãn `Họ tên`/`Email`/`Điện thoại` và type `text`/`email`/`tel`, rồi
+      `<button type="submit">Lưu</button><button type="button" data-cancel-edit>Huỷ</button></form>`.
+      Trường có lỗi trong `fieldErrors` thì `<input>` thêm hai thuộc tính Ở CUỐI và phần tử lỗi ngay sau nó:
+      `<input ... value="{value}" aria-invalid="true" aria-describedby="edit-{field}-error"><span id="edit-{field}-error" class="error" role="alert">{thông điệp}</span></div>`.
+      Trường không có lỗi thì không có `aria-invalid` và không có phần tử `edit-{field}-error`. Key khác `name`,
+      `email`, `phone` trong `fieldErrors` bị bỏ qua. MỌI giá trị động (`id` ở tiêu đề và `data-id`, ba `value`,
+      thông điệp lỗi) đi qua `escapeHtml`. `phone` là `null`, thiếu field hoặc `''` cho `value=""`; số giữ dạng API
+      trả, KHÔNG qua `formatPhone`, không dùng `NO_PHONE`. Thông điệp lỗi hiện nguyên văn tiếng Anh của API. Component
+      không kiểm tra dữ liệu.
+      `index.html`: thêm `<div id="edit-customer"></div>` giữa `#message` và `#customers`; thêm CSS
+      `.field { display: flex; flex-direction: column; gap: .25rem; }`. `#create-form` không đổi.
+      `src/main.js`: import `getCustomer`, `updateCustomer`, `renderCustomerEditForm`; lấy
+      `editEl = document.getElementById('edit-customer')`; thêm ba xử lý sự kiện bằng delegation:
+      (1) `click` trên `#customers`, phần tử khớp `button[data-edit-id]`: xoá `#message`, gọi `getCustomer(id)`, gán
+      `editEl.innerHTML = renderCustomerEditForm(customer)`, focus ô nhập đầu tiên; lỗi thì `#message` hiện
+      "Không tải được khách hàng." và vùng form giữ nguyên.
+      (2) `submit` trên `#edit-customer`: `preventDefault()`, xoá `#message`, lấy `id` từ `form.dataset.id` và giá trị
+      thô từ `new FormData(form)`, gọi `updateCustomer(id, { name, email, phone })`. Thành công: `editEl.innerHTML = ''`
+      rồi `await refresh()`. `ApiError` có `fieldErrors` khác rỗng: gán
+      `editEl.innerHTML = renderCustomerEditForm({ id, name, email, phone }, error.fieldErrors)` với giá trị vừa nhập,
+      focus ô lỗi đầu tiên. Lỗi khác (404, 500, mất mạng): `#message` hiện "Không lưu được khách hàng.", form giữ
+      nguyên giá trị đang nhập.
+      (3) `click` trên `#edit-customer`, phần tử khớp `button[data-cancel-edit]`: `editEl.innerHTML = ''` và xoá
+      `#message`.
+      Thông báo gán bằng `textContent`. `refresh()` và submit handler của `#create-form` KHÔNG đổi; `main.js` không
+      giữ state hay cache khách hàng, không tự chuẩn hoá hay kiểm tra dữ liệu.
+      `src/api/customerApi.js` và `src/components/customerTable.js` CỐ Ý không nằm trong allowed_files (xong ở T4,
+      T5); nếu thấy cần sửa thì ghi câu hỏi vào `aiws/work/REQ-002/questions.md` và dừng.
+      Test: tạo `test/customerEditForm.test.js` với TC-76..TC-81 theo 03-test-spec.md (`node:test` +
+      `node:assert/strict`, so chuỗi HTML; bảng dữ liệu là một mảng lặp bằng `for...of` trong MỘT `test(...)`; comment
+      `// Arrange`, `// Act`, `// Assert` ở test đầu tiên của file). Tên test
+      `test('TC-n: renderCustomerEditForm ...', ...)` bằng câu tiếng Anh. `index.html` và `main.js` không có seam
+      unit test (không có DOM), được kiểm bằng review hoặc chạy tay theo mục "Không có TC tự động" của test spec.
+    allowed_files:
+      - source-fe/src/components/customerEditForm.js
+      - source-fe/test/customerEditForm.test.js
+      - source-fe/index.html
+      - source-fe/src/main.js
+    tests: [TC-76, TC-77, TC-78, TC-79, TC-80, TC-81]
+    depends_on: [T4, T5]
+
+  - id: T7
+    type: refactor
+    title: be - đổi hàm kiểm tra dùng chung của CustomerService sang nhận hai predicate theo D4
+    description: >-
+      Task sửa cho finding critical của 05-review.md (`CustomerService.java:46`, design D4). Hàm private `check`
+      đang có chữ ký `check(name, email, phone, Long ownId)`, `create` truyền `null`, và `isEmailUsed`/`isPhoneUsed`
+      rẽ nhánh theo `ownId == null`: đây là phương án D4 đã loại tường minh ("Tham số `Long excludedId` (`null` khi
+      tạo) rồi rẽ nhánh bên trong: loại, vì hàm kiểm tra phải biết mình đang tạo hay sửa"). Đưa về đúng hình dạng
+      của D4; chỉ sửa `service/CustomerService.java`.
+      (1) Thêm `import java.util.function.Predicate;` đúng thứ tự alphabet của khối import (sau
+      `java.util.Map`, trước `java.util.regex.Pattern`).
+      (2) Đổi chữ ký thành
+      `private Checked check(String name, String email, String phone, Predicate<String> emailTaken, Predicate<String> phoneTaken)`.
+      Trong thân hàm chỉ đổi ĐÚNG hai lệnh gọi: `isEmailUsed(trimmedEmail, ownId)` thành
+      `emailTaken.test(trimmedEmail)` và `isPhoneUsed(normalizedPhone, ownId)` thành
+      `phoneTaken.test(normalizedPhone)`. Mọi dòng khác của thân hàm giữ nguyên.
+      (3) `create` gọi `check(name, email, phone, repository::existsByEmail, p -> repository.existsByPhoneAndStatus(p, CustomerStatus.ACTIVE))`.
+      (4) `update` gọi `check(name, email, phone, e -> repository.existsByEmailAndIdNot(e, id), p -> repository.existsByPhoneAndStatusAndIdNot(p, CustomerStatus.ACTIVE, id))`.
+      (5) XOÁ hai hàm private `isEmailUsed` và `isPhoneUsed`.
+      (6) Viết lại Javadoc một dòng của `check` bằng tiếng Anh: không còn nhắc `ownId` hay "null when creating";
+      nói rằng hai predicate cho biết email / số điện thoại đã được khách hàng khác dùng hay chưa.
+      Sau khi sửa, `check` KHÔNG được biết mình đang tạo hay sửa: không có tham số `Long`/`Optional`/boolean/enum
+      chỉ chế độ, không tham số nullable, không rẽ nhánh tạo/sửa bên trong, không gọi `repository` trực tiếp. Không
+      thay bằng hình dạng khác (hai hàm kiểm tra, class validator, `save` gộp).
+      BẮT BUỘC giữ nguyên: thứ tự kiểm tra name -> email -> phone; nguyên văn năm thông điệp (`must not be blank`,
+      `must be at most 100 characters`, `must be a valid email address`, `must be a valid phone number`,
+      `is already used by another customer`); truy vấn trùng chỉ chạy khi giá trị đã qua kiểm tra định dạng (vẫn là
+      nhánh `else if`); `phone` rỗng sau `PhoneNumbers.trim` thì bỏ qua mọi kiểm tra và là `null`; các lỗi gom vào
+      một `ValidationException`; `CustomerStatus.ACTIVE` vẫn do service truyền xuống trong hai lambda của số điện
+      thoại. Giữ nguyên chữ ký public `create(String, String, String)` và `update(long, String, String, String)`,
+      Javadoc của `update`, lệnh `get(id)` TRƯỚC `check` trong `update`, `repository.update(...).orElseThrow(...)`,
+      `list`, `get`, `NAME_MAX_LENGTH`, `EMAIL`, constructor. Tên `check` và record `Checked` đã hợp lệ (tên trong D4
+      là gợi ý): KHÔNG đổi tên, không reformat phần không liên quan. Các hành vi legacy của D7 không đổi.
+      Test: KHÔNG thêm, sửa hay xoá test nào; `CustomerServiceTest.java` CỐ Ý không nằm trong allowed_files. Hành vi
+      quan sát được không đổi nên task không có TC mới (`tests` rỗng). Bằng chứng là toàn bộ `be_test` pass không
+      đổi sau khi sửa: TC-13..TC-32 (REQ-001) bảo vệ `create`, TC-48..TC-60 (T2) bảo vệ `update`, TC-61..TC-69 (T3)
+      bảo vệ đường HTTP. Nếu test nào fail thì lỗi nằm ở code vừa sửa, không sửa test. Nếu thấy cần sửa file khác
+      hoặc không giữ được hình dạng trên thì ghi câu hỏi vào `aiws/work/REQ-002/questions.md` và dừng (AGENTS.md
+      mục 4).
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+    tests: []
+    depends_on: [T2]

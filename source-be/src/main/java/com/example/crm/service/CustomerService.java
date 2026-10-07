@@ -8,6 +8,7 @@ import com.example.crm.repository.CustomerRepository;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /** Business rules for customers. All validation happens here, not in the HTTP layer. */
@@ -30,6 +31,25 @@ public class CustomerService {
   }
 
   public Customer create(String name, String email, String phone) {
+    Checked fields = check(name, email, phone,
+        repository::existsByEmail,
+        p -> repository.existsByPhoneAndStatus(p, CustomerStatus.ACTIVE));
+    return repository.insert(fields.name(), fields.email(), fields.phone(), CustomerStatus.ACTIVE);
+  }
+
+  /** Replaces name, email and phone of an existing customer; its id and status are kept. */
+  public Customer update(long id, String name, String email, String phone) {
+    get(id);
+    Checked fields = check(name, email, phone,
+        e -> repository.existsByEmailAndIdNot(e, id),
+        p -> repository.existsByPhoneAndStatusAndIdNot(p, CustomerStatus.ACTIVE, id));
+    return repository.update(id, fields.name(), fields.email(), fields.phone())
+        .orElseThrow(() -> new NotFoundException("Customer " + id + " not found"));
+  }
+
+  /** Validates and normalizes the input; the predicates report whether another customer already uses the email or phone. */
+  private Checked check(
+      String name, String email, String phone, Predicate<String> emailTaken, Predicate<String> phoneTaken) {
     String trimmedName = name == null ? "" : name.trim();
     String trimmedEmail = email == null ? "" : email.trim();
     String trimmedPhone = PhoneNumbers.trim(phone);
@@ -42,20 +62,22 @@ public class CustomerService {
     }
     if (!EMAIL.matcher(trimmedEmail).matches()) {
       errors.put("email", "must be a valid email address");
-    } else if (repository.existsByEmail(trimmedEmail)) {
+    } else if (emailTaken.test(trimmedEmail)) {
       errors.put("email", "is already used by another customer");
     }
     if (!trimmedPhone.isEmpty()) {
       normalizedPhone = PhoneNumbers.normalize(trimmedPhone);
       if (!PhoneNumbers.isValid(normalizedPhone)) {
         errors.put("phone", "must be a valid phone number");
-      } else if (repository.existsByPhoneAndStatus(normalizedPhone, CustomerStatus.ACTIVE)) {
+      } else if (phoneTaken.test(normalizedPhone)) {
         errors.put("phone", "is already used by another customer");
       }
     }
     if (!errors.isEmpty()) {
       throw new ValidationException(errors);
     }
-    return repository.insert(trimmedName, trimmedEmail, normalizedPhone, CustomerStatus.ACTIVE);
+    return new Checked(trimmedName, trimmedEmail, normalizedPhone);
   }
+
+  private record Checked(String name, String email, String phone) {}
 }

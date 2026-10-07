@@ -36,14 +36,14 @@ test('TC-36: renderCustomerTable has a phone column between email and status', (
 
   assert.match(
     html,
-    /<thead><tr><th>ID<\/th><th>Họ tên<\/th><th>Email<\/th><th>Điện thoại<\/th><th>Trạng thái<\/th><\/tr><\/thead>/
+    /<thead><tr><th>ID<\/th><th>Họ tên<\/th><th>Email<\/th><th>Điện thoại<\/th><th>Trạng thái<\/th><th>Thao tác<\/th><\/tr><\/thead>/
   );
   assert.match(html, /<td>an@example\.com<\/td><td>0912 345 678<\/td><td>Đang hoạt động<\/td>/);
   assert.match(html, /<td>binh@example\.com<\/td><td>—<\/td><td>Ngừng hoạt động<\/td>/);
   const bodyRows = html.match(/<tbody>(.*)<\/tbody>/)[1].match(/<tr>.*?<\/tr>/g);
   assert.equal(bodyRows.length, 2);
   for (const row of bodyRows) {
-    assert.equal(row.match(/<td>/g).length, 5);
+    assert.equal(row.match(/<td>/g).length, 6);
   }
 });
 
@@ -108,4 +108,48 @@ test('TC-41: renderCustomerTable formats the raw phone before escaping it', () =
   assert.match(html, /<td>12345&amp;<\/td>/);
   assert.doesNotMatch(html, /<td>012345678&amp;<\/td>/);
   assert.doesNotMatch(html, /<td>1234 5&a mp;<\/td>/);
+});
+
+test('TC-74: renderCustomerTable adds an action column with one edit button carrying the id per row', () => {
+  // Arrange
+  const customers = [
+    { id: 1, name: 'Nguyen Van An', email: 'an@example.com', phone: '0912345678', status: 'ACTIVE' },
+    { id: 2, name: 'Tran Thi Binh', email: 'binh@example.com', phone: null, status: 'INACTIVE' },
+  ];
+
+  // Act
+  const html = renderCustomerTable(customers);
+
+  // Assert
+  assert.match(
+    html,
+    /<thead><tr><th>ID<\/th><th>Họ tên<\/th><th>Email<\/th><th>Điện thoại<\/th><th>Trạng thái<\/th><th>Thao tác<\/th><\/tr><\/thead>/
+  );
+  assert.match(
+    html,
+    /<tr><td>1<\/td><td>Nguyen Van An<\/td><td>an@example\.com<\/td><td>0912 345 678<\/td><td>Đang hoạt động<\/td><td><button type="button" data-edit-id="1">Sửa<\/button><\/td><\/tr>/
+  );
+  assert.match(
+    html,
+    /<tr><td>2<\/td><td>Tran Thi Binh<\/td><td>binh@example\.com<\/td><td>—<\/td><td>Ngừng hoạt động<\/td><td><button type="button" data-edit-id="2">Sửa<\/button><\/td><\/tr>/
+  );
+  const bodyRows = html.match(/<tbody>(.*)<\/tbody>/)[1].match(/<tr>.*?<\/tr>/g);
+  assert.equal(bodyRows.length, 2);
+  for (const row of bodyRows) {
+    assert.equal(row.match(/<td>/g).length, 6);
+    assert.equal(row.match(/data-edit-id=/g).length, 1);
+  }
+  assert.equal(html.match(/<tr>/g).length, 3); // header + two rows
+});
+
+test('TC-75: renderCustomerTable escapes the id inside data-edit-id', () => {
+  // Arrange
+  const customers = [{ id: '7"><b>x</b>', name: 'A', email: 'a@example.com', phone: null, status: 'ACTIVE' }];
+
+  // Act
+  const html = renderCustomerTable(customers);
+
+  // Assert
+  assert.match(html, /data-edit-id="7&quot;&gt;&lt;b&gt;x&lt;\/b&gt;"/);
+  assert.doesNotMatch(html, /<b>x<\/b>/);
 });

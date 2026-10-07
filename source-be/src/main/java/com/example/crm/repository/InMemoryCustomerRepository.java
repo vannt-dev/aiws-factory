@@ -35,9 +35,27 @@ public class InMemoryCustomerRepository implements CustomerRepository {
   }
 
   @Override
+  public boolean existsByEmailAndIdNot(String email, long id) {
+    return customers.values().stream()
+        .anyMatch(c -> c.id() != id && c.email().equalsIgnoreCase(email));
+  }
+
+  @Override
+  public boolean existsByPhoneAndStatusAndIdNot(String phone, CustomerStatus status, long id) {
+    return customers.values().stream()
+        .anyMatch(c -> c.id() != id && phone.equals(c.phone()) && c.status() == status);
+  }
+
+  @Override
   public Customer insert(String name, String email, String phone, CustomerStatus status) {
     Customer customer = new Customer(sequence.incrementAndGet(), name, email, phone, status);
     customers.put(customer.id(), customer);
     return customer;
+  }
+
+  @Override
+  public Optional<Customer> update(long id, String name, String email, String phone) {
+    return Optional.ofNullable(
+        customers.computeIfPresent(id, (key, c) -> new Customer(c.id(), name, email, phone, c.status())));
   }
 }

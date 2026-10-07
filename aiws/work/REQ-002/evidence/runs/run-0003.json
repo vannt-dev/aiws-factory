@@ -1,0 +1,41 @@
+{
+  "run_id": "run-0003",
+  "req": "REQ-002",
+  "phase": "design",
+  "agent": "test-designer",
+  "task": null,
+  "attempt": 1,
+  "adapter": "claude",
+  "command": "claude \"-p\" \"--output-format\" \"json\" \"--permission-mode\" \"dontAsk\" \"--allowedTools\" \"Read,Grep,Glob,Write,Edit,MultiEdit\" \"--model\" \"opus\"",
+  "allowed_tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write",
+    "Edit",
+    "MultiEdit"
+  ],
+  "prompt_file": "run-0003.prompt.md",
+  "prompt_sha256": "b2d95592f2a5c432a7211d9a9d26afa75c91520638dafb93820c580221b03bce",
+  "started_at": "2026-10-04T03:30:50Z",
+  "duration_ms": 232321,
+  "exit_code": 1,
+  "report": {
+    "is_error": true,
+    "result": "You've hit your session limit · resets 1:50pm (Asia/Bangkok)",
+    "num_turns": 37,
+    "cost_usd": 1.6673572,
+    "session_id": "5f21019f-7818-4201-a7f5-4b9f09b8ba6b",
+    "model": null
+  },
+  "stderr_tail": null,
+  "files_changed": [],
+  "scope_violations_reverted": [],
+  "validation": [
+    {
+      "kind": "invalid",
+      "message": "agent run failed (exit 1): You've hit your session limit · resets 1:50pm (Asia/Bangkok)"
+    }
+  ],
+  "outcome": "failed"
+}
