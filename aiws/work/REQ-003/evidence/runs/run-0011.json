@@ -1,0 +1,36 @@
+{
+  "run_id": "run-0011",
+  "req": "REQ-003",
+  "phase": "review",
+  "agent": "reviewer",
+  "task": null,
+  "attempt": 1,
+  "adapter": "claude",
+  "command": "claude \"-p\" \"--output-format\" \"json\" \"--permission-mode\" \"dontAsk\" \"--allowedTools\" \"Read,Grep,Glob,Write\" \"--model\" \"opus\"",
+  "allowed_tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write"
+  ],
+  "prompt_file": "run-0011.prompt.md",
+  "prompt_sha256": "89029c2a3bec53a23595f375000e4194575b429b98b50e51d52c2c5ffbe7f435",
+  "started_at": "2026-10-07T16:48:43Z",
+  "duration_ms": 878495,
+  "exit_code": 0,
+  "report": {
+    "is_error": false,
+    "result": "## Báo cáo — review REQ-003\n\n**File đã ghi:** `aiws/work/REQ-003/05-review.md` (đủ 4 heading: Tóm tắt, Findings, Đối chiếu design, Đối chiếu api-contract). Không đụng file nào khác.\n\n**Kết luận: sẵn sàng tạo PR.** Không có finding critical hay major; có 4 finding minor.\n\n1. `source-fe/src/main.js:75` — bấm đúp nút đổi trạng thái có thể đảo ngược chính thao tác vừa làm, vì sau `refresh()` nút mang trạng thái đích ngược lại nằm đúng vị trí cũ. Code làm đúng D11 đã duyệt, nên đây là hệ quả của thiết kế; tôi suy ra từ đọc code, chưa chạy tay.\n2. `source-fe/src/components/customerTable.js:16` — `STATUS_ACTIONS[c.status]` tra cả key kế thừa (`'constructor'`, `'__proto__'`), nên vẫn hiện một nút nhãn `undefined`. Không xảy ra qua contract và không phải XSS; đề xuất dùng `Object.hasOwn`.\n3. `source-fe/test/customerTable.test.js:214` — TC-105 thiếu assertion \"đúng 6 `<td>`\" của test spec, và dòng \"thiếu field\" được viết là `status: undefined`.\n4. `source-be/.../CustomerHandlerTest.java:476` — TC-92, TC-97, TC-98 dùng `@ValueSource` / `Stream<String>` thay vì `@MethodSource` + `Arguments.of(...)` như plan T3; test spec cho phép, chỉ lệch kiểu.\n\n**Quyết định chính**\n- Design được duyệt nguyên trạng (`approvals/design-01.yaml`, không kèm ghi chú), nên 400 thay vì 409, nhãn \"Ngừng hoạt động\", không tải lại khi thất bại và không vô hiệu hoá nút đều là lựa chọn đã duyệt, không phải finding.\n- D1..D11 đều hiện thực đúng; BE expose và FE gọi đúng `PUT /api/customers/{id}/status` theo contract, mọi mã lỗi khai báo đều được FE xử lý.\n- Cả 26 TC (TC-82..TC-107) có trong code, đúng file, đủ dòng dữ liệu. Test cũ chỉ bị sửa đúng hai regex của TC-74 mà D9 cho phép.\n\n**Người review PR cần biết**\n- **Tôi không chạy lại test.** Kết quả lấy từ evidence của orchestrator: BE 311 pass sau T3, FE 36 pass sau T6.\n- **Chưa kiểm trailer của từng commit.** Phạm vi file từng task đã kiểm qua `evidence/runs/run-0005..0010.json`: không có vi phạm.\n- **Phần tăng số test của T1 và T4** chỉ đối chiếu bằng đếm dòng dữ liệu trong code, vì evidence của REQ-003 không có số trước hai task này; đã đánh dấu `[CẦN XÁC NHẬN]` trong file.\n- **`main.js` không có test tự động.** Cần chạy tay 6 bước ở mục \"Không có TC tự động\" của `03-test-spec.md`, và thử thêm bấm đúp (finding 1).",
+    "num_turns": 38,
+    "cost_usd": 4.2806302,
+    "session_id": "9ab9bab1-36e8-42e5-a113-f39adce8a156",
+    "model": null
+  },
+  "stderr_tail": null,
+  "files_changed": [
+    "aiws/work/REQ-003/05-review.md"
+  ],
+  "scope_violations_reverted": [],
+  "validation": [],
+  "outcome": "ok"
+}

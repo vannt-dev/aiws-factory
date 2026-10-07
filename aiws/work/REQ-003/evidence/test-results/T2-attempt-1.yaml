@@ -1,0 +1,107 @@
+req: REQ-003
+task: T2
+attempt: 1
+run: run-0006
+at: 2026-10-07T16:39:59Z
+tests:
+  - TC-84
+  - TC-85
+  - TC-86
+  - TC-87
+  - TC-88
+  - TC-89
+  - TC-90
+result: pass
+suites:
+  - side: be
+    command: cd source-be && .\mvnw.cmd -B -ntp test
+    exit_code: 0
+    duration_ms: 7499
+    output_tail: "[INFO] Scanning for projects...\r
+
+      [INFO] \r
+
+      [INFO] ------------------------< com.example:crm-api >-------------------------\r
+
+      [INFO] Building CRM API (AIWS demo backend) 0.1.0-SNAPSHOT\r
+
+      [INFO]   from pom.xml\r
+
+      [INFO] --------------------------------[ jar ]---------------------------------\r
+
+      [INFO] \r
+
+      [INFO] --- resources:3.4.0:resources (default-resources) @ crm-api ---\r
+
+      [INFO] skip non existing resourceDirectory C:\\Project\\WFH\\aiws-demo-REQ-003\\source-be\\src\\main\\resources\r
+
+      [INFO] \r
+
+      [INFO] --- compiler:3.15.0:compile (default-compile) @ crm-api ---\r
+
+      [INFO] Nothing to compile - all classes are up to date.\r
+
+      [INFO] \r
+
+      [INFO] --- resources:3.4.0:testResources (default-testResources) @ crm-api ---\r
+
+      [INFO] skip non existing resourceDirectory C:\\Project\\WFH\\aiws-demo-REQ-003\\source-be\\src\\test\\resources\r
+
+      [INFO] \r
+
+      [INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ crm-api ---\r
+
+      [INFO] Nothing to compile - all classes are up to date.\r
+
+      [INFO] \r
+
+      [INFO] --- surefire:3.6.0:test (default-test) @ crm-api ---\r
+
+      [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider\r
+
+      [INFO] \r
+
+      [INFO] -------------------------------------------------------\r
+
+      [INFO]  T E S T S\r
+
+      [INFO] -------------------------------------------------------\r
+
+      [INFO] Running com.example.crm.api.CustomerHandlerTest\r
+
+      [INFO] Tests run: 31, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.339 s -- in com.example.crm.api.CustomerHandlerTest\r
+
+      [INFO] Running com.example.crm.repository.InMemoryCustomerRepositoryTest\r
+
+      [INFO] Tests run: 40, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.151 s -- in com.example.crm.repository.InMemoryCustomerRepositoryTest\r
+
+      [INFO] Running com.example.crm.service.CustomerServiceTest\r
+
+      [INFO] Tests run: 133, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.293 s -- in com.example.crm.service.CustomerServiceTest\r
+
+      [INFO] Running com.example.crm.service.PhoneNumbersTest\r
+
+      [INFO] Tests run: 70, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.095 s -- in com.example.crm.service.PhoneNumbersTest\r
+
+      [INFO] \r
+
+      [INFO] Results:\r
+
+      [INFO] \r
+
+      [INFO] Tests run: 274, Failures: 0, Errors: 0, Skipped: 0\r
+
+      [INFO] \r
+
+      [INFO] ------------------------------------------------------------------------\r
+
+      [INFO] BUILD SUCCESS\r
+
+      [INFO] ------------------------------------------------------------------------\r
+
+      [INFO] Total time:  4.568 s\r
+
+      [INFO] Finished at: 2026-10-07T23:39:59+07:00\r
+
+      [INFO] ------------------------------------------------------------------------"
+problems: []

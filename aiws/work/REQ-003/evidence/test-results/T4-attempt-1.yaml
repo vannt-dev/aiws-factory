@@ -1,0 +1,129 @@
+req: REQ-003
+task: T4
+attempt: 1
+run: run-0008
+at: 2026-10-07T16:45:04Z
+tests:
+  - TC-101
+  - TC-102
+result: pass
+suites:
+  - side: fe
+    command: npm test --prefix source-fe
+    exit_code: 0
+    duration_ms: 763
+    output_tail: |-
+      ...API
+        ---
+        duration_ms: 1.2674
+        ...
+      # Subtest: TC-76: renderCustomerEditForm pre-fills name, email and phone with the current values
+      ok 12 - TC-76: renderCustomerEditForm pre-fills name, email and phone with the current values
+        ---
+        duration_ms: 2.288
+        ...
+      # Subtest: TC-77: renderCustomerEditForm leaves the phone input empty when the customer has no phone
+      ok 13 - TC-77: renderCustomerEditForm leaves the phone input empty when the customer has no phone
+        ---
+        duration_ms: 0.418
+        ...
+      # Subtest: TC-78: renderCustomerEditForm escapes HTML in every pre-filled value
+      ok 14 - TC-78: renderCustomerEditForm escapes HTML in every pre-filled value
+        ---
+        duration_ms: 0.2937
+        ...
+      # Subtest: TC-79: renderCustomerEditForm shows each field error right after its own input
+      ok 15 - TC-79: renderCustomerEditForm shows each field error right after its own input
+        ---
+        duration_ms: 0.8289
+        ...
+      # Subtest: TC-80: renderCustomerEditForm escapes HTML in field error messages
+      ok 16 - TC-80: renderCustomerEditForm escapes HTML in field error messages
+        ---
+        duration_ms: 0.2623
+        ...
+      # Subtest: TC-81: renderCustomerEditForm ignores fieldErrors keys other than name, email and phone
+      ok 17 - TC-81: renderCustomerEditForm ignores fieldErrors keys other than name, email and phone
+        ---
+        duration_ms: 0.3678
+        ...
+      # Subtest: renderCustomerTable shows one row per customer with a translated status
+      ok 18 - renderCustomerTable shows one row per customer with a translated status
+        ---
+        duration_ms: 2.6063
+        ...
+      # Subtest: renderCustomerTable escapes HTML in customer data
+      ok 19 - renderCustomerTable escapes HTML in customer data
+        ---
+        duration_ms: 0.3191
+        ...
+      # Subtest: renderCustomerTable shows an empty state
+      ok 20 - renderCustomerTable shows an empty state
+        ---
+        duration_ms: 0.2114
+        ...
+      # Subtest: TC-36: renderCustomerTable has a phone column between email and status
+      ok 21 - TC-36: renderCustomerTable has a phone column between email and status
+        ---
+        duration_ms: 0.4451
+        ...
+      # Subtest: TC-37: renderCustomerTable shows a 10-character phone as 4-3-3
+      ok 22 - TC-37: renderCustomerTable shows a 10-character phone as 4-3-3
+        ---
+        duration_ms: 0.2363
+        ...
+      # Subtest: TC-38: renderCustomerTable shows an 11-character phone as 3-4-4
+      ok 23 - TC-38: renderCustomerTable shows an 11-character phone as 3-4-4
+        ---
+        duration_ms: 0.2092
+        ...
+      # Subtest: TC-39: renderCustomerTable shows an em dash when there is no phone
+      ok 24 - TC-39: renderCustomerTable shows an em dash when there is no phone
+        ---
+        duration_ms: 0.2785
+        ...
+      # Subtest: TC-40: renderCustomerTable shows a phone of any other length verbatim and HTML-escaped
+      ok 25 - TC-40: renderCustomerTable shows a phone of any other length verbatim and HTML-escaped
+        ---
+        duration_ms: 0.244
+        ...
+      # Subtest: TC-41: renderCustomerTable formats the raw phone before escaping it
+      ok 26 - TC-41: renderCustomerTable formats the raw phone before escaping it
+        ---
+        duration_ms: 0.4991
+        ...
+      # Subtest: TC-74: renderCustomerTable adds an action column with one edit button carrying the id per row
+      ok 27 - TC-74: renderCustomerTable adds an action column with one edit button carrying the id per row
+        ---
+        duration_ms: 0.571
+        ...
+      # Subtest: TC-75: renderCustomerTable escapes the id inside data-edit-id
+      ok 28 - TC-75: renderCustomerTable escapes the id inside data-edit-id
+        ---
+        duration_ms: 0.3156
+        ...
+      # Subtest: TC-33: formatPhone formats a 10-character string as 4-3-3
+      ok 29 - TC-33: formatPhone formats a 10-character string as 4-3-3
+        ---
+        duration_ms: 3.2388
+        ...
+      # Subtest: TC-34: formatPhone formats an 11-character string as 3-4-4
+      ok 30 - TC-34: formatPhone formats an 11-character string as 3-4-4
+        ---
+        duration_ms: 0.3765
+        ...
+      # Subtest: TC-35: formatPhone returns a string of any other length unchanged
+      ok 31 - TC-35: formatPhone returns a string of any other length unchanged
+        ---
+        duration_ms: 0.5141
+        ...
+      1..31
+      # tests 31
+      # suites 0
+      # pass 31
+      # fail 0
+      # cancelled 0
+      # skipped 0
+      # todo 0
+      # duration_ms 180.2123
+problems: []

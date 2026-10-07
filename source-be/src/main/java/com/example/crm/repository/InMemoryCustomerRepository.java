@@ -58,4 +58,10 @@ public class InMemoryCustomerRepository implements CustomerRepository {
     return Optional.ofNullable(
         customers.computeIfPresent(id, (key, c) -> new Customer(c.id(), name, email, phone, c.status())));
   }
+
+  @Override
+  public Optional<Customer> updateStatus(long id, CustomerStatus status) {
+    return Optional.ofNullable(
+        customers.computeIfPresent(id, (key, c) -> new Customer(c.id(), c.name(), c.email(), c.phone(), status)));
+  }
 }

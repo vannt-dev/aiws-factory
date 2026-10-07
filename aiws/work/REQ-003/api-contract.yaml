@@ -1,0 +1,239 @@
+# OpenAPI 3 cho MỌI endpoint mới/đổi của REQ-003. Cầu nối FE-BE: BE phải expose đúng, FE phải gọi đúng.
+# REQ-003 THÊM đúng một endpoint: PUT /api/customers/{id}/status. Không endpoint cũ nào đổi path, method, schema,
+# mã trạng thái hay format lỗi (RFC 9457); bốn endpoint cũ xem aiws/work/REQ-001/api-contract.yaml và
+# aiws/work/REQ-002/api-contract.yaml.
+openapi: 3.0.3
+info:
+  title: REQ-003 API contract
+  version: 1.0.0
+  description: >-
+    CRM customers API (source-be, CustomerHandler). REQ-003 thêm thao tác đổi trạng thái của khách hàng đã có
+    (ngừng hoạt động và kích hoạt lại). Quy tắc duy nhất lấy từ source-legacy là BR-09: số điện thoại chỉ phải
+    duy nhất giữa các khách hàng ACTIVE (xem 02-design.md D1..D5).
+paths:
+  /api/customers/{id}/status:
+    parameters:
+      - $ref: "#/components/parameters/CustomerId"
+    put:
+      operationId: updateCustomerStatus
+      summary: Đặt trạng thái của một khách hàng đã có (MỚI, REQ-003)
+      description: >-
+        Đặt trạng thái của khách hàng `id` thành trạng thái đích trong body. `id`, `name`, `email`, `phone` của
+        khách hàng không bao giờ đổi. Không bao giờ tạo khách hàng mới. Lặp lại cùng một request cho cùng kết quả
+        (idempotent).
+        Thứ tự xử lý: (1) khớp route, id phải gồm toàn chữ số, nếu không thì 404 "No route for ...";
+        (2) đọc body JSON, hỏng thì 400 "Malformed JSON" kể cả khi id không tồn tại;
+        (3) tìm khách hàng, không có thì 404 "Customer {id} not found" kể cả khi status không hợp lệ;
+        (4) status phải đúng bằng "ACTIVE" hoặc "INACTIVE", nếu không thì 400 với errors.status;
+        (5) khách hàng đã ở đúng trạng thái đích thì trả 200 kèm khách hàng đang lưu, không ghi gì và không
+        kiểm tra trùng số;
+        (6) khi trạng thái đích là ACTIVE và khách hàng có số điện thoại: số đó đang được một khách hàng ACTIVE
+        KHÁC dùng thì 400 với errors.phone, khách hàng vẫn INACTIVE;
+        (7) ghi trạng thái và trả 200.
+        Đổi trạng thái KHÔNG kiểm tra lại họ tên, email hay định dạng số điện thoại đang lưu; chiều INACTIVE
+        không có điều kiện nào. Method khác trên path này trả 404 "No route for ...".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCustomerStatusRequest"
+            examples:
+              deactivate:
+                summary: Ngừng hoạt động
+                value:
+                  status: "INACTIVE"
+              reactivate:
+                summary: Kích hoạt lại
+                value:
+                  status: "ACTIVE"
+      responses:
+        "200":
+          description: >-
+            Khách hàng sau khi đặt trạng thái: `status` bằng trạng thái đích, các field khác như trước. Cũng là
+            kết quả khi khách hàng đã ở đúng trạng thái đích (không có gì bị ghi). Các lần GET sau đó trả đúng
+            các giá trị này.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+              examples:
+                deactivated:
+                  summary: Kết quả của request deactivate trên khách hàng 7; số điện thoại được giữ nguyên
+                  value:
+                    id: 7
+                    name: "Nguyen Van An"
+                    email: "an@example.com"
+                    phone: "0912345678"
+                    status: "INACTIVE"
+                reactivated:
+                  summary: Kết quả của request reactivate khi không khách hàng ACTIVE nào khác dùng số này
+                  value:
+                    id: 7
+                    name: "Nguyen Van An"
+                    email: "an@example.com"
+                    phone: "0912345678"
+                    status: "ACTIVE"
+                reactivatedWithoutPhone:
+                  summary: Khách hàng không có số luôn kích hoạt lại được
+                  value:
+                    id: 3
+                    name: "Tran Thi Binh"
+                    email: "binh@example.com"
+                    phone: null
+                    status: "ACTIVE"
+        "400":
+          description: >-
+            Một trong ba trường hợp, khách hàng không đổi gì:
+            kích hoạt lại bị từ chối vì số điện thoại đang được khách hàng ACTIVE khác dùng (`title`
+            "Validation failed", `errors` chỉ có key `phone`);
+            trạng thái đích không hợp lệ (`title` "Validation failed", `errors` chỉ có key `status`);
+            body không phải JSON hợp lệ (`title` "Malformed JSON", không có `errors`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                phoneInUse:
+                  summary: Kích hoạt lại khách hàng INACTIVE có số đang được một khách hàng ACTIVE khác dùng
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      phone: "is already used by another customer"
+                invalidStatus:
+                  summary: status thiếu, null, "" hoặc không đúng bằng ACTIVE/INACTIVE (vd. "DELETED", "active")
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      status: "must be ACTIVE or INACTIVE"
+                malformedJson:
+                  summary: Body không phải JSON hợp lệ (trả trước cả khi tìm khách hàng)
+                  value:
+                    type: "about:blank"
+                    title: "Malformed JSON"
+                    status: 400
+                    detail: "The request body is not valid JSON"
+        "404":
+          description: >-
+            Không có khách hàng với id này (được kiểm tra TRƯỚC khi kiểm tra status), hoặc id trong path không
+            phải chuỗi chữ số nên rơi vào route fallback. Không tạo khách hàng mới và không đổi ai.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                unknownCustomer:
+                  summary: PUT /api/customers/999/status khi không có khách hàng 999
+                  value:
+                    type: "about:blank"
+                    title: "Not Found"
+                    status: 404
+                    detail: "Customer 999 not found"
+                noRoute:
+                  summary: PUT /api/customers/abc/status (id không phải chuỗi chữ số)
+                  value:
+                    type: "about:blank"
+                    title: "Not Found"
+                    status: 404
+                    detail: "No route for PUT /api/customers/abc/status"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  parameters:
+    CustomerId:
+      name: id
+      in: path
+      required: true
+      description: >-
+        Mã khách hàng, chỉ gồm chữ số (regex \d+ trong CustomerHandler). Giá trị không phải chuỗi chữ số rơi vào
+        route fallback và trả 404. `id` chỉ lấy từ path.
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+      example: 7
+  responses:
+    InternalError:
+      description: Lỗi không mong đợi (RuntimeException khác).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: "about:blank"
+            title: "Internal Server Error"
+            status: 500
+            detail: "Unexpected error"
+  schemas:
+    CustomerStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    UpdateCustomerStatusRequest:
+      type: object
+      description: >-
+        Body của PUT /api/customers/{id}/status (MỚI, REQ-003). Field lạ bị bỏ qua.
+      required: [status]
+      properties:
+        status:
+          allOf:
+            - $ref: "#/components/schemas/CustomerStatus"
+          description: >-
+            Trạng thái đích. So khớp chính xác: không trim, không nhận chữ thường. Thiếu field, null hoặc giá trị
+            khác trả 400 với errors.status = "must be ACTIVE or INACTIVE".
+          example: "INACTIVE"
+    Customer:
+      type: object
+      description: >-
+        Khách hàng (record source-be domain/Customer.java). KHÔNG ĐỔI so với REQ-001 và REQ-002; mọi field luôn
+        có mặt trong JSON.
+      required: [id, name, email, phone, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+          description: >-
+            Số điện thoại ở dạng đã chuẩn hoá, chưa định dạng hiển thị, hoặc `null` khi khách hàng không có số.
+            Đổi trạng thái không bao giờ đổi field này. Không đặt `pattern` vì dữ liệu migrate từ legacy có thể
+            theo quy tắc cũ (vd. "01234567890").
+          example: "0912345678"
+        status:
+          $ref: "#/components/schemas/CustomerStatus"
+    Problem:
+      type: object
+      description: >-
+        RFC 9457 problem details (source-be api/Problem.java), Content-Type application/problem+json.
+        Hình dạng KHÔNG ĐỔI; REQ-003 thêm key `status` vào tập key có thể có của `errors`.
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          description: Luôn "about:blank".
+          example: "about:blank"
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        errors:
+          type: object
+          description: >-
+            Chỉ có khi `title` là "Validation failed". Map field -> message. Với endpoint này `errors` có đúng
+            một key: `phone` (kích hoạt lại bị từ chối vì trùng số) hoặc `status` (trạng thái đích không hợp lệ).
+          additionalProperties:
+            type: string

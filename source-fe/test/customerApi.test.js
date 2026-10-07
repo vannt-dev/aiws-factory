@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ApiError, createCustomer, getCustomer, listCustomers, updateCustomer } from '../src/api/customerApi.js';
+import { ApiError, createCustomer, getCustomer, listCustomers, updateCustomer, updateCustomerStatus } from '../src/api/customerApi.js';
 
 function fakeFetch(status, body, calls = []) {
   return async (url, init) => {
@@ -163,6 +163,71 @@ test('TC-43: createCustomer throws ApiError with the phone field error returned 
     await assert.rejects(
       createCustomer({ name: 'An', email: 'an@example.com', phone: '0412345678' }, { fetchImpl: fakeFetch(400, problem) }),
       (error) => error instanceof ApiError && error.status === 400 && error.fieldErrors.phone === phone
+    );
+  }
+});
+
+test('TC-101: updateCustomerStatus sends PUT /api/customers/{id}/status with a body containing only the target status', async () => {
+  const rows = [
+    { id: 7, status: 'INACTIVE', url: '/api/customers/7/status' },
+    { id: '7', status: 'ACTIVE', url: '/api/customers/7/status' },
+    { id: '7/8', status: 'INACTIVE', url: '/api/customers/7%2F8/status' },
+  ];
+
+  for (const { id, status, url } of rows) {
+    const calls = [];
+    const apiCustomer = { id: 7, name: 'Nguyen Van An', email: 'an@example.com', phone: '0912345678', status };
+    const result = await updateCustomerStatus(id, status, { fetchImpl: fakeFetch(200, apiCustomer, calls) });
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, url);
+    assert.equal(calls[0].init.method, 'PUT');
+    assert.equal(calls[0].init.headers['Content-Type'], 'application/json');
+    assert.deepEqual(JSON.parse(calls[0].init.body), { status });
+    assert.deepEqual(result, apiCustomer);
+  }
+});
+
+test('TC-102: updateCustomerStatus throws ApiError with the status and field errors of the API', async () => {
+  const rows = [
+    {
+      status: 400,
+      problem: {
+        type: 'about:blank',
+        title: 'Validation failed',
+        status: 400,
+        detail: 'The request has invalid fields',
+        errors: { phone: 'is already used by another customer' },
+      },
+      fieldErrors: { phone: 'is already used by another customer' },
+    },
+    {
+      status: 400,
+      problem: {
+        type: 'about:blank',
+        title: 'Validation failed',
+        status: 400,
+        detail: 'The request has invalid fields',
+        errors: { status: 'must be ACTIVE or INACTIVE' },
+      },
+      fieldErrors: { status: 'must be ACTIVE or INACTIVE' },
+    },
+    {
+      status: 404,
+      problem: { type: 'about:blank', title: 'Not Found', status: 404, detail: 'Customer 7 not found' },
+      fieldErrors: {},
+    },
+  ];
+
+  for (const row of rows) {
+    await assert.rejects(
+      updateCustomerStatus(7, 'ACTIVE', { fetchImpl: fakeFetch(row.status, row.problem) }),
+      (error) => {
+        assert.ok(error instanceof ApiError);
+        assert.equal(error.status, row.status);
+        assert.deepEqual(error.fieldErrors, row.fieldErrors);
+        return true;
+      }
     );
   }
 });

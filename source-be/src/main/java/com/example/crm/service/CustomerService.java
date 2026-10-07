@@ -47,6 +47,32 @@ public class CustomerService {
         .orElseThrow(() -> new NotFoundException("Customer " + id + " not found"));
   }
 
+  /** Sets the status of an existing customer; its name, email and phone are kept. */
+  public Customer updateStatus(long id, String status) {
+    Customer current = get(id);
+    CustomerStatus target = parseStatus(status);
+    if (current.status() == target) {
+      return current;
+    }
+    if (target == CustomerStatus.ACTIVE
+        && current.phone() != null
+        && repository.existsByPhoneAndStatusAndIdNot(current.phone(), CustomerStatus.ACTIVE, id)) {
+      throw new ValidationException(Map.of("phone", "is already used by another customer"));
+    }
+    return repository.updateStatus(id, target)
+        .orElseThrow(() -> new NotFoundException("Customer " + id + " not found"));
+  }
+
+  private static CustomerStatus parseStatus(String status) {
+    if (CustomerStatus.ACTIVE.name().equals(status)) {
+      return CustomerStatus.ACTIVE;
+    }
+    if (CustomerStatus.INACTIVE.name().equals(status)) {
+      return CustomerStatus.INACTIVE;
+    }
+    throw new ValidationException(Map.of("status", "must be ACTIVE or INACTIVE"));
+  }
+
   /** Validates and normalizes the input; the predicates report whether another customer already uses the email or phone. */
   private Checked check(
       String name, String email, String phone, Predicate<String> emailTaken, Predicate<String> phoneTaken) {

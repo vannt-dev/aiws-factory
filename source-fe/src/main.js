@@ -1,6 +1,7 @@
-import { ApiError, createCustomer, getCustomer, listCustomers, updateCustomer } from './api/customerApi.js';
+import { ApiError, createCustomer, getCustomer, listCustomers, updateCustomer, updateCustomerStatus } from './api/customerApi.js';
 import { renderCustomerEditForm } from './components/customerEditForm.js';
 import { renderCustomerTable } from './components/customerTable.js';
+import { describeStatusError } from './utils/describeStatusError.js';
 
 const listEl = document.getElementById('customers');
 const editEl = document.getElementById('edit-customer');
@@ -69,6 +70,18 @@ editEl.addEventListener('click', (event) => {
   if (!event.target.closest('button[data-cancel-edit]')) return;
   editEl.innerHTML = '';
   messageEl.textContent = '';
+});
+
+listEl.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-status-id]');
+  if (!button) return;
+  messageEl.textContent = '';
+  try {
+    await updateCustomerStatus(button.dataset.statusId, button.dataset.targetStatus);
+    await refresh();
+  } catch (error) {
+    messageEl.textContent = describeStatusError(error);
+  }
 });
 
 refresh();

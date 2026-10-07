@@ -1,0 +1,200 @@
+req_id: REQ-003
+title: Ngừng hoạt động và kích hoạt lại khách hàng
+requirement: requirements/REQ-003-customer-status.md
+branch: aiws/REQ-003
+base_branch: demo
+base_commit: 7a881facf3a7612174a8390700c161fc4e7f2cc3
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-003 pr` (or `aiws reject REQ-003 pr -m "..."`)
+history:
+  - phase: new
+    result: created
+    by: Van Nguyen
+    at: 2026-10-07T15:58:06Z
+  - phase: analysis
+    agent: analyst
+    result: ok
+    run: run-0001
+    at: 2026-10-07T16:05:26Z
+  - phase: design
+    agent: architect
+    result: ok
+    run: run-0002
+    at: 2026-10-07T16:15:37Z
+  - phase: design
+    agent: test-designer
+    result: ok
+    run: run-0003
+    at: 2026-10-07T16:28:22Z
+  - phase: design_approval
+    result: approved
+    by: Van Nguyen
+    record: design-01.yaml
+    at: 2026-10-07T16:29:26Z
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0004
+    at: 2026-10-07T16:35:12Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0005
+    commit: e1ba048
+    at: 2026-10-07T16:36:50Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0006
+    commit: 4806b5d
+    at: 2026-10-07T16:39:59Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0007
+    commit: b16ba82
+    at: 2026-10-07T16:44:05Z
+  - phase: implementation
+    task: T4
+    result: done
+    run: run-0008
+    commit: 4529e7c
+    at: 2026-10-07T16:45:05Z
+  - phase: implementation
+    task: T5
+    result: done
+    run: run-0009
+    commit: e3e496e
+    at: 2026-10-07T16:46:37Z
+  - phase: implementation
+    task: T6
+    result: done
+    run: run-0010
+    commit: 03dfd36
+    at: 2026-10-07T16:48:42Z
+  - phase: implementation
+    result: all_tasks_done
+    at: 2026-10-07T16:48:43Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0011
+    at: 2026-10-07T17:03:22Z
+tasks:
+  - id: T1
+    title: be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests:
+      - TC-82
+      - TC-83
+    depends_on: []
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: e1ba048c5028e7f951973263e9f568df91ae7150
+  - id: T2
+    title: be - thêm CustomerService.updateStatus với kiểm tra trùng số khi kích hoạt lại
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+    tests:
+      - TC-84
+      - TC-85
+      - TC-86
+      - TC-87
+      - TC-88
+      - TC-89
+      - TC-90
+    depends_on:
+      - T1
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 4806b5dc9c5fb547696947513ed12d5fae8d90df
+  - id: T3
+    title: be - thêm endpoint PUT /api/customers/{id}/status đổi trạng thái khách hàng
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/api/UpdateCustomerStatusRequest.java
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests:
+      - TC-91
+      - TC-92
+      - TC-93
+      - TC-94
+      - TC-95
+      - TC-96
+      - TC-97
+      - TC-98
+      - TC-99
+      - TC-100
+    depends_on:
+      - T2
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: b16ba827dcf41d9ce926f24332d68e5c2279fc24
+  - id: T4
+    title: fe - thêm updateCustomerStatus vào customerApi
+    type: feat
+    allowed_files:
+      - source-fe/src/api/customerApi.js
+      - source-fe/test/customerApi.test.js
+    tests:
+      - TC-101
+      - TC-102
+    depends_on:
+      - T3
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 4529e7c09f70428ade1b417080373fde308e12a8
+  - id: T5
+    title: fe - thêm nút đổi trạng thái vào ô Thao tác của bảng khách hàng
+    type: feat
+    allowed_files:
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/customerTable.test.js
+    tests:
+      - TC-103
+      - TC-104
+      - TC-105
+    depends_on:
+      - T3
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: e3e496e88cf92d0ca92d4fc852d3b9ca762b8da2
+  - id: T6
+    title: fe - thêm describeStatusError và nối nút đổi trạng thái vào trang
+    type: feat
+    allowed_files:
+      - source-fe/src/utils/describeStatusError.js
+      - source-fe/test/describeStatusError.test.js
+      - source-fe/src/main.js
+    tests:
+      - TC-106
+      - TC-107
+    depends_on:
+      - T4
+      - T5
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 03dfd36b406b7fe6e5700894e8b8d6459b68c6ba
+feedback: []
+attempts: {}
+last_failure: {}
+step_index: 0
+run_seq: 11
+last_review:
+  run: run-0011
+  head: 5e1278a508abf8d4d886725bdcea39d24073635e
+  approval: design-01.yaml

@@ -127,11 +127,11 @@ test('TC-74: renderCustomerTable adds an action column with one edit button carr
   );
   assert.match(
     html,
-    /<tr><td>1<\/td><td>Nguyen Van An<\/td><td>an@example\.com<\/td><td>0912 345 678<\/td><td>Đang hoạt động<\/td><td><button type="button" data-edit-id="1">Sửa<\/button><\/td><\/tr>/
+    /<tr><td>1<\/td><td>Nguyen Van An<\/td><td>an@example\.com<\/td><td>0912 345 678<\/td><td>Đang hoạt động<\/td><td><button type="button" data-edit-id="1">Sửa<\/button> <button type="button" data-status-id="1" data-target-status="INACTIVE">Ngừng hoạt động<\/button><\/td><\/tr>/
   );
   assert.match(
     html,
-    /<tr><td>2<\/td><td>Tran Thi Binh<\/td><td>binh@example\.com<\/td><td>—<\/td><td>Ngừng hoạt động<\/td><td><button type="button" data-edit-id="2">Sửa<\/button><\/td><\/tr>/
+    /<tr><td>2<\/td><td>Tran Thi Binh<\/td><td>binh@example\.com<\/td><td>—<\/td><td>Ngừng hoạt động<\/td><td><button type="button" data-edit-id="2">Sửa<\/button> <button type="button" data-status-id="2" data-target-status="ACTIVE">Kích hoạt lại<\/button><\/td><\/tr>/
   );
   const bodyRows = html.match(/<tbody>(.*)<\/tbody>/)[1].match(/<tr>.*?<\/tr>/g);
   assert.equal(bodyRows.length, 2);
@@ -140,6 +140,91 @@ test('TC-74: renderCustomerTable adds an action column with one edit button carr
     assert.equal(row.match(/data-edit-id=/g).length, 1);
   }
   assert.equal(html.match(/<tr>/g).length, 3); // header + two rows
+});
+
+test('TC-103: renderCustomerTable adds a status action button carrying id and target status per row', () => {
+  // Arrange
+  const customers = [
+    { id: 7, name: 'Le Van Cuong', email: 'cuong@example.com', phone: '0912345678', status: 'ACTIVE' },
+    { id: 8, name: 'Pham Thi Dung', email: 'dung@example.com', phone: null, status: 'INACTIVE' },
+  ];
+
+  // Act
+  const html = renderCustomerTable(customers);
+
+  // Assert
+  assert.match(
+    html,
+    /<thead><tr><th>ID<\/th><th>Họ tên<\/th><th>Email<\/th><th>Điện thoại<\/th><th>Trạng thái<\/th><th>Thao tác<\/th><\/tr><\/thead>/
+  );
+  assert.match(
+    html,
+    /<tr><td>7<\/td><td>Le Van Cuong<\/td><td>cuong@example\.com<\/td><td>0912 345 678<\/td><td>Đang hoạt động<\/td><td><button type="button" data-edit-id="7">Sửa<\/button> <button type="button" data-status-id="7" data-target-status="INACTIVE">Ngừng hoạt động<\/button><\/td><\/tr>/
+  );
+  assert.match(
+    html,
+    /<tr><td>8<\/td><td>Pham Thi Dung<\/td><td>dung@example\.com<\/td><td>—<\/td><td>Ngừng hoạt động<\/td><td><button type="button" data-edit-id="8">Sửa<\/button> <button type="button" data-status-id="8" data-target-status="ACTIVE">Kích hoạt lại<\/button><\/td><\/tr>/
+  );
+  const bodyRows = html.match(/<tbody>(.*)<\/tbody>/)[1].match(/<tr>.*?<\/tr>/g);
+  assert.equal(bodyRows.length, 2);
+  for (const row of bodyRows) {
+    assert.equal(row.match(/<td>/g).length, 6);
+    assert.equal(row.match(/data-edit-id=/g).length, 1);
+    assert.equal(row.match(/data-status-id=/g).length, 1);
+    assert.equal(row.match(/data-target-status=/g).length, 1);
+  }
+  assert.equal(html.match(/<tr>/g).length, 3); // header + two rows
+});
+
+test('TC-104: renderCustomerTable escapes the id inside data-status-id', () => {
+  const cases = [
+    {
+      id: '7"><b>x</b>',
+      status: 'ACTIVE',
+      attr: '7&quot;&gt;&lt;b&gt;x&lt;/b&gt;',
+      rest: ' data-target-status="INACTIVE">Ngừng hoạt động</button>',
+    },
+    {
+      id: '7"><b>x</b>',
+      status: 'INACTIVE',
+      attr: '7&quot;&gt;&lt;b&gt;x&lt;/b&gt;',
+      rest: ' data-target-status="ACTIVE">Kích hoạt lại</button>',
+    },
+    {
+      id: "7' x='y",
+      status: 'ACTIVE',
+      attr: '7&#39; x=&#39;y',
+      rest: ' data-target-status="INACTIVE">Ngừng hoạt động</button>',
+    },
+  ];
+
+  for (const { id, status, attr, rest } of cases) {
+    const html = renderCustomerTable([{ id, name: 'A', email: 'a@example.com', phone: null, status }]);
+
+    assert.match(
+      html,
+      new RegExp(`<button type="button" data-status-id="${attr}"${rest.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
+    );
+    assert.doesNotMatch(html, /<b>x<\/b>/);
+    assert.doesNotMatch(html, /x='y/);
+    assert.equal(html.match(/data-status-id=/g).length, 1);
+  }
+});
+
+test('TC-105: renderCustomerTable does not show a status action button for status outside ACTIVE and INACTIVE', () => {
+  const statuses = ['DELETED', 'active', '', null, undefined];
+
+  for (const status of statuses) {
+    const customer = { id: 1, name: 'A', email: 'a@example.com', phone: null, status };
+
+    const html = renderCustomerTable([customer]);
+
+    assert.match(html, /<td><button type="button" data-edit-id="1">Sửa<\/button><\/td><\/tr>/);
+    assert.doesNotMatch(html, /data-status-id/);
+    assert.doesNotMatch(html, /data-target-status/);
+    assert.doesNotMatch(html, /Kích hoạt lại/);
+    assert.equal(html.match(/<button /g).length, 1);
+  }
 });
 
 test('TC-75: renderCustomerTable escapes the id inside data-edit-id', () => {
