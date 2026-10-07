@@ -1,0 +1,38 @@
+{
+  "run_id": "run-0003",
+  "req": "REQ-003",
+  "phase": "design",
+  "agent": "test-designer",
+  "task": null,
+  "attempt": 1,
+  "adapter": "claude",
+  "command": "claude \"-p\" \"--output-format\" \"json\" \"--permission-mode\" \"dontAsk\" \"--allowedTools\" \"Read,Grep,Glob,Write,Edit,MultiEdit\" \"--model\" \"opus\"",
+  "allowed_tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write",
+    "Edit",
+    "MultiEdit"
+  ],
+  "prompt_file": "run-0003.prompt.md",
+  "prompt_sha256": "9110d3f1f7d1d8d8266d9f2930b1c5c7b5e84f3d913e218c6b361e58d66c9acb",
+  "started_at": "2026-10-07T16:15:37Z",
+  "duration_ms": 764874,
+  "exit_code": 0,
+  "report": {
+    "is_error": false,
+    "result": "## Báo cáo — REQ-003, phase design, test-designer\n\n**File đã ghi:** chỉ `aiws/work/REQ-003/03-test-spec.md`, đủ ba heading bắt buộc (Chiến lược, Test cases, Ma trận AC).\n\n**Kết quả:** 26 test case, TC-82..TC-107, đánh số tiếp từ REQ-002. Mọi AC-1..AC-10 đều có TC, không TC nào covers AC không tồn tại, và ma trận AC khớp với các dòng `covers`.\n\n| TC | File test | Nhóm | Level |\n| --- | --- | --- | --- |\n| TC-82, TC-83 | `InMemoryCustomerRepositoryTest.java` | BE-1 | unit |\n| TC-84..TC-90 | `CustomerServiceTest.java` | BE-2 | unit |\n| TC-91..TC-100 | `CustomerHandlerTest.java` | BE-3 | integration (server trong tiến trình, chạy trong `be_test`) |\n| TC-101, TC-102 | `customerApi.test.js` | FE-1 | unit |\n| TC-103..TC-105 | `customerTable.test.js` | FE-2 | unit |\n| TC-106, TC-107 | `describeStatusError.test.js` (mới) | FE-3 | unit |\n\n**Quyết định chính**\n- **TC-74 của REQ-002 không được định nghĩa lại.** Nó được sửa đúng hai regex trong FE-2 theo D9; kỳ vọng mới về nút đổi trạng thái nằm ở TC-103..TC-105.\n- **Kịch bản đầu-cuối của AC-3 chạy ở HTTP test** (TC-93), vì khách hàng `INACTIVE` nay dựng được qua chính endpoint mới. Hai khách hàng `ACTIVE` trùng số và số theo quy tắc cũ chỉ dựng được bằng `repository.insert`, nên chỉ kiểm ở service.\n- **TC-94 đi xa hơn AC một bước:** bị chặn vì trùng số → gỡ xung đột theo 5 cách → kích hoạt lại được. Truy vết tới AC-2.\n- **TC sinh từ design, không có AC riêng**, được truy vết tới AC gần nhất như REQ-002 đã làm: `Malformed JSON` (TC-98), route fallback (TC-99, TC-100), không có nút cho trạng thái lạ (TC-105).\n- **Không cần helper test mới ở BE;** vì `post(json)` không nhận path, method khác trên `/status` chỉ được kiểm bằng `GET` (TC-100).\n\n**Reviewer cần biết**\n- **Không có TC tự động cho `main.js` và `index.html`** (không có DOM); spec liệt kê checklist chạy tay thay thế. Không có đường \"không có quyền\" vì hệ thống chưa có auth (R5).\n- **Các TC phụ thuộc quyết định đang chờ duyệt** — nếu người duyệt chọn khác thì phải đổi theo:\n  - 400 hay 409 khi trùng số: TC-86, TC-93, TC-102, TC-106.\n  - Trạng thái đích so khớp chính xác: TC-89, TC-97.\n  - Số theo quy tắc cũ vẫn đổi trạng thái được: các dòng `01234567890` của TC-84, TC-85, TC-86, TC-90.\n  - Vị trí và nhãn nút: TC-103..TC-105.\n  - Lời văn thông báo: TC-106, TC-107.\n- **Hai điểm `[CẦN XÁC NHẬN]`, cố ý không đặt kỳ vọng:**\n  - Số đang lưu ở dạng chưa chuẩn hoá: D5 yêu cầu so nguyên văn, nhưng analysis không định nghĩa loại dữ liệu này.\n  - `status` trùng tên thuộc tính kế thừa của object (vd. `'constructor'`) khi render bảng.\n- **Cũng không có TC cho các ca biên của R11:** `id` vượt `long`, body JSON `null`, `status` không phải chuỗi.\n- **Kiểm tra chưa chạy bằng parser thật.** Bash bị từ chối trong run này, nên tôi đối chiếu bằng grep theo quy tắc của `parse.js`: 26 heading liên tục, đúng 26 dòng `covers` và 26 dòng `side`, đủ 9 trường còn lại cho mỗi TC. Rule `every_ac_has_tc` của orchestrator vẫn cần chạy thật.\n- **Một lần ghi nhầm file tạm ngoài phạm vi đã bị guard chặn;** không có file nào được tạo.",
+    "num_turns": 34,
+    "cost_usd": 5.0333918,
+    "session_id": "5f10f90c-aeb0-4e3e-a207-e42453c3ca46",
+    "model": null
+  },
+  "stderr_tail": null,
+  "files_changed": [
+    "aiws/work/REQ-003/03-test-spec.md"
+  ],
+  "scope_violations_reverted": [],
+  "validation": [],
+  "outcome": "ok"
+}

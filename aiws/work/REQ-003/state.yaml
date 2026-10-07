@@ -4,8 +4,9 @@ requirement: requirements/REQ-003-customer-status.md
 branch: aiws/REQ-003
 base_branch: demo
 base_commit: 7a881facf3a7612174a8390700c161fc4e7f2cc3
-phase: design
-status: running
+phase: design_approval
+status: waiting_human
+reason: 'design ready for review: 02-design.md, 03-test-spec.md, api-contract.yaml. Then run `aiws approve REQ-003 design` or `aiws reject REQ-003 design -m "..."`'
 history:
   - phase: new
     result: created
@@ -21,9 +22,14 @@ history:
     result: ok
     run: run-0002
     at: 2026-10-07T16:15:37Z
+  - phase: design
+    agent: test-designer
+    result: ok
+    run: run-0003
+    at: 2026-10-07T16:28:22Z
 tasks: []
 feedback: []
 attempts: {}
 last_failure: {}
-step_index: 1
-run_seq: 2
+step_index: 0
+run_seq: 3
