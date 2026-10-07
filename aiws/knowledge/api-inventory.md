@@ -1,32 +1,47 @@
 # API inventory
 
 ## Endpoints
-Nguồn: `source-be/src/main/java/com/example/crm/api/CustomerHandler.java` (`route`). Context duy nhất được đăng ký là `/api/customers`, trong `source-be/src/main/java/com/example/crm/App.java:start`. Mô tả OpenAPI 3 của ba endpoint (viết ở REQ-001): `aiws/work/REQ-001/api-contract.yaml`.
+Nguồn: `source-be/src/main/java/com/example/crm/api/CustomerHandler.java` (`route`). Context duy nhất được đăng ký là `/api/customers`, trong `source-be/src/main/java/com/example/crm/App.java:start`. Mô tả OpenAPI 3: `aiws/work/REQ-001/api-contract.yaml` (ba endpoint `GET`/`POST`, viết ở REQ-001) và `aiws/work/REQ-002/api-contract.yaml` (`PUT /api/customers/{id}`, kèm bản chép lại không đổi của `GET /api/customers/{id}`).
 
 | Method | Path | Handler (file:hàm) | Mô tả | Được FE gọi ở |
 | --- | --- | --- | --- | --- |
 | GET | `/api/customers` | `source-be/src/main/java/com/example/crm/api/CustomerHandler.java:route` → `CustomerService.list` | Trả mảng JSON `Customer[]`, thứ tự tăng dần theo `id`, 200. Không phân trang, không lọc | `source-fe/src/api/customerApi.js:listCustomers` (dùng trong `source-fe/src/main.js:refresh`) |
 | POST | `/api/customers` | `source-be/src/main/java/com/example/crm/api/CustomerHandler.java:route` → `CustomerService.create` | Body `CreateCustomerRequest {name, email, phone}`; `phone` tuỳ chọn (thiếu field hoặc `null` đều được) và là giá trị thô người dùng nhập. Field lạ bị bỏ qua. Thành công trả 201 + `Customer` với `status = "ACTIVE"` và `phone` đã chuẩn hoá hoặc `null`. Validation lỗi trả 400 Problem kèm `errors`. JSON hỏng trả 400 "Malformed JSON" | `source-fe/src/api/customerApi.js:createCustomer` (dùng trong submit handler của `source-fe/src/main.js`) |
-| GET | `/api/customers/{id}` | `source-be/src/main/java/com/example/crm/api/CustomerHandler.java:route` → `CustomerService.get` | `id` khớp `\d+`. Trả 200 + `Customer`, hoặc 404 Problem với detail `Customer {id} not found` | Không được FE gọi |
-| * | `/api/customers...` (method/path khác) | `source-be/src/main/java/com/example/crm/api/CustomerHandler.java:route` (fallback) | 404 Problem, detail `No route for <METHOD> <path>`. Method sai (vd. `PUT /api/customers`) cũng trả **404**, không phải 405. `id` không phải số cũng rơi vào đây | — |
+| GET | `/api/customers/{id}` | `source-be/src/main/java/com/example/crm/api/CustomerHandler.java:route` → `CustomerService.get` | `id` khớp `\d+`. Trả 200 + `Customer`, hoặc 404 Problem với detail `Customer {id} not found` | `source-fe/src/api/customerApi.js:getCustomer` (dùng trong handler `click` trên `#customers` của `source-fe/src/main.js`, để điền form sửa) |
+| PUT | `/api/customers/{id}` | `source-be/src/main/java/com/example/crm/api/CustomerHandler.java:route` → `CustomerService.update` | Sửa khách hàng đã có. `id` khớp `\d+` và chỉ lấy từ path. Body `UpdateCustomerRequest {name, email, phone}` là giá trị thô, **thay thế cả ba trường** (trường không gửi không giữ giá trị cũ: thiếu `phone` thì số đang có bị xoá). Field lạ (`id`, `status`...) bị bỏ qua. Thành công trả 200 + `Customer` sau khi sửa, `id` và `status` như trước. Không bao giờ tạo khách hàng mới. Lỗi: 400 Problem kèm `errors`, 400 "Malformed JSON", 404 Problem `Customer {id} not found`. Thứ tự xử lý xem bên dưới | `source-fe/src/api/customerApi.js:updateCustomer` (dùng trong handler `submit` trên `#edit-customer` của `source-fe/src/main.js`) |
+| * | `/api/customers...` (method/path khác) | `source-be/src/main/java/com/example/crm/api/CustomerHandler.java:route` (fallback) | 404 Problem, detail `No route for <METHOD> <path>`. Method sai (vd. `PUT /api/customers`, `DELETE /api/customers/1`) cũng trả **404**, không phải 405. `id` không phải chuỗi chữ số (vd. `/api/customers/abc`, `/api/customers/-1`) cũng rơi vào đây | — |
 
 Schema `Customer` (`source-be/src/main/java/com/example/crm/domain/Customer.java`), serialize bằng Jackson theo tên component của record:
 ```json
 { "id": 1, "name": "Nguyen Van An", "email": "an.nguyen@example.com", "phone": "0912345678", "status": "ACTIVE" }
 ```
 - `status` là một trong `ACTIVE`, `INACTIVE` (`source-be/src/main/java/com/example/crm/domain/CustomerStatus.java`).
-- `phone` là số điện thoại **đã chuẩn hoá, chưa định dạng hiển thị** (vd. `"0912345678"`, `"02438251234"`), hoặc `null` khi khách hàng không có số. Field luôn có mặt trong JSON của cả ba endpoint: `Customer` không có `@JsonInclude` và `CustomerHandler.JSON` không cấu hình bỏ `null` (kiểm chứng ở `source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java`, TC-27, TC-31). FE định dạng khi hiển thị (`source-fe/src/utils/formatPhone.js`).
+- `phone` là số điện thoại **đã chuẩn hoá, chưa định dạng hiển thị** (vd. `"0912345678"`, `"02438251234"`), hoặc `null` khi khách hàng không có số. Field luôn có mặt trong JSON của cả bốn endpoint: `Customer` không có `@JsonInclude` và `CustomerHandler.JSON` không cấu hình bỏ `null` (kiểm chứng ở `source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java`, TC-27, TC-31, TC-62). FE định dạng khi hiển thị (`source-fe/src/utils/formatPhone.js`).
 
-Quy tắc validation của `POST` (`source-be/src/main/java/com/example/crm/service/CustomerService.java:create`). `name` và `email` được `String.trim()` trước khi kiểm tra. `phone` được trim bằng `PhoneNumbers.trim`, chỉ bỏ space, `\t`, `\n`, `\r`, NUL, VT ở hai đầu (tập ký tự của `trim()` PHP, hẹp hơn `String.trim()`). `null` được coi là chuỗi rỗng ở cả ba field. Lỗi của mọi field được gom vào **một** response 400; nhánh `phone` chạy bất kể `name`/`email` có lỗi hay không:
+Quy tắc validation của `POST` và `PUT`: cả hai đi qua **cùng một** hàm private `source-be/src/main/java/com/example/crm/service/CustomerService.java:check`, nên quy tắc, thứ tự kiểm tra và thông điệp giống hệt nhau. Chỗ khác duy nhất là hai kiểm tra trùng, do `create` và `update` truyền vào dưới dạng `Predicate<String>` (xem bảng). `name` và `email` được `String.trim()` trước khi kiểm tra. `phone` được trim bằng `PhoneNumbers.trim`, chỉ bỏ space, `\t`, `\n`, `\r`, NUL, VT ở hai đầu (tập ký tự của `trim()` PHP, hẹp hơn `String.trim()`). `null` được coi là chuỗi rỗng ở cả ba field. Lỗi của mọi field được gom vào **một** response 400; nhánh `phone` chạy bất kể `name`/`email` có lỗi hay không:
 | Field | Quy tắc | Thông điệp trong `errors` |
 | --- | --- | --- |
 | `name` | Không rỗng | `must not be blank` |
 | `name` | ≤ 100 ký tự (`NAME_MAX_LENGTH`) | `must be at most 100 characters` |
 | `email` | Khớp `^[^@\s]+@[^@\s]+\.[^@\s]+$` | `must be a valid email address` |
-| `email` | Chưa được khách hàng khác dùng, không phân biệt hoa thường (`InMemoryCustomerRepository.existsByEmail`) | `is already used by another customer` |
-| `phone` | Rỗng sau `PhoneNumbers.trim` (thiếu field, `null`, `""`, `"   "`) nghĩa là không có số | Không lỗi; lưu `phone = null` |
+| `email` | Chưa được khách hàng khác dùng, không phân biệt hoa thường, bất kể trạng thái của khách hàng kia. `POST`: `InMemoryCustomerRepository.existsByEmail`. `PUT`: `existsByEmailAndIdNot(email, id)`, không tính chính khách hàng đang sửa | `is already used by another customer` |
+| `phone` | Rỗng sau `PhoneNumbers.trim` (thiếu field, `null`, `""`, `"   "`) nghĩa là không có số | Không lỗi; lưu `phone = null` (với `PUT`: số đang có bị xoá) |
 | `phone` | Sau `PhoneNumbers.normalize`, cả chuỗi phải là di động `0[35789][0-9]{8}` (10 chữ số) hoặc cố định `02[0-9]{9}` (11 chữ số) (`PhoneNumbers.isValid`) | `must be a valid phone number` |
-| `phone` | Số đã chuẩn hoá chưa được khách hàng `ACTIVE` nào dùng (`InMemoryCustomerRepository.existsByPhoneAndStatus`); khách hàng `INACTIVE` không giữ số (BR-09). Chỉ kiểm tra khi số hợp lệ | `is already used by another customer` |
+| `phone` | Số đã chuẩn hoá chưa được khách hàng `ACTIVE` nào dùng; khách hàng `INACTIVE` không giữ số (BR-09). Chỉ kiểm tra khi số hợp lệ. `POST`: `InMemoryCustomerRepository.existsByPhoneAndStatus(phone, ACTIVE)`. `PUT`: `existsByPhoneAndStatusAndIdNot(phone, ACTIVE, id)`, không tính chính khách hàng đang sửa | `is already used by another customer` |
+
+Riêng `PUT /api/customers/{id}` (`CustomerService.update`; dẫn chứng: `source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java` TC-48..TC-60, `source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java` TC-61..TC-69):
+- **Thứ tự xử lý**:
+  1. Khớp route (`BY_ID` + method `PUT`); không khớp thì 404 fallback.
+  2. Đọc body JSON; hỏng thì 400 "Malformed JSON", **kể cả khi `id` không tồn tại** (handler đọc body trước khi gọi service).
+  3. Tìm khách hàng (`CustomerService.get`); không có thì 404 `Customer {id} not found`, **kể cả khi các field trong body không hợp lệ**.
+  4. Kiểm tra dữ liệu (`check`); có lỗi thì 400 kèm `errors`.
+  5. Ghi (`CustomerRepository.update`) và trả 200.
+- Mọi trường hợp 400 và 404 đều không ghi gì.
+- Giữ email và/hoặc số của chính mình thì không báo trùng, kể cả khi viết khác hoa thường hay khác định dạng. Giá trị gửi lên (email sau trim, số sau chuẩn hoá) là giá trị được lưu, vd. gửi `"AN@Example.com"` thì lưu `AN@Example.com`.
+- `update` không đọc `status` của khách hàng đang sửa. Hệ quả: khách hàng `INACTIVE` vẫn sửa được và vẫn `INACTIVE`; khách hàng `INACTIVE` gửi lại số của mình mà số đó đang do một khách hàng `ACTIVE` khác giữ thì nhận 400 `errors.phone` (TC-57), kể cả khi chỉ đổi họ tên.
+- Số đang lưu được kiểm tra lại ở mọi lần sửa, kể cả khi không đổi: số không còn khớp `PhoneNumbers.isValid` (vd. `01234567890`) phải sửa hoặc xoá thì mới lưu được (TC-54).
+- `id` gồm toàn chữ số nhưng vượt `long`: `Long.parseLong` trong `CustomerHandler.route` ném `NumberFormatException`, nên trả 500 (giống `GET /api/customers/{id}`). [CẦN XÁC NHẬN] suy ra từ code, chưa có test nào kiểm chứng.
+- [CẦN XÁC NHẬN] Body là JSON `null`: `route` gọi `body.name()` ngay sau `JSON.readValue`, nên trả 500 (giống `POST /api/customers`). Suy ra từ code, chưa có test nào kiểm chứng (`aiws/work/REQ-002/02-design.md` R10).
 
 Chuẩn hoá `phone` (`source-be/src/main/java/com/example/crm/service/PhoneNumbers.java:normalize`, port từ `source-legacy/lib/phone.php:phone_normalize`):
 1. Trim như trên.
@@ -43,7 +58,7 @@ Chuẩn hoá `phone` (`source-be/src/main/java/com/example/crm/service/PhoneNumb
 | `"+84 0912 345 678"` | `00912345678` | 400 `must be a valid phone number` |
 | `"-"`, `"()"`, `" . "` | chuỗi rỗng | 400 `must be a valid phone number` (không được coi là "không có số") |
 
-Dẫn chứng cho bảng trên: `source-be/src/test/java/com/example/crm/service/PhoneNumbersTest.java` (TC-3..TC-7) và `source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java` (TC-17..TC-23).
+Dẫn chứng cho bảng trên: `source-be/src/test/java/com/example/crm/service/PhoneNumbersTest.java` (TC-3..TC-7) và `source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java` (TC-17..TC-23). Cột "Kết quả" ghi theo `POST`; `PUT /api/customers/{id}` chuẩn hoá y hệt và trả 200 thay cho 201 (TC-48, TC-52, TC-61).
 
 ### Legacy (source-legacy, read-only)
 Legacy không có REST API. Đây là các trang PHP xử lý trực tiếp.
@@ -64,9 +79,10 @@ Legacy không có REST API. Đây là các trang PHP xử lý trực tiếp.
   | `NotFoundException` | 404 | `Not Found` |
   | `JsonProcessingException` | 400 | `Malformed JSON` |
   | `RuntimeException` khác | 500 | `Internal Server Error` |
-- **Giá trị thô và giá trị hiển thị**: request nhận giá trị thô người dùng nhập, BE chuẩn hoá rồi lưu, response trả giá trị đã chuẩn hoá. Việc định dạng để hiển thị thuộc về FE: `phone` qua `formatPhone` (`source-fe/src/utils/formatPhone.js`), `status` qua `STATUS_LABELS` (`source-fe/src/components/customerTable.js`).
-- **Mã thành công**: tạo mới trả 201 kèm object vừa tạo, không có header `Location`. Đọc trả 200.
+- **Giá trị thô và giá trị hiển thị**: request nhận giá trị thô người dùng nhập, BE chuẩn hoá rồi lưu, response trả giá trị đã chuẩn hoá. Việc định dạng để hiển thị thuộc về FE: `phone` qua `formatPhone` (`source-fe/src/utils/formatPhone.js`), `status` qua `STATUS_LABELS` (`source-fe/src/components/customerTable.js`). Ngoại lệ: form sửa điền nguyên giá trị API trả vào ô nhập, không định dạng (`source-fe/src/components/customerEditForm.js`).
+- **Thêm và sửa là hai endpoint riêng**: `POST /api/customers` chỉ thêm, `PUT /api/customers/{id}` chỉ sửa và thay thế toàn bộ các trường sửa được (không có `PATCH`, không upsert). Mỗi thao tác ghi có một request record riêng (`CreateCustomerRequest`, `UpdateCustomerRequest`). `id` của tài nguyên chỉ lấy từ path.
+- **Mã thành công**: tạo mới trả 201 kèm object vừa tạo, không có header `Location`. Sửa trả 200 kèm object sau khi sửa. Đọc trả 200.
 - **Ngoài context `/api/customers`**: request tới path khác không đi qua `CustomerHandler`, nên nhận 404 mặc định của JDK `HttpServer`, không phải `problem+json`.
 - **Auth**: không có. **CORS**: không có header CORS.
 - **Phân trang**: không có. `GET /api/customers` trả toàn bộ danh sách.
-- **Client FE**: mọi lỗi non-2xx ném `ApiError { status, fieldErrors }`, trong đó `fieldErrors` lấy từ `problem.errors` (`source-fe/src/api/customerApi.js`).
+- **Client FE**: mọi lỗi non-2xx ném `ApiError { status, fieldErrors }`, trong đó `fieldErrors` lấy từ `problem.errors` (`source-fe/src/api/customerApi.js`). Path có `id` được ghép bằng `encodeURIComponent(id)` (`getCustomer`, `updateCustomer`). Body của `PUT` là đúng object nhận vào, không thêm `id`.
