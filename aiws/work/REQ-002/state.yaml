@@ -4,9 +4,8 @@ requirement: requirements/REQ-002-edit-customer.md
 branch: aiws/REQ-002
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
-phase: planning
-status: blocked
-reason: "planner failed 3 attempts: agent run failed (exit 1): You've hit your session limit · resets 6:50pm (Asia/Bangkok)"
+phase: implementation
+status: running
 history:
   - phase: new
     result: created
@@ -132,6 +131,16 @@ history:
     run: run-0017
     attempt: 3
     at: 2026-10-04T08:03:08Z
+  - phase: planning
+    result: resumed
+    by: Van Nguyen
+    budget_usd: 40
+    at: 2026-10-07T14:04:47Z
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0018
+    at: 2026-10-07T14:07:40Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -147,9 +156,8 @@ tasks:
       - TC-47
     depends_on: []
     status: done
-    attempts: 1
-    test_result: pass
     commit: 344328838ebd18fd01bf5d686a191168115b0e53
+    test_result: pass
   - id: T2
     title: be - tách hàm kiểm tra dùng chung và thêm CustomerService.update
     type: feat
@@ -173,9 +181,8 @@ tasks:
     depends_on:
       - T1
     status: done
-    attempts: 1
-    test_result: pass
     commit: e83a2e9638d1dfe02ad357741309db7d2b0f0d46
+    test_result: pass
   - id: T3
     title: be - thêm endpoint PUT /api/customers/{id} sửa khách hàng
     type: feat
@@ -196,9 +203,8 @@ tasks:
     depends_on:
       - T2
     status: done
-    attempts: 1
-    test_result: pass
     commit: e61ea261260bad4b31dfe69d7de108dfd053faf4
+    test_result: pass
   - id: T4
     title: fe - thêm getCustomer và updateCustomer vào customerApi
     type: feat
@@ -213,9 +219,8 @@ tasks:
     depends_on:
       - T3
     status: done
-    attempts: 1
-    test_result: pass
     commit: b0a305019b68f4d6442875cd0d54b9a3edf07809
+    test_result: pass
   - id: T5
     title: fe - thêm cột Thao tác với nút Sửa trong bảng khách hàng
     type: feat
@@ -228,9 +233,8 @@ tasks:
     depends_on:
       - T3
     status: done
-    attempts: 1
-    test_result: pass
     commit: 9d9bec3fa7ec6592dcfac0d9c2348f2027396936
+    test_result: pass
   - id: T6
     title: fe - thêm form sửa khách hàng hiện lỗi theo từng trường và nối vào trang
     type: feat
@@ -250,18 +254,20 @@ tasks:
       - T4
       - T5
     status: done
-    attempts: 1
-    test_result: pass
     commit: b27b52d16055888b0feae81f8e4eaff12b285163
-feedback:
-  - phase: planning
-    source: review critical findings
-    text: 'Add fix tasks for: source-be/src/main/java/com/example/crm/service/CustomerService.java:46 — Sai design D4: hàm kiểm tra dùng chung có chữ ký `check(name, email, phone, Long ownId)`, `create` truyền `null` (dòng 33), và `isEmailUsed`/`isPhoneUsed` (dòng 76–86) rẽ nhánh theo `ownId == null`. Đây chính là phương án D4 đã loại ở "Đã cân nhắc" ("Tham số `Long excludedId` (`null` khi tạo) rồi rẽ nhánh bên trong: loại, vì hàm kiểm tra phải biết mình đang tạo hay sửa") và 04-plan.yaml T2 cấm ("không thêm tham số `Long excludedId`"). Tên hàm và record trong D4 là gợi ý, nhưng phương án tham số `Long` nullable đã bị loại tường minh. Không có `questions.md`, trong khi báo cáo run-0009 ghi "The design was followed as written" (trái AGENTS.md mục 4). Hành vi quan sát được không đổi: TC-13..TC-32 và TC-48..TC-60 pass — Thêm một task sửa chỉ chạm `CustomerService.java`: đổi chữ ký thành `check(name, email, phone, Predicate<String> emailTaken, Predicate<String> phoneTaken)`; `create` truyền `repository::existsByEmail` và `p -> repository.existsByPhoneAndStatus(p, CustomerStatus.ACTIVE)`; `update` truyền `e -> repository.existsByEmailAndIdNot(e, id)` và `p -> repository.existsByPhoneAndStatusAndIdNot(p, CustomerStatus.ACTIVE, id)`; xoá `isEmailUsed` và `isPhoneUsed`, sửa Javadoc của `check`. Giữ nguyên thứ tự kiểm tra, năm thông điệp lỗi, chữ ký `create` và `update`; không sửa test nào.'
-    at: 2026-10-04T08:02:44Z
-attempts:
-  planning:planner: 3
-last_failure:
-  planning:planner: "- agent run failed (exit 1): You've hit your session limit · resets 6:50pm (Asia/Bangkok)"
+    test_result: pass
+  - id: T7
+    title: be - đổi hàm kiểm tra dùng chung của CustomerService sang nhận hai predicate theo D4
+    type: refactor
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+    tests: []
+    depends_on:
+      - T2
+    status: pending
+feedback: []
+attempts: {}
+last_failure: {}
 step_index: 0
-run_seq: 17
+run_seq: 18
 budget_usd: 40

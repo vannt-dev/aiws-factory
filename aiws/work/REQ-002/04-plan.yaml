@@ -11,6 +11,12 @@
 # Thứ tự: BE trước FE (design -> Migration: deploy BE trước, FE sau).
 # TC-36 thuộc REQ-001, không được định nghĩa lại trong 03-test-spec.md của REQ-002, nên KHÔNG nằm trong `tests`
 # của task nào (design D9).
+#
+# Re-plan sau review (05-review.md, 1 critical): T1..T6 đã DONE và giữ nguyên id, allowed_files, tests. T7 là
+# task sửa cho finding D4 ở `CustomerService.java:46`. T7 không đổi hành vi quan sát được và không thêm hay sửa
+# test, nên `tests: []`: TC-48..TC-60 vẫn thuộc T2; toàn bộ `be_test` chạy lại sau T7 là bằng chứng không hồi quy.
+# Bốn finding minor của 05-review.md không có trong feedback của vòng này và không có task: để người review PR
+# quyết định.
 tasks:
   - id: T1
     type: feat
@@ -218,3 +224,47 @@ tasks:
       - source-fe/src/main.js
     tests: [TC-76, TC-77, TC-78, TC-79, TC-80, TC-81]
     depends_on: [T4, T5]
+
+  - id: T7
+    type: refactor
+    title: be - đổi hàm kiểm tra dùng chung của CustomerService sang nhận hai predicate theo D4
+    description: >-
+      Task sửa cho finding critical của 05-review.md (`CustomerService.java:46`, design D4). Hàm private `check`
+      đang có chữ ký `check(name, email, phone, Long ownId)`, `create` truyền `null`, và `isEmailUsed`/`isPhoneUsed`
+      rẽ nhánh theo `ownId == null`: đây là phương án D4 đã loại tường minh ("Tham số `Long excludedId` (`null` khi
+      tạo) rồi rẽ nhánh bên trong: loại, vì hàm kiểm tra phải biết mình đang tạo hay sửa"). Đưa về đúng hình dạng
+      của D4; chỉ sửa `service/CustomerService.java`.
+      (1) Thêm `import java.util.function.Predicate;` đúng thứ tự alphabet của khối import (sau
+      `java.util.Map`, trước `java.util.regex.Pattern`).
+      (2) Đổi chữ ký thành
+      `private Checked check(String name, String email, String phone, Predicate<String> emailTaken, Predicate<String> phoneTaken)`.
+      Trong thân hàm chỉ đổi ĐÚNG hai lệnh gọi: `isEmailUsed(trimmedEmail, ownId)` thành
+      `emailTaken.test(trimmedEmail)` và `isPhoneUsed(normalizedPhone, ownId)` thành
+      `phoneTaken.test(normalizedPhone)`. Mọi dòng khác của thân hàm giữ nguyên.
+      (3) `create` gọi `check(name, email, phone, repository::existsByEmail, p -> repository.existsByPhoneAndStatus(p, CustomerStatus.ACTIVE))`.
+      (4) `update` gọi `check(name, email, phone, e -> repository.existsByEmailAndIdNot(e, id), p -> repository.existsByPhoneAndStatusAndIdNot(p, CustomerStatus.ACTIVE, id))`.
+      (5) XOÁ hai hàm private `isEmailUsed` và `isPhoneUsed`.
+      (6) Viết lại Javadoc một dòng của `check` bằng tiếng Anh: không còn nhắc `ownId` hay "null when creating";
+      nói rằng hai predicate cho biết email / số điện thoại đã được khách hàng khác dùng hay chưa.
+      Sau khi sửa, `check` KHÔNG được biết mình đang tạo hay sửa: không có tham số `Long`/`Optional`/boolean/enum
+      chỉ chế độ, không tham số nullable, không rẽ nhánh tạo/sửa bên trong, không gọi `repository` trực tiếp. Không
+      thay bằng hình dạng khác (hai hàm kiểm tra, class validator, `save` gộp).
+      BẮT BUỘC giữ nguyên: thứ tự kiểm tra name -> email -> phone; nguyên văn năm thông điệp (`must not be blank`,
+      `must be at most 100 characters`, `must be a valid email address`, `must be a valid phone number`,
+      `is already used by another customer`); truy vấn trùng chỉ chạy khi giá trị đã qua kiểm tra định dạng (vẫn là
+      nhánh `else if`); `phone` rỗng sau `PhoneNumbers.trim` thì bỏ qua mọi kiểm tra và là `null`; các lỗi gom vào
+      một `ValidationException`; `CustomerStatus.ACTIVE` vẫn do service truyền xuống trong hai lambda của số điện
+      thoại. Giữ nguyên chữ ký public `create(String, String, String)` và `update(long, String, String, String)`,
+      Javadoc của `update`, lệnh `get(id)` TRƯỚC `check` trong `update`, `repository.update(...).orElseThrow(...)`,
+      `list`, `get`, `NAME_MAX_LENGTH`, `EMAIL`, constructor. Tên `check` và record `Checked` đã hợp lệ (tên trong D4
+      là gợi ý): KHÔNG đổi tên, không reformat phần không liên quan. Các hành vi legacy của D7 không đổi.
+      Test: KHÔNG thêm, sửa hay xoá test nào; `CustomerServiceTest.java` CỐ Ý không nằm trong allowed_files. Hành vi
+      quan sát được không đổi nên task không có TC mới (`tests` rỗng). Bằng chứng là toàn bộ `be_test` pass không
+      đổi sau khi sửa: TC-13..TC-32 (REQ-001) bảo vệ `create`, TC-48..TC-60 (T2) bảo vệ `update`, TC-61..TC-69 (T3)
+      bảo vệ đường HTTP. Nếu test nào fail thì lỗi nằm ở code vừa sửa, không sửa test. Nếu thấy cần sửa file khác
+      hoặc không giữ được hình dạng trên thì ghi câu hỏi vào `aiws/work/REQ-002/questions.md` và dừng (AGENTS.md
+      mục 4).
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+    tests: []
+    depends_on: [T2]
