@@ -42,6 +42,12 @@ history:
     run: run-0005
     commit: e1ba048
     at: 2026-10-07T16:36:50Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0006
+    commit: 4806b5d
+    at: 2026-10-07T16:39:59Z
 tasks:
   - id: T1
     title: be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
@@ -74,10 +80,10 @@ tasks:
       - TC-90
     depends_on:
       - T1
-    status: running
-    base: 1a1d1dda259a0cbda91618340d6d8df40085a463
+    status: done
     attempts: 1
     test_result: pass
+    commit: 4806b5dc9c5fb547696947513ed12d5fae8d90df
   - id: T3
     title: be - thêm endpoint PUT /api/customers/{id}/status đổi trạng thái khách hàng
     type: feat
