@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `knowledge_update: sonnet` while `aiws discover` keeps the model of the
   discovery agent.
 
+### Changed
+
+- A review that follows an earlier review of the same approved design (after
+  fix tasks, or after changes requested on the pull request) is a follow-up:
+  the reviewer is given the files and commits changed since the earlier
+  review, checks that its critical findings are fixed, and reads in full only
+  what changed. A first review, and a review after the design was approved
+  again, still read everything.
+
 ### Fixed
 
 - Reaching the AI usage limit (for example the session limit of a Claude

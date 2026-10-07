@@ -87,7 +87,7 @@ Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lện
 | Design sẵn sàng | `design_approval / waiting_human` | `aiws approve … design` hoặc `aiws reject … design -m` |
 | Developer ghi `questions.md` | `design_change_requested` | `aiws answer … -m` (giữ design) hoặc `aiws redesign … -m` (quay lại design, phải duyệt lại) |
 | Task fail 3 lần | `implementation / blocked` | sửa tay hoặc revert, rồi `aiws resume REQ-001`, rồi `aiws run` |
-| Review có `[critical]` | tự quay lại `planning` | không cần làm gì: planner thêm task sửa |
+| Review có `[critical]` | tự quay lại `planning` | không cần làm gì: planner thêm task sửa. Lần review sau đó là review tiếp nối: kiểm lại các finding cũ và chỉ đọc kỹ phần đã thay đổi từ lần trước |
 | Sửa design sau khi đã duyệt | tự quay về `design_approval` | duyệt lại |
 | AI hết giới hạn sử dụng | giữ nguyên phase, vẫn `running` | không cần duyệt gì: chạy lại `aiws run REQ-001` khi giới hạn được đặt lại |
 
