@@ -48,6 +48,12 @@ history:
     run: run-0006
     commit: 4806b5d
     at: 2026-10-07T16:39:59Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0007
+    commit: b16ba82
+    at: 2026-10-07T16:44:05Z
 tasks:
   - id: T1
     title: be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
@@ -104,10 +110,10 @@ tasks:
       - TC-100
     depends_on:
       - T2
-    status: running
-    base: 17aa9acf7cf364748ee866312b126977c40bb2f7
+    status: done
     attempts: 1
     test_result: pass
+    commit: b16ba827dcf41d9ce926f24332d68e5c2279fc24
   - id: T4
     title: fe - thêm updateCustomerStatus vào customerApi
     type: feat
