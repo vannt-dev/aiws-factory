@@ -60,6 +60,12 @@ history:
     run: run-0008
     commit: 4529e7c
     at: 2026-10-07T16:45:05Z
+  - phase: implementation
+    task: T5
+    result: done
+    run: run-0009
+    commit: e3e496e
+    at: 2026-10-07T16:46:37Z
 tasks:
   - id: T1
     title: be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
@@ -147,10 +153,10 @@ tasks:
       - TC-105
     depends_on:
       - T3
-    status: running
-    base: 567cd68598bcb7770f7b63d6555a78e20b0a5d77
+    status: done
     attempts: 1
     test_result: pass
+    commit: e3e496e88cf92d0ca92d4fc852d3b9ca762b8da2
   - id: T6
     title: fe - thêm describeStatusError và nối nút đổi trạng thái vào trang
     type: feat
