@@ -5,7 +5,7 @@ import path from 'node:path';
 import YAML from 'yaml';
 import { detectStacks, commandPrefixes } from '../src/stacks.js';
 import { tcPattern } from '../src/engine.js';
-import { allowedTools } from '../src/adapters/claude.js';
+import { allowedTools, shellCommand } from '../src/adapters/claude.js';
 import { replaceYamlBlock } from '../src/util.js';
 import { tempDir, makeWorkspace, ok, readFile, git } from './helpers.js';
 
@@ -129,6 +129,28 @@ test('headless Bash permissions include both OS variants of a command', () => {
   assert.ok(tools.includes('Bash(.\\mvnw.cmd *)'));
   assert.ok(tools.includes('Bash(./mvnw *)'));
   assert.ok(tools.includes('Bash(cd source-be *)'));
+  // an agent that retypes the windows form for Git Bash writes ./mvnw.cmd
+  assert.ok(tools.includes('Bash(./mvnw.cmd *)'));
+  assert.equal(shellCommand(ws.policies.commands.be_test), 'cd source-be && ./mvnw -q test');
+  assert.equal(shellCommand('npm test --prefix source-fe'), 'npm test --prefix source-fe');
+  assert.equal(shellCommand(undefined), null);
+});
+
+test('the developer prompt lists the exact shell commands of the sides its task touches', () => {
+  const root = makeWorkspace({ discover: true });
+  ok(root, ['new', 'REQ-001']);
+  ok(root, ['run', 'REQ-001']);
+  ok(root, ['approve', 'REQ-001', 'design', '--yes']);
+  ok(root, ['run', 'REQ-001', '--once']); // planning
+  const claude = { AIWS_ADAPTER: 'claude' }; // the prompt is built for the adapter that would run the phase
+  const be = ok(root, ['prompt', 'REQ-001', 'implementation', '--task', 'T1'], { env: claude }).stdout;
+  assert.match(be, /## Shell commands \(enforced\)/);
+  assert.match(be, /- be_test: `node --test "source-be\/test\/\*\.test\.js"`/);
+  assert.match(be, /- be_build: `node --check source-be\/src\/users\.js`/);
+  assert.doesNotMatch(be, /- fe_test:/, 'T1 touches only the backend');
+  assert.match(be, /Read-only helpers are allowed too: `ls`/);
+  // an agent without a shell gets no such section
+  assert.doesNotMatch(ok(root, ['prompt', 'REQ-001', 'review'], { env: claude }).stdout, /## Shell commands/);
 });
 
 test('TC ids are recognised in every language naming style', () => {

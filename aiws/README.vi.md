@@ -115,7 +115,7 @@ Worktree cũng là cách đơn giản nhất để một trợ lý AI điều ph
 | Lớp | Hiện thực |
 | --- | --- |
 | 1. Orchestrator | Phase bị khoá thì agent không được gọi. Approval gắn hash của 02/03/api-contract; file bị sửa thì approval mất hiệu lực. Có giới hạn retry, vượt thì `blocked`. |
-| 2. Tool permission | Headless: `claude -p --permission-mode dontAsk --allowedTools …` theo contract. Reviewer không có Bash. Developer chỉ được chạy lệnh build/test. |
+| 2. Tool permission | Headless: `claude -p --permission-mode dontAsk --allowedTools …` theo contract. Reviewer không có Bash. Developer chỉ được chạy lệnh build/test; prompt của nó liệt kê các lệnh này đúng dạng mà shell của nó chấp nhận. |
 | 3. Hook | `aiws guard` (PreToolUse cho Edit/Write/Read/Bash/PowerShell) đọc `AIWS_*` env hoặc nhánh `aiws/REQ-*` + `state.yaml` và chặn ghi ngoài scope. Bash lồng như `bash -c`, `node …/aiws.js approve`, `git -C . push` cũng bị phân tích. Văn bản chỉ nhắc tới một lệnh bị cấm (mẫu tìm kiếm, commit message, here-document cho `git commit`) thì không bị chặn; mọi cách có thể thực thi văn bản đó (shell, `eval`, pipe vào trình thông dịch, `$(...)`, biến, alias) vẫn bị chặn. |
 | 4. Git + diff-scope | Sau MỌI lần chạy AI, orchestrator so trạng thái git trước và sau: file ngoài scope bị revert và lần chạy bị đánh fail, bất kể được ghi bằng cách nào. Commit có trailer. `aiws check …` dùng cho CI. |
 

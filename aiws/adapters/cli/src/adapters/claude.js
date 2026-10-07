@@ -176,10 +176,21 @@ export function allowedTools(ws, contract) {
         else if (!entry.includes('{side}') && !(key in (pol.commands ?? {}))) prefixes.add(key);
       }
     }
+    // an agent that only knows the `windows` form retypes it for Git Bash with forward slashes (./mvnw.cmd)
+    for (const p of [...prefixes]) if (p.includes('\\')) prefixes.add(p.replace(/\\/g, '/'));
     // nothing configured -> no shell at all (the orchestrator still builds and tests after the run)
     for (const p of prefixes) tools.push(`Bash(${p})`, `Bash(${p} *)`);
   }
   return tools;
+}
+
+/**
+ * The form of a configured command that an agent types. Claude Code's Bash tool is a POSIX shell on every
+ * OS (Git Bash on Windows), so the `posix` variant is the one that runs there.
+ */
+export function shellCommand(value) {
+  if (value === undefined || value === null) return null;
+  return typeof value === 'string' ? value : (value.posix ?? value.windows ?? null);
 }
 
 function quoteArg(a) {

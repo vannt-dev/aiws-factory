@@ -1,7 +1,8 @@
 import YAML from 'yaml';
-import { fill } from './util.js';
-import { writeScope } from './scope.js';
+import { fill, osCommand } from './util.js';
+import { writeScope, matcher } from './scope.js';
 import { feedbackFor } from './state.js';
+import { adapterName, getAdapter } from './adapters/index.js';
 
 /**
  * Builds the full prompt for one agent step from core definitions:
@@ -39,6 +40,24 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
       'Do not run git commands that change history or branches; the orchestrator commits for you.',
     ].join('\n')
   );
+
+  const commands = shellCommands(ws, phase, contract, task);
+  if (commands.length) {
+    const extra = ws.policies.bash_allow_extra ?? [];
+    parts.push(
+      [
+        '## Shell commands (enforced)',
+        'Your shell tool accepts only the project commands below. Run each from the workspace root, exactly as written, one per call:',
+        ...commands.map((c) => `- ${c.key}: \`${c.command}\``),
+        ...(extra.length ? [`Read-only helpers are allowed too: ${extra.map((e) => `\`${e}\``).join(', ')}.`] : []),
+        'Other spellings are likely to be denied in this run: another name for the same program (a `.cmd` wrapper, ' +
+          'a full path), `$?` or other variables, or more commands chained to one of these.',
+        'Your shell keeps its working directory between calls: after `cd X && ...` you are inside X, so leave out `cd X &&` the next time.',
+        'If a command is denied, do not look for a way around it; say so in your report. ' +
+          'The orchestrator builds and runs the full test suites after you in any case.',
+      ].join('\n')
+    );
+  }
 
   const outs = contract.outputs ?? [];
   if (outs.length) {
@@ -91,6 +110,27 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
   );
 
   return parts.join('\n\n') + '\n';
+}
+
+/**
+ * The build/test commands of the contract (`bash_allow`), in the form the agent's shell accepts. With a task,
+ * only the sides the task touches. Empty when the agent has no shell or nothing is configured.
+ */
+function shellCommands(ws, phase, contract, task) {
+  if (!(contract.tools ?? []).includes('bash')) return [];
+  const pol = ws.policies;
+  const globs = pol.sides ?? {};
+  const sides = Object.keys(globs).filter((s) => !task || (task.allowed_files ?? []).some((f) => matcher([globs[s]])(f)));
+  const toShell = getAdapter(adapterName(ws, phase)).shellCommand ?? osCommand;
+  const out = [];
+  for (const entry of contract.bash_allow ?? []) {
+    const keys = entry.includes('{side}') ? sides.map((s) => entry.replace('{side}', s)) : [entry];
+    for (const key of keys) {
+      const command = toShell(pol.commands?.[key]);
+      if (command) out.push({ key, command });
+    }
+  }
+  return out;
 }
 
 function truncate(s, n) {
