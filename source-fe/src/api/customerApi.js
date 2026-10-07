@@ -39,3 +39,8 @@ export function getCustomer(id, options) {
 export function updateCustomer(id, customer, options) {
   return request(`/customers/${encodeURIComponent(id)}`, { ...options, method: 'PUT', body: JSON.stringify(customer) });
 }
+
+/** Sets the status of customer `id` to the given target status. */
+export function updateCustomerStatus(id, status, options) {
+  return request(`/customers/${encodeURIComponent(id)}/status`, { ...options, method: 'PUT', body: JSON.stringify({ status }) });
+}

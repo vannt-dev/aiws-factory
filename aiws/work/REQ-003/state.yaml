@@ -125,7 +125,10 @@ tasks:
       - TC-102
     depends_on:
       - T3
-    status: pending
+    status: running
+    base: f972e9568a5870da66892d5fc5257d2b6f9af44f
+    attempts: 1
+    test_result: pass
   - id: T5
     title: fe - thêm nút đổi trạng thái vào ô Thao tác của bảng khách hàng
     type: feat
@@ -157,4 +160,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 7
+run_seq: 8
