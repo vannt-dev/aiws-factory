@@ -1,12 +1,11 @@
 req_id: REQ-002
 title: Sửa thông tin khách hàng
 requirement: requirements/REQ-002-edit-customer.md
-branch: aiws/REQ-002
+branch: aiws/REQ-002-knowledge
 base_branch: demo
 base_commit: 884647f76f010a7e8900d098f6800c5bd508c475
-phase: pr_approval
-status: waiting_human
-reason: open a PR for the branch; after it is merged run `aiws approve REQ-002 pr` (or `aiws reject REQ-002 pr -m "..."`)
+phase: knowledge_update
+status: running
 history:
   - phase: new
     result: created
@@ -156,6 +155,13 @@ history:
     result: ok
     run: run-0020
     at: 2026-10-07T14:15:48Z
+  - phase: pr_approval
+    result: merged
+    by: Van Nguyen
+    record: pr-01.yaml
+    head: 0f439fc
+    merge: merge commit
+    at: 2026-10-07T14:19:44Z
 tasks:
   - id: T1
     title: be - thêm update và hai truy vấn trùng có loại trừ id vào repository
@@ -289,3 +295,4 @@ last_failure: {}
 step_index: 0
 run_seq: 20
 budget_usd: 40
+code_head: 0f439fc0e67ea81218006c8123bdd4b568afdaf9
