@@ -17,7 +17,7 @@ limits:
   # Ngân sách AI cho mỗi REQ (USD quy đổi theo bảng giá API). Vượt thì REQ bị blocked và chỉ NGƯỜI
   # chạy tiếp được bằng `aiws resume <REQ> [--budget USD]`. Bỏ trống = không giới hạn.
   # Kiểm tra trước mỗi bước (bước đang chạy có thể vượt). Nâng trước được khi REQ đang chờ ở cổng duyệt design.
-  max_cost_usd_per_req: 20
+  max_cost_usd_per_req: 40
 
 protected_paths:            # không agent nào được ghi, ở mọi phase
   - source-legacy/**
