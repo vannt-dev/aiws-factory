@@ -36,6 +36,12 @@ history:
     result: ok
     run: run-0004
     at: 2026-10-07T16:35:12Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0005
+    commit: e1ba048
+    at: 2026-10-07T16:36:50Z
 tasks:
   - id: T1
     title: be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
@@ -48,10 +54,10 @@ tasks:
       - TC-82
       - TC-83
     depends_on: []
-    status: running
-    base: 1d83bcdf5b3bbcbc7be9aa650a490feaffe4a9b8
+    status: done
     attempts: 1
     test_result: pass
+    commit: e1ba048c5028e7f951973263e9f568df91ae7150
   - id: T2
     title: be - thêm CustomerService.updateStatus với kiểm tra trùng số khi kích hoạt lại
     type: feat
