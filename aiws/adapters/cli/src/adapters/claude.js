@@ -62,10 +62,15 @@ function mapTools(tools) {
   return [...new Set((tools ?? ['read']).flatMap((t) => TOOL_MAP[t] ?? [t]))];
 }
 
-/** Model of one agent: `claude.agent_models.<agent id>` wins over the `model_hint` mapping in `claude.models`. */
-export function modelFor(ws, agent) {
+/**
+ * Model of one run: `claude.phase_models.<phase>` wins, then `claude.agent_models.<agent id>`, then the
+ * `model_hint` mapping in `claude.models`. A phase model lets an agent run on another model in one phase only,
+ * for example `discovery` in `knowledge_update` but not in `aiws discover`. Without a phase (interactive
+ * subagents written by `aiws sync claude`) only the agent counts.
+ */
+export function modelFor(ws, agent, phase = null) {
   const cfg = ws.runtime.claude ?? {};
-  const own = cfg.agent_models?.[agent.id];
+  const own = (phase && cfg.phase_models?.[phase]) || cfg.agent_models?.[agent.id];
   if (own) return own;
   return agent.model_hint ? (cfg.models?.[agent.model_hint] ?? null) : null;
 }
@@ -176,10 +181,21 @@ export function allowedTools(ws, contract) {
         else if (!entry.includes('{side}') && !(key in (pol.commands ?? {}))) prefixes.add(key);
       }
     }
+    // an agent that only knows the `windows` form retypes it for Git Bash with forward slashes (./mvnw.cmd)
+    for (const p of [...prefixes]) if (p.includes('\\')) prefixes.add(p.replace(/\\/g, '/'));
     // nothing configured -> no shell at all (the orchestrator still builds and tests after the run)
     for (const p of prefixes) tools.push(`Bash(${p})`, `Bash(${p} *)`);
   }
   return tools;
+}
+
+/**
+ * The form of a configured command that an agent types. Claude Code's Bash tool is a POSIX shell on every
+ * OS (Git Bash on Windows), so the `posix` variant is the one that runs there.
+ */
+export function shellCommand(value) {
+  if (value === undefined || value === null) return null;
+  return typeof value === 'string' ? value : (value.posix ?? value.windows ?? null);
 }
 
 function quoteArg(a) {
@@ -193,7 +209,7 @@ export function runAgent(ws, { prompt, env, contract, agent }) {
   const args = ['-p', '--output-format', 'json', '--permission-mode', cfg.permission_mode ?? 'dontAsk'];
   const tools = allowedTools(ws, contract);
   args.push('--allowedTools', tools.join(','));
-  const model = modelFor(ws, agent);
+  const model = modelFor(ws, agent, env.AIWS_PHASE);
   if (model) args.push('--model', model);
   if (cfg.max_turns) args.push('--max-turns', String(cfg.max_turns));
   for (const extra of cfg.extra_args ?? []) args.push(fill(extra, {}));

@@ -115,7 +115,7 @@ Worktree cũng là cách đơn giản nhất để một trợ lý AI điều ph
 | Lớp | Hiện thực |
 | --- | --- |
 | 1. Orchestrator | Phase bị khoá thì agent không được gọi. Approval gắn hash của 02/03/api-contract; file bị sửa thì approval mất hiệu lực. Có giới hạn retry, vượt thì `blocked`. |
-| 2. Tool permission | Headless: `claude -p --permission-mode dontAsk --allowedTools …` theo contract. Reviewer không có Bash. Developer chỉ được chạy lệnh build/test. |
+| 2. Tool permission | Headless: `claude -p --permission-mode dontAsk --allowedTools …` theo contract. Reviewer không có Bash. Developer chỉ được chạy lệnh build/test; prompt của nó liệt kê các lệnh này đúng dạng mà shell của nó chấp nhận. |
 | 3. Hook | `aiws guard` (PreToolUse cho Edit/Write/Read/Bash/PowerShell) đọc `AIWS_*` env hoặc nhánh `aiws/REQ-*` + `state.yaml` và chặn ghi ngoài scope. Bash lồng như `bash -c`, `node …/aiws.js approve`, `git -C . push` cũng bị phân tích. Văn bản chỉ nhắc tới một lệnh bị cấm (mẫu tìm kiếm, commit message, here-document cho `git commit`) thì không bị chặn; mọi cách có thể thực thi văn bản đó (shell, `eval`, pipe vào trình thông dịch, `$(...)`, biến, alias) vẫn bị chặn. |
 | 4. Git + diff-scope | Sau MỌI lần chạy AI, orchestrator so trạng thái git trước và sau: file ngoài scope bị revert và lần chạy bị đánh fail, bất kể được ghi bằng cách nào. Commit có trailer. `aiws check …` dùng cho CI. |
 
@@ -161,7 +161,7 @@ Hai lần chạy thật để tham khảo. Với Sonnet, một REQ nhỏ có 2 t
 
 Có hai cách kiểm soát chi phí:
 
-- **Chọn model theo agent.** `runtime.yaml → claude.models` ánh xạ từng `model_hint` sang model, còn `claude.agent_models` ghi đè cho riêng một agent, ví dụ `developer: sonnet` trong khi design và review vẫn dùng Opus. Sửa xong thì chạy `aiws sync claude`.
+- **Chọn model theo agent.** `runtime.yaml → claude.models` ánh xạ từng `model_hint` sang model, còn `claude.agent_models` ghi đè cho riêng một agent, ví dụ `developer: sonnet` trong khi design và review vẫn dùng Opus. Sửa xong thì chạy `aiws sync claude`. `claude.phase_models` đặt model cho riêng một phase khi chạy `aiws run` và được ưu tiên hơn cả hai, nên một agent có thể chạy rẻ hơn ở đúng một phase: `knowledge_update: sonnet` đổi bước cập nhật knowledge nhưng không đổi `aiws discover`, dù cả hai cùng dùng agent discovery.
 - **Ngân sách cho mỗi REQ.** `policies.yaml → limits.max_cost_usd_per_req` chặn REQ trước bước kế tiếp khi chi phí AI chạm ngân sách. Chỉ người mới cho chạy tiếp được: `aiws resume REQ-001` cấp thêm một lần ngân sách tính từ mức đã tiêu, còn `aiws resume REQ-001 --budget 80` đặt giới hạn mới. Lần chạy không báo chi phí thì không bị tính. Mặc định không giới hạn.
 
 ## 9. Khác biệt so với Spec V1 (có chủ đích)

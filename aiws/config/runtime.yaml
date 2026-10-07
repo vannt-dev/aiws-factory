@@ -18,6 +18,10 @@ claude:
   # Chọn model riêng cho từng agent (ưu tiên hơn model_hint). Ví dụ giảm chi phí implementation:
   agent_models:
     developer: sonnet
+  # Chọn model riêng cho một phase (ưu tiên hơn agent_models), áp dụng cho mọi agent của phase đó khi chạy
+  # `aiws run`. Ví dụ: agent discovery chạy model rẻ hơn khi cập nhật knowledge, nhưng `aiws discover` vẫn giữ nguyên:
+  # phase_models:
+  #   knowledge_update: sonnet
   extra_args: []
 
 # Adapter tất định để demo/test không tốn token: chạy node <dir>/<agent>.js thay cho AI.

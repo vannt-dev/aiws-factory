@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `claude.phase_models` in `runtime.yaml` chooses the model of one phase for
+  `aiws run`, ahead of `agent_models` and the `model_hint` mapping. An agent
+  can then run on a cheaper model in one phase only, for example
+  `knowledge_update: sonnet` while `aiws discover` keeps the model of the
+  discovery agent.
+
 ### Fixed
 
 - Reaching the AI usage limit (for example the session limit of a Claude
@@ -16,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `aiws status` shows the message of the AI with the reset time. The next
   `aiws run` starts the same step again and tells the agent about partial
   output; no human gate command is needed.
+- The developer agent could not run the build and the tests itself when it
+  spelled the command differently from `policies.yaml` (for example
+  `./mvnw.cmd` in Git Bash on Windows), because only the configured prefixes
+  are allowed. Its prompt now lists the exact commands it may run, in the form
+  its shell accepts and only for the sides its task touches, and the
+  forward-slash form of a Windows command is allowed too.
 
 ## [0.2.0] - 2026-10-04
 

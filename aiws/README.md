@@ -115,7 +115,7 @@ A worktree is also the simplest way to let an assistant coordinate a requirement
 | Layer | Implementation |
 | --- | --- |
 | 1. Orchestrator | Agents of a locked phase are never called. Approvals carry the hash of 02/03/api-contract; editing those files invalidates the approval. Retries are capped; beyond the cap the requirement is `blocked`. |
-| 2. Tool permissions | Headless: `claude -p --permission-mode dontAsk --allowedTools …` per contract. The reviewer has no Bash; the developer may only run the build/test commands. |
+| 2. Tool permissions | Headless: `claude -p --permission-mode dontAsk --allowedTools …` per contract. The reviewer has no Bash; the developer may only run the build/test commands, which its prompt lists in the exact form its shell accepts. |
 | 3. Hook | `aiws guard` (PreToolUse for Edit/Write/Read/Bash/PowerShell) reads the `AIWS_*` environment or the `aiws/REQ-*` branch plus `state.yaml` and blocks writes outside the scope. Nested shells such as `bash -c`, `node …/aiws.js approve` or `git -C . push` are analysed too. Text that only mentions a denied command (a search pattern, a commit message, a here-document for `git commit`) is not blocked; anything that could run that text (shells, `eval`, pipes into an interpreter, `$(...)`, variables, aliases) still is. |
 | 4. Git + diff-scope | After EVERY AI run the orchestrator compares git state before and after: files outside the scope are reverted and the run fails, however they were written. Commits carry trailers; `aiws check …` is meant for CI. |
 
@@ -161,7 +161,7 @@ Two real runs for reference. With Sonnet, a small requirement with 2 tasks cost 
 
 Two controls keep cost in hand:
 
-- **Model per agent.** `runtime.yaml → claude.models` maps each `model_hint` to a model, and `claude.agent_models` overrides it for one agent, for example `developer: sonnet` while design and review stay on Opus. Run `aiws sync claude` afterwards.
+- **Model per agent.** `runtime.yaml → claude.models` maps each `model_hint` to a model, and `claude.agent_models` overrides it for one agent, for example `developer: sonnet` while design and review stay on Opus. Run `aiws sync claude` afterwards. `claude.phase_models` sets the model of one phase for `aiws run` and wins over both, so an agent can run cheaper in one phase only: `knowledge_update: sonnet` changes the knowledge update but not `aiws discover`, although both use the discovery agent.
 - **Budget per requirement.** `policies.yaml → limits.max_cost_usd_per_req` blocks a requirement before its next step once its AI runs reach the budget. Only a human continues: `aiws resume REQ-001` grants one more budget on top of what is spent, and `aiws resume REQ-001 --budget 80` sets a new limit. Runs that report no cost never count. The budget is off by default.
 
 ## 9. Intentional differences from spec V1
