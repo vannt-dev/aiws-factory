@@ -264,10 +264,13 @@ tasks:
     tests: []
     depends_on:
       - T2
-    status: pending
+    status: running
+    base: f5605e839be9b5170fc922ab7a04d272be624534
+    attempts: 1
+    test_result: pass
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 18
+run_seq: 19
 budget_usd: 40
