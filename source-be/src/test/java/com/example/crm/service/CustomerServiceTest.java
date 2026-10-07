@@ -10,6 +10,7 @@ import com.example.crm.domain.CustomerStatus;
 import com.example.crm.error.NotFoundException;
 import com.example.crm.error.ValidationException;
 import com.example.crm.repository.InMemoryCustomerRepository;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -614,6 +615,156 @@ class CustomerServiceTest {
   private void insertSeedAndAn() {
     repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
     repository.insert("Nguyen Van An", "an@example.com", "0912345678", CustomerStatus.ACTIVE);
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("deactivatePhones")
+  @DisplayName("TC-84: updateStatus deactivates an ACTIVE customer and keeps its data unchanged")
+  void updateStatusDeactivatesActiveCustomerAndKeepsData(String aPhone, String bPhone) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    Customer seed = service.get(1);
+    repository.insert("Nguyen Van An", "an@example.com", aPhone, CustomerStatus.ACTIVE);
+    repository.insert("Tran Thi Binh", "binh@example.com", bPhone, CustomerStatus.ACTIVE);
+    Customer b = service.get(3);
+
+    Customer updated = service.updateStatus(2, "INACTIVE");
+
+    assertEquals(new Customer(2, "Nguyen Van An", "an@example.com", aPhone, CustomerStatus.INACTIVE), updated);
+    assertEquals(updated, service.get(2));
+    assertEquals(List.of(seed, updated, b), service.list());
+  }
+
+  private static Stream<Arguments> deactivatePhones() {
+    return Stream.of(
+        arguments("0912345678", "0987654321"),
+        arguments(null, null),
+        arguments("01234567890", "0987654321"), // legacy-rule phone number
+        arguments("0912345678", "0912345678")); // B already holds A's phone while ACTIVE
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("reactivateAllowedPhones")
+  @DisplayName("TC-85: updateStatus reactivates a customer when no other ACTIVE customer holds its phone")
+  void updateStatusReactivatesWhenPhoneIsFree(String aPhone, String bPhone, CustomerStatus bStatus) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    Customer seed = service.get(1);
+    repository.insert("Tran Thi Binh", "binh@example.com", bPhone, bStatus);
+    Customer b = service.get(2);
+    repository.insert("Nguyen Van An", "an@example.com", aPhone, CustomerStatus.INACTIVE);
+
+    Customer updated = service.updateStatus(3, "ACTIVE");
+
+    assertEquals(new Customer(3, "Nguyen Van An", "an@example.com", aPhone, CustomerStatus.ACTIVE), updated);
+    assertEquals(updated, service.get(3));
+    assertEquals(List.of(seed, b, updated), service.list());
+  }
+
+  private static Stream<Arguments> reactivateAllowedPhones() {
+    return Stream.of(
+        arguments(null, null, CustomerStatus.ACTIVE),
+        arguments("0912345678", "0987654321", CustomerStatus.ACTIVE),
+        arguments("0912345678", "0912345678", CustomerStatus.INACTIVE),
+        arguments("01234567890", "0987654321", CustomerStatus.ACTIVE)); // legacy-rule phone number
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @ValueSource(strings = {"0912345678", "01234567890"})
+  @DisplayName("TC-86: updateStatus rejects reactivation when another ACTIVE customer holds the phone")
+  void updateStatusRejectsReactivationWhenPhoneIsTaken(String phone) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", phone, CustomerStatus.INACTIVE);
+    repository.insert("Tran Thi Binh", "binh@example.com", phone, CustomerStatus.ACTIVE);
+    List<Customer> before = service.list();
+
+    ValidationException error = assertThrows(ValidationException.class, () -> service.updateStatus(2, "ACTIVE"));
+
+    assertEquals(Map.of("phone", "is already used by another customer"), error.errors());
+    assertEquals(before, service.list());
+    assertEquals(CustomerStatus.INACTIVE, service.get(2).status());
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("sameTargetStatuses")
+  @DisplayName("TC-87: updateStatus to the status already held returns the stored customer without checking for a duplicate phone")
+  void updateStatusToSameStatusReturnsStoredCustomer(CustomerStatus status, String aPhone, String bPhone) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", aPhone, status);
+    repository.insert("Tran Thi Binh", "binh@example.com", bPhone, CustomerStatus.ACTIVE);
+    List<Customer> before = service.list();
+
+    Customer result = service.updateStatus(2, status.name());
+
+    assertEquals(new Customer(2, "Nguyen Van An", "an@example.com", aPhone, status), result);
+    assertEquals(result, service.get(2));
+    assertEquals(before, service.list());
+  }
+
+  private static Stream<Arguments> sameTargetStatuses() {
+    return Stream.of(
+        arguments(CustomerStatus.ACTIVE, "0912345678", "0987654321"),
+        arguments(CustomerStatus.INACTIVE, "0912345678", "0987654321"),
+        arguments(CustomerStatus.INACTIVE, "0912345678", "0912345678"),
+        arguments(CustomerStatus.ACTIVE, "0912345678", "0912345678"), // duplicate ACTIVE phones already existing
+        arguments(CustomerStatus.INACTIVE, null, null));
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @NullSource
+  @MethodSource("statusesForUnknownId")
+  @DisplayName("TC-88: updateStatus throws NotFoundException for an unknown id before validating the target status")
+  void updateStatusThrowsNotFoundBeforeValidatingStatus(String status) {
+    insertSeedAndAn();
+    List<Customer> before = service.list();
+
+    NotFoundException error = assertThrows(NotFoundException.class, () -> service.updateStatus(999, status));
+
+    assertEquals("Customer 999 not found", error.getMessage());
+    assertEquals(before, service.list());
+    assertThrows(NotFoundException.class, () -> service.get(999));
+  }
+
+  private static Stream<String> statusesForUnknownId() {
+    return Stream.of("ACTIVE", "INACTIVE", "DELETED", "");
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("invalidTargetStatuses")
+  @DisplayName("TC-89: updateStatus rejects a target status that is not exactly ACTIVE or INACTIVE")
+  void updateStatusRejectsValueOtherThanActiveOrInactive(CustomerStatus current, String status) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", "0912345678", current);
+    List<Customer> before = service.list();
+
+    ValidationException error = assertThrows(ValidationException.class, () -> service.updateStatus(2, status));
+
+    assertEquals(Map.of("status", "must be ACTIVE or INACTIVE"), error.errors());
+    assertEquals(before, service.list());
+  }
+
+  private static Stream<Arguments> invalidTargetStatuses() {
+    List<String> values = Arrays.asList(null, "", "   ", "DELETED", "active", "Inactive", " ACTIVE", "INACTIVE ");
+    return Stream.of(CustomerStatus.ACTIVE, CustomerStatus.INACTIVE)
+        .flatMap(current -> values.stream().map(status -> arguments(current, status)));
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("roundTripPhones")
+  @DisplayName("TC-90: updateStatus deactivating then reactivating returns the original customer")
+  void updateStatusDeactivateThenReactivateReturnsOriginalCustomer(String phone) {
+    repository.insert("Seed", "seed@example.com", null, CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", phone, CustomerStatus.ACTIVE);
+    List<Customer> before = service.list();
+
+    Customer deactivated = service.updateStatus(2, "INACTIVE");
+    Customer reactivated = service.updateStatus(2, "ACTIVE");
+
+    assertEquals(new Customer(2, "Nguyen Van An", "an@example.com", phone, CustomerStatus.INACTIVE), deactivated);
+    assertEquals(new Customer(2, "Nguyen Van An", "an@example.com", phone, CustomerStatus.ACTIVE), reactivated);
+    assertEquals(before, service.list());
+  }
+
+  private static Stream<String> roundTripPhones() {
+    return Stream.of("0912345678", null, "01234567890");
   }
 
   @Test
