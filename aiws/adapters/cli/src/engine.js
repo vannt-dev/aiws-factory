@@ -128,7 +128,7 @@ export function executeAgent(ws, counter, { req, phase, agentId, contract, task 
       message: `wrote outside the allowed scope; these changes were reverted: ${scope.violations.join(', ')}. Allowed: ${allowed.join(', ')}`,
     });
   }
-  return { runId, res, scope, evidence, errors };
+  return { runId, res, scope, evidence, errors, usageLimit: res.usageLimit ? String(res.usageLimit) : null };
 }
 
 function writeEvidence(ws, req, evidence) {
@@ -170,6 +170,26 @@ const INTERRUPTED_NOTE =
   '- The previous attempt was interrupted before it finished (no error). The files of this task may contain ' +
   'partial work: read them first, then complete or correct them.';
 
+const STEP_INTERRUPTED_NOTE =
+  '- The previous attempt was interrupted before it finished (no error). The output files of this step may contain ' +
+  'partial work: read them first, then complete or correct them.';
+
+/**
+ * The AI refused the run because the usage limit of the account is reached. That says nothing about the work,
+ * so it is not a failed attempt: nothing is counted and nothing is blocked. The run stops here and the next
+ * `aiws run` starts the same step again; no human gate command is needed.
+ */
+function pauseOnUsageLimit(ws, st, r, entry) {
+  const req = st.req_id;
+  r.evidence.outcome = 'usage_limit';
+  writeEvidence(ws, req, r.evidence);
+  addHistory(st, { ...entry, result: 'usage_limit', run: r.runId });
+  st.paused = 'usage_limit';
+  st.reason = `paused by the AI usage limit (${r.usageLimit}). No attempt was counted; run \`aiws run ${req}\` again once the limit resets`;
+  saveState(ws, st);
+  log('  paused by the AI usage limit (not counted as an attempt)');
+}
+
 // ---------------------------------------------------------------- run loop
 
 /** Runs a REQ until the next human gate, a block, or done. Returns the final state. */
@@ -184,6 +204,12 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
     );
   }
   Lock.takeStop(ws.root, req); // a stop request left over from an earlier run does not apply to this one
+  if (st.paused) {
+    // the pause of an earlier run ends with this one
+    delete st.paused;
+    delete st.reason;
+    saveState(ws, st);
+  }
 
   for (let i = 0; i < maxSteps; i++) {
     st = loadState(ws, req);
@@ -228,7 +254,7 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
     }
     if (def.type === 'loop') stepLoop(ws, st, def);
     else stepAgentPhase(ws, st, def);
-    if (once) break;
+    if (st.paused || once) break; // paused: the status stays running, so without this the same step would spin
   }
   return loadState(ws, req);
 }
@@ -248,6 +274,8 @@ function assertCleanEnough(ws, st) {
     const t = st.tasks.find((x) => x.status === 'running' || x.status === 'blocked');
     if (t) allowed.push(...(t.allowed_files ?? []));
   }
+  // a step paused by the usage limit keeps its partial output, which may live outside the work directory
+  if (st.interrupted?.startsWith(`${st.phase}:`)) allowed.push(...writeScope(ws.policies, st.phase, { req: st.req_id }));
   const ok = matcher(allowed);
   const stray = G.dirtyFiles(ws.root).filter((f) => !ok(f));
   if (stray.length) {
@@ -286,17 +314,25 @@ function stepAgentPhase(ws, st, def) {
   const key = `${def.id}:${step.agent}`;
   const attempt = (st.attempts[key] ?? 0) + 1;
   const maxAttempts = contract.max_attempts ?? 3;
+  const interrupted = st.interrupted === key;
 
-  log(`[${req}] ${def.id} / ${step.agent} (attempt ${attempt}/${maxAttempts})`);
+  log(`[${req}] ${def.id} / ${step.agent} (attempt ${attempt}/${maxAttempts})${interrupted ? ' - resuming an interrupted attempt' : ''}`);
   const r = executeAgent(ws, st, {
     req,
     phase: def.id,
     agentId: step.agent,
     contract,
     attempt,
-    failure: st.last_failure[key],
+    failure: interrupted ? [STEP_INTERRUPTED_NOTE, st.last_failure[key]].filter(Boolean).join('\n') : st.last_failure[key],
     extra: phaseExtra(ws, st, def),
   });
+  if (r.usageLimit) {
+    // output written before the limit stays in the work directory; the next run tells the agent to review it
+    if (interrupted || r.scope.allowed.length) st.interrupted = key;
+    pauseOnUsageLimit(ws, st, r, { phase: def.id, agent: step.agent });
+    return;
+  }
+  delete st.interrupted;
   let errors = r.errors;
   if (!errors.length) errors = validateOutputs(ws, contract, { req }).errors;
   if (!errors.length && def.checks)
@@ -546,6 +582,11 @@ function stepLoop(ws, st, def) {
   const qBefore = readTextIfExists(ws.abs(qRel));
   const failure = interrupted ? [INTERRUPTED_NOTE, task.last_failure].filter(Boolean).join('\n') : task.last_failure;
   const r = executeAgent(ws, st, { req, phase: def.id, agentId: devStep.agent, contract, task, attempt, failure });
+  if (r.usageLimit) {
+    // in_progress stays set: the next run resumes this attempt and tells the developer about partial files
+    pauseOnUsageLimit(ws, st, r, { phase: def.id, task: task.id });
+    return;
+  }
   delete task.in_progress;
   const errors = [...r.errors];
 
@@ -705,9 +746,10 @@ export function runDiscover(ws, { maxAttempts } = {}) {
     reportText(report),
     'The workspace may use any language. Describe each source-* directory in its own terms (framework, build tool, test framework).',
   ].join('\n');
-  let failure = null;
+  // a discovery paused by the usage limit left partial knowledge files in the working tree
+  let failure = counter.interrupted ? STEP_INTERRUPTED_NOTE : null;
   for (let attempt = 1; attempt <= max; attempt++) {
-    log(`[discover] attempt ${attempt}/${max}`);
+    log(`[discover] attempt ${attempt}/${max}${attempt === 1 && failure ? ' - resuming an interrupted attempt' : ''}`);
     const r = executeAgent(ws, counter, {
       req,
       phase: 'discover',
@@ -717,6 +759,13 @@ export function runDiscover(ws, { maxAttempts } = {}) {
       failure,
       extra,
     });
+    if (r.usageLimit) {
+      const interrupted = Boolean(counter.interrupted || r.scope.allowed.length);
+      writeYaml(seqFile, { run_seq: counter.run_seq, ...(interrupted ? { interrupted } : {}) });
+      r.evidence.outcome = 'usage_limit';
+      writeEvidence(ws, req, r.evidence);
+      return { ok: false, paused: r.usageLimit };
+    }
     writeYaml(seqFile, { run_seq: counter.run_seq });
     let errors = r.errors;
     if (!errors.length) errors = validateOutputs(ws, contract, { req }).errors;

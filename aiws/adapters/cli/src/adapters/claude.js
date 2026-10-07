@@ -212,16 +212,35 @@ export function runAgent(ws, { prompt, env, contract, agent }) {
   });
   const raw = res.stdout ?? '';
   const report = parse(raw);
+  const ok = res.status === 0 && !report.is_error;
+  const stderr = (res.stderr ?? '') + (res.error ? String(res.error) : '');
   return {
-    ok: res.status === 0 && !report.is_error,
+    ok,
     exitCode: res.status,
-    stderr: (res.stderr ?? '') + (res.error ? String(res.error) : ''),
+    stderr,
+    usageLimit: ok ? null : (usageLimit(report.result) ?? usageLimit(stderr)),
     raw,
     report,
     command: cmdline,
     allowedTools: tools,
     durationMs: Date.now() - started,
   };
+}
+
+// What Claude Code answers when the usage window of the account is used up, for example
+// "You've hit your session limit · resets 1:50pm (Asia/Bangkok)" or "Weekly limit reached ∙ resets Mon 10am".
+const LIMIT_KIND = '(?:session|usage|weekly|daily|monthly|[\\w-]*hour|plan|model|opus|sonnet|rate)';
+const USAGE_LIMIT = new RegExp(`\\b(?:hit|reached) your (?:${LIMIT_KIND} ){0,2}limit\\b|\\b${LIMIT_KIND} limit reached\\b`, 'i');
+
+/**
+ * The usage-limit message of a failed run, or null. Only the start of the text is tested: the message is
+ * the whole answer of such a run, while an agent that merely writes about limits says so further down.
+ */
+export function usageLimit(text) {
+  const head = String(text ?? '')
+    .trim()
+    .slice(0, 300);
+  return USAGE_LIMIT.test(head) ? head.split(/\r?\n/)[0] : null;
 }
 
 /** Normalises `--output-format json` output into the evidence report shape. */

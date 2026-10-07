@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Reaching the AI usage limit (for example the session limit of a Claude
+  subscription) no longer burns the retries of a step and blocks the
+  requirement. The run pauses: no attempt is counted, the state stays
+  `running`, `aiws run` and `aiws discover` exit with code 75, and
+  `aiws status` shows the message of the AI with the reset time. The next
+  `aiws run` starts the same step again and tells the agent about partial
+  output; no human gate command is needed.
+
 ## [0.2.0] - 2026-10-04
 
 Hardening release driven by the first real requirement run on the demo

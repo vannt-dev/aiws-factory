@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import { makeWorkspace, aiws, ok, state, git, scenario, readFile, writeFile, tempDir, BIN } from './helpers.js';
+import { makeWorkspace, aiws, ok, state, git, scenario, readFile, writeFile, tempDir, mergeToMain, BIN } from './helpers.js';
 import { Workspace } from '../src/workspace.js';
-import { guardCommand, preflight } from '../src/adapters/claude.js';
+import { guardCommand, preflight, usageLimit } from '../src/adapters/claude.js';
 import { preflightAdapters } from '../src/adapters/index.js';
 
 function toImplementation(root, env) {
@@ -210,6 +210,151 @@ test('a task interrupted mid-run is resumed with its partial work', () => {
   const refused = aiws(other, ['run', 'REQ-001']);
   assert.notEqual(refused.status, 0);
   assert.match(refused.out, /uncommitted changes outside REQ-001's scope/);
+});
+
+const LIMIT_MESSAGE = "You've hit your session limit · resets 1:50pm (Asia/Bangkok)";
+
+function evidenceRuns(root) {
+  const dir = path.join(root, 'aiws/work/REQ-001/evidence/runs');
+  return fs
+    .readdirSync(dir)
+    .filter((f) => /^run-\d+\.json$/.test(f))
+    .sort()
+    .map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')));
+}
+
+test('AI usage limit: the run pauses without counting an attempt or blocking, and continues later', () => {
+  const root = makeWorkspace({ discover: true });
+  ok(root, ['new', 'REQ-001']);
+  // the limit is reached while the test designer works: a half-written test spec stays behind
+  const env = scenario({
+    'test-designer.js': `
+      import { write, work } from './_lib.js';
+      write(work('03-test-spec.md'), '# half written\\n');
+      console.log(${JSON.stringify(LIMIT_MESSAGE)});
+      process.exit(75);
+    `,
+  });
+  const paused = aiws(root, ['run', 'REQ-001'], { env });
+  assert.equal(paused.status, 75, paused.out);
+  assert.match(paused.stdout, /paused by the AI usage limit \(You've hit your session limit/);
+  let st = state(root);
+  assert.equal(st.phase, 'design');
+  assert.equal(st.status, 'running', 'a pause is not a block: no human gate command is needed to continue');
+  assert.equal(st.attempts?.['design:test-designer'], undefined, 'no attempt was counted');
+  assert.equal(st.last_failure?.['design:test-designer'], undefined);
+  assert.equal(st.history.at(-1).result, 'usage_limit');
+  let runs = evidenceRuns(root);
+  assert.equal(runs.length, 3, 'analyst, architect and one paused run: the step did not spin');
+  assert.equal(runs.at(-1).outcome, 'usage_limit');
+  assert.match(ok(root, ['status', 'REQ-001']).stdout, /reason: paused by the AI usage limit/);
+
+  // still limited: paused again, still nothing counted
+  assert.equal(aiws(root, ['run', 'REQ-001'], { env }).status, 75);
+  assert.equal(state(root).attempts?.['design:test-designer'], undefined);
+  assert.equal(evidenceRuns(root).length, 4);
+
+  // the limit has reset: the same step runs as attempt 1 and is told about the partial output
+  const r = ok(root, ['run', 'REQ-001']);
+  assert.match(r.stdout, /test-designer \(attempt 1\/\d+\) - resuming an interrupted attempt/);
+  st = state(root);
+  assert.equal(st.phase, 'design_approval', st.reason);
+  assert.equal(st.paused, undefined);
+  assert.equal(st.interrupted, undefined);
+  runs = evidenceRuns(root);
+  const prompt = readFile(root, `aiws/work/REQ-001/evidence/runs/${runs.at(-1).prompt_file}`);
+  assert.match(prompt, /previous attempt was interrupted/);
+  assert.match(prompt, /output files of this step may contain partial work/);
+});
+
+test('AI usage limit during a task: the task stays in progress and resumes with its partial files', () => {
+  const root = makeWorkspace({ discover: true });
+  const env = scenario({
+    'developer-T1.js': `
+      import { write } from './_lib.js';
+      write('source-be/test/nickname.test.js', '// half written\\n');
+      console.log('Weekly limit reached ∙ resets Mon 10am');
+      process.exit(75);
+    `,
+  });
+  toImplementation(root, env);
+  const paused = aiws(root, ['run', 'REQ-001'], { env });
+  assert.equal(paused.status, 75, paused.out);
+  let st = state(root);
+  assert.equal(st.phase, 'implementation');
+  assert.equal(st.status, 'running');
+  const t1 = st.tasks.find((t) => t.id === 'T1');
+  assert.equal(t1.status, 'running');
+  assert.equal(t1.in_progress, true);
+  assert.equal(t1.attempts ?? 0, 0, 'no attempt was counted');
+  assert.equal(t1.last_failure, undefined);
+
+  const r = ok(root, ['run', 'REQ-001']);
+  assert.match(r.stdout, /T1 \(attempt 1\/3\) - resuming an interrupted attempt/);
+  st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+  assert.equal(st.paused, undefined);
+});
+
+test('AI usage limit during the knowledge update: partial knowledge files do not stop the next run', () => {
+  const root = makeWorkspace({ discover: true });
+  toImplementation(root);
+  ok(root, ['run', 'REQ-001']);
+  mergeToMain(root);
+  ok(root, ['approve', 'REQ-001', 'pr', '--yes']);
+  // this phase writes outside the work directory of the requirement
+  const env = scenario({
+    'discovery.js': `
+      import { write, read } from './_lib.js';
+      write('aiws/knowledge/api-inventory.md', read('aiws/knowledge/api-inventory.md') + '\\nhalf written\\n');
+      console.log(${JSON.stringify(LIMIT_MESSAGE)});
+      process.exit(75);
+    `,
+  });
+  const paused = aiws(root, ['run', 'REQ-001'], { env });
+  assert.equal(paused.status, 75, paused.out);
+  let st = state(root);
+  assert.equal(st.phase, 'knowledge_update');
+  assert.equal(st.status, 'running');
+  assert.match(git(root, ['status', '--porcelain']), /aiws\/knowledge\/api-inventory\.md/, 'the partial file is kept');
+
+  const r = ok(root, ['run', 'REQ-001']);
+  assert.match(r.stdout, /discovery \(attempt 1\/\d+\) - resuming an interrupted attempt/);
+  st = state(root);
+  assert.equal(st.phase, 'done', st.reason);
+  assert.match(readFile(root, 'aiws/knowledge/api-inventory.md'), /nickname/);
+  assert.doesNotMatch(readFile(root, 'aiws/knowledge/api-inventory.md'), /half written/);
+  assert.match(readFile(root, `aiws/work/REQ-001/evidence/runs/${evidenceRuns(root).at(-1).prompt_file}`), /output files of this step/);
+});
+
+test('AI usage limit during discovery pauses it; only usage-limit answers are recognised', () => {
+  const root = makeWorkspace();
+  const env = scenario({
+    'discovery.js': `
+      import { write } from './_lib.js';
+      write('aiws/knowledge/system-map.md', '# half written\\n');
+      console.log(${JSON.stringify(LIMIT_MESSAGE)});
+      process.exit(75);
+    `,
+  });
+  const paused = aiws(root, ['discover'], { env });
+  assert.equal(paused.status, 75, paused.out);
+  assert.match(paused.stdout, /Discovery paused by the AI usage limit/);
+  const r = ok(root, ['discover']);
+  assert.match(r.stdout, /attempt 1\/\d+ - resuming an interrupted attempt/);
+  assert.doesNotMatch(readFile(root, 'aiws/knowledge/system-map.md'), /half written/);
+  assert.equal(git(root, ['status', '--porcelain']), '', 'the knowledge base is committed');
+  assert.doesNotMatch(readFile(root, 'aiws/work/_discover/seq.yaml'), /interrupted/);
+
+  // what the Claude adapter treats as a usage limit
+  assert.equal(usageLimit(LIMIT_MESSAGE), LIMIT_MESSAGE);
+  assert.ok(usageLimit('Weekly limit reached ∙ resets Mon 10am'));
+  assert.ok(usageLimit('5-hour limit reached ∙ resets 3pm'));
+  assert.ok(usageLimit('Claude usage limit reached. Your limit will reset at 3pm (Asia/Bangkok).'));
+  assert.equal(usageLimit('Implemented the rate limit of AC-3: the limit is reached after 5 requests.'), null);
+  assert.equal(usageLimit(`${'Wrote 03-test-spec.md. '.repeat(20)}${LIMIT_MESSAGE}`), null, 'only the start of the answer counts');
+  assert.equal(usageLimit(''), null);
+  assert.equal(usageLimit(undefined), null);
 });
 
 test('source lock: a second REQ in its own worktree cannot enter implementation', () => {
