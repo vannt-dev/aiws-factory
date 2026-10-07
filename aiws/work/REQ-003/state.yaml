@@ -147,7 +147,10 @@ tasks:
       - TC-105
     depends_on:
       - T3
-    status: pending
+    status: running
+    base: 567cd68598bcb7770f7b63d6555a78e20b0a5d77
+    attempts: 1
+    test_result: pass
   - id: T6
     title: fe - thêm describeStatusError và nối nút đổi trạng thái vào trang
     type: feat
@@ -166,4 +169,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 8
+run_seq: 9
