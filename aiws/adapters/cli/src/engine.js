@@ -10,7 +10,7 @@ import { loadState, saveState, setPhase, addHistory, nextRunId, addFeedback } fr
 import { writeScope, orchestratorPaths, matcher } from './scope.js';
 import { buildPrompt } from './prompt.js';
 import { validateOutputs, loadPlan } from './validate.js';
-import { designApprovalStatus } from './gate.js';
+import { designApprovalStatus, listApprovals } from './gate.js';
 import { buildTrace, traceMarkdown } from './trace.js';
 import { adapterName, getAdapter, preflightAdapters } from './adapters/index.js';
 import { detectStacks, reportText } from './stacks.js';
@@ -362,6 +362,8 @@ function stepAgentPhase(ws, st, def) {
   const outputs = r.scope.allowed.filter((f) => !f.startsWith(ws.workRel(req) + '/'));
   delete st.attempts[key];
   delete st.last_failure[key];
+  // what this review covered, so that a later round can limit itself to what changed since (see phaseExtra)
+  if (def.id === 'review') st.last_review = { run: r.runId, head: G.head(ws.root), approval: latestDesignApproval(ws, req) };
 
   if (human.length) {
     r.evidence.outcome = 'needs_human';
@@ -431,9 +433,11 @@ function phaseExtra(ws, st, def) {
     const logOut = G.git(ws.root, ['log', '--format=%h %s', `--grep=REQ-ID: ${st.req_id}`, '-F', `${st.base_commit}..HEAD`], {
       allowFail: true,
     }).stdout.trim();
+    const followUp = reviewFollowUp(ws, st, isSource);
     return [
       '## Diff under review',
-      `Source files changed on ${st.branch} since ${String(st.base_commit).slice(0, 7)} (read them all):`,
+      `Source files changed on ${st.branch} since ${String(st.base_commit).slice(0, 7)} ` +
+        (followUp ? '(the whole requirement, for reference):' : '(read them all):'),
       '```',
       files.join('\n') || '(none)',
       '```',
@@ -441,6 +445,7 @@ function phaseExtra(ws, st, def) {
       '```',
       logOut || '(none)',
       '```',
+      ...(followUp ? ['', followUp] : []),
     ].join('\n');
   }
   if (def.mode === 'incremental') {
@@ -462,6 +467,47 @@ function phaseExtra(ws, st, def) {
     ].join('\n');
   }
   return null;
+}
+
+function latestDesignApproval(ws, req) {
+  return listApprovals(ws, req, 'design').at(-1)?.name ?? null;
+}
+
+/**
+ * Scope of a review that follows an earlier one of the same design (the usual case: fix tasks added after a
+ * critical finding). The reviewer checks the earlier findings and reads in full only what changed since;
+ * unchanged files were read in the earlier round. Null for a first review, or when the design was approved
+ * again in between: then everything is reviewed afresh.
+ */
+function reviewFollowUp(ws, st, isSource) {
+  const prev = st.last_review;
+  if (!prev?.head || prev.approval !== latestDesignApproval(ws, st.req_id)) return null;
+  if (!G.isAncestor(ws.root, prev.head, 'HEAD')) return null;
+  const files = G.git(ws.root, ['diff', '--name-only', prev.head, 'HEAD'], { allowFail: true })
+    .stdout.split(/\r?\n/)
+    .filter((f) => f && isSource(f));
+  const logOut = G.git(ws.root, ['log', '--format=%h %s', `--grep=REQ-ID: ${st.req_id}`, '-F', `${prev.head}..HEAD`], {
+    allowFail: true,
+  }).stdout.trim();
+  const review = ws.workRel(st.req_id, '05-review.md');
+  return [
+    '## Follow-up review',
+    `An earlier review (${prev.run}) covered this branch up to ${String(prev.head).slice(0, 7)}. ` +
+      `Its findings are still in ${review}: read that file before you overwrite it.`,
+    'Source files changed since that review:',
+    '```',
+    files.join('\n') || '(none)',
+    '```',
+    'Commits since that review:',
+    '```',
+    logOut || '(none)',
+    '```',
+    'Scope of this round:',
+    '- Check that every [critical] finding of the earlier review is fixed, in the code and not only in a report.',
+    '- Read in full the files changed since that review, and any code that depends on those changes.',
+    '- Do not read the unchanged files again unless a change above affects them; carry over the findings of the earlier review that are still open.',
+    `- ${review} still gives the verdict on the whole requirement, with all required headings.`,
+  ].join('\n');
 }
 
 /** Loads 04-plan.yaml into state.tasks, keeping done tasks whose definition did not change. */

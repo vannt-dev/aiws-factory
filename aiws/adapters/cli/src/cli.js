@@ -32,6 +32,7 @@ Human-only (refuse to run inside an AI session; confirm interactively or pass --
   aiws redesign REQ-001 -m REASON      developer question needs a design change -> back to design
   aiws resume  REQ-001 [-m NOTE] [--budget USD]
                                        continue after a block you have fixed, or raise the cost budget
+                                       (with --budget also ahead of time, while waiting at a gate before the PR)
   aiws unlock                          release a stale source lock
 
 Checks (for CI and debugging)

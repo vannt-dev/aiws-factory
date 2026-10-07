@@ -87,7 +87,7 @@ Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lện
 | Design sẵn sàng | `design_approval / waiting_human` | `aiws approve … design` hoặc `aiws reject … design -m` |
 | Developer ghi `questions.md` | `design_change_requested` | `aiws answer … -m` (giữ design) hoặc `aiws redesign … -m` (quay lại design, phải duyệt lại) |
 | Task fail 3 lần | `implementation / blocked` | sửa tay hoặc revert, rồi `aiws resume REQ-001`, rồi `aiws run` |
-| Review có `[critical]` | tự quay lại `planning` | không cần làm gì: planner thêm task sửa |
+| Review có `[critical]` | tự quay lại `planning` | không cần làm gì: planner thêm task sửa. Lần review sau đó là review tiếp nối: kiểm lại các finding cũ và chỉ đọc kỹ phần đã thay đổi từ lần trước |
 | Sửa design sau khi đã duyệt | tự quay về `design_approval` | duyệt lại |
 | AI hết giới hạn sử dụng | giữ nguyên phase, vẫn `running` | không cần duyệt gì: chạy lại `aiws run REQ-001` khi giới hạn được đặt lại |
 
@@ -162,7 +162,7 @@ Hai lần chạy thật để tham khảo. Với Sonnet, một REQ nhỏ có 2 t
 Có hai cách kiểm soát chi phí:
 
 - **Chọn model theo agent.** `runtime.yaml → claude.models` ánh xạ từng `model_hint` sang model, còn `claude.agent_models` ghi đè cho riêng một agent, ví dụ `developer: sonnet` trong khi design và review vẫn dùng Opus. Sửa xong thì chạy `aiws sync claude`. `claude.phase_models` đặt model cho riêng một phase khi chạy `aiws run` và được ưu tiên hơn cả hai, nên một agent có thể chạy rẻ hơn ở đúng một phase: `knowledge_update: sonnet` đổi bước cập nhật knowledge nhưng không đổi `aiws discover`, dù cả hai cùng dùng agent discovery.
-- **Ngân sách cho mỗi REQ.** `policies.yaml → limits.max_cost_usd_per_req` chặn REQ trước bước kế tiếp khi chi phí AI chạm ngân sách. Chỉ người mới cho chạy tiếp được: `aiws resume REQ-001` cấp thêm một lần ngân sách tính từ mức đã tiêu, còn `aiws resume REQ-001 --budget 80` đặt giới hạn mới. Lần chạy không báo chi phí thì không bị tính. Mặc định không giới hạn.
+- **Ngân sách cho mỗi REQ.** `policies.yaml → limits.max_cost_usd_per_req` chặn REQ trước bước kế tiếp khi chi phí AI chạm ngân sách. Chỉ người mới cho chạy tiếp được: `aiws resume REQ-001` cấp thêm một lần ngân sách tính từ mức đã tiêu, còn `aiws resume REQ-001 --budget 80` đặt giới hạn mới. Lần chạy không báo chi phí thì không bị tính. Mặc định không giới hạn. Ngân sách được kiểm tra trước mỗi bước, không kiểm tra giữa chừng, nên bước đang chạy có thể kết thúc vượt mức. Để không bị dừng giữa lúc implementation, hãy nâng trước: `aiws resume REQ-001 --budget 80` cũng chạy được khi REQ đang chờ ở một cổng duyệt trước pull request, và từ mức 80% ngân sách thì `aiws run` nhắc điều này khi dừng ở cổng. Ở cổng PR, nhánh phải giữ nguyên đúng như pull request sẽ merge, nên tại đó chỉ nâng được sau khi REQ bị khoá.
 
 ## 9. Khác biệt so với Spec V1 (có chủ đích)
 

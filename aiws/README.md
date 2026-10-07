@@ -87,7 +87,7 @@ When the orchestrator stops, `aiws status REQ-001` tells you why and what to run
 | Design is ready | `design_approval / waiting_human` | `aiws approve … design` or `aiws reject … design -m` |
 | Developer wrote `questions.md` | `design_change_requested` | `aiws answer … -m` (keep the design) or `aiws redesign … -m` (back to design, needs a new approval) |
 | A task failed 3 times | `implementation / blocked` | fix or revert by hand, `aiws resume REQ-001`, then `aiws run` |
-| Review found a `[critical]` issue | back to `planning` automatically | nothing: the planner adds fix tasks |
+| Review found a `[critical]` issue | back to `planning` automatically | nothing: the planner adds fix tasks. The review after them is a follow-up: it checks the earlier findings and reads in full only what changed since |
 | The design changed after approval | back to `design_approval` automatically | approve again |
 | The AI usage limit is reached | same phase, still `running` | nothing to approve: `aiws run REQ-001` again once the limit resets |
 
@@ -162,7 +162,7 @@ Two real runs for reference. With Sonnet, a small requirement with 2 tasks cost 
 Two controls keep cost in hand:
 
 - **Model per agent.** `runtime.yaml → claude.models` maps each `model_hint` to a model, and `claude.agent_models` overrides it for one agent, for example `developer: sonnet` while design and review stay on Opus. Run `aiws sync claude` afterwards. `claude.phase_models` sets the model of one phase for `aiws run` and wins over both, so an agent can run cheaper in one phase only: `knowledge_update: sonnet` changes the knowledge update but not `aiws discover`, although both use the discovery agent.
-- **Budget per requirement.** `policies.yaml → limits.max_cost_usd_per_req` blocks a requirement before its next step once its AI runs reach the budget. Only a human continues: `aiws resume REQ-001` grants one more budget on top of what is spent, and `aiws resume REQ-001 --budget 80` sets a new limit. Runs that report no cost never count. The budget is off by default.
+- **Budget per requirement.** `policies.yaml → limits.max_cost_usd_per_req` blocks a requirement before its next step once its AI runs reach the budget. Only a human continues: `aiws resume REQ-001` grants one more budget on top of what is spent, and `aiws resume REQ-001 --budget 80` sets a new limit. Runs that report no cost never count. The budget is off by default. It is checked before each step, never in the middle of one, so the step in progress can end above it. To avoid a stop in the middle of the implementation, raise it ahead of time: `aiws resume REQ-001 --budget 80` also works while the requirement waits at a human gate before the pull request, and from 80% of the budget `aiws run` says so when it stops at a gate. At the PR gate the branch must stay what the pull request merges, so there the budget is raised only after a block.
 
 ## 9. Intentional differences from spec V1
 

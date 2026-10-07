@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-07
+
+Cost control and unattended runs, driven by the second real requirement run
+on the demo workspace.
+
 ### Added
 
 - `claude.phase_models` in `runtime.yaml` chooses the model of one phase for
@@ -14,6 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   can then run on a cheaper model in one phase only, for example
   `knowledge_update: sonnet` while `aiws discover` keeps the model of the
   discovery agent.
+- `aiws resume REQ --budget USD` also raises the budget ahead of time, while
+  the requirement waits at a human gate before the pull request, so a run no
+  longer has to stop in the middle of the implementation. From 80% of the
+  budget, `aiws run` says so when it stops at a gate, and `aiws status` shows
+  the percentage used.
+
+### Changed
+
+- A review that follows an earlier review of the same approved design (after
+  fix tasks, or after changes requested on the pull request) is a follow-up:
+  the reviewer is given the files and commits changed since the earlier
+  review, checks that its critical findings are fixed, and reads in full only
+  what changed. A first review, and a review after the design was approved
+  again, still read everything.
 
 ### Fixed
 
@@ -153,6 +172,7 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/vannt-dev/aiws-factory/releases/tag/v0.1.0

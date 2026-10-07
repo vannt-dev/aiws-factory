@@ -192,4 +192,17 @@ test('review critical finding goes back to planning, adds a fix task, keeps done
   assert.match(git(root, ['log', '-1', '--format=%s', byId.T3.commit]), /^fix\(REQ-001\): T3 /);
   const subjects = git(root, ['log', '--format=%s', 'main..HEAD']).split('\n');
   for (const s of subjects) assert.match(s, /^(feat|fix|refactor|perf|test|docs|style|build|ci|chore|revert)\(REQ-001\): /, s);
+
+  // the second review is a follow-up: it is pointed at what changed since the first one
+  const runs = st.history.filter((h) => h.phase === 'review').map((h) => h.run);
+  const [first, second] = runs.map((run) => readFile(root, `aiws/work/REQ-001/evidence/runs/${run}.prompt.md`));
+  assert.match(first, /\(read them all\):/);
+  assert.doesNotMatch(first, /## Follow-up review/);
+  assert.match(second, /## Follow-up review/);
+  assert.match(second, new RegExp(`An earlier review \\(${runs[0]}\\) covered this branch`));
+  const since = second.split('Source files changed since that review:')[1].split('Commits since that review:');
+  assert.match(since[0], /source-be\/src\/users\.js/);
+  assert.doesNotMatch(since[0], /source-fe\//, 'the frontend did not change after the first review');
+  assert.match(since[1], /fix\(REQ-001\): T3 /);
+  assert.equal(st.last_review.run, runs[1]);
 });
