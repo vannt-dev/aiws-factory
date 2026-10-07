@@ -66,6 +66,12 @@ history:
     run: run-0009
     commit: e3e496e
     at: 2026-10-07T16:46:37Z
+  - phase: implementation
+    task: T6
+    result: done
+    run: run-0010
+    commit: 03dfd36
+    at: 2026-10-07T16:48:42Z
 tasks:
   - id: T1
     title: be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
@@ -170,10 +176,10 @@ tasks:
     depends_on:
       - T4
       - T5
-    status: running
-    base: 11bfdcf4978f3453e8ca06a50e60483bc8dcbf2d
+    status: done
     attempts: 1
     test_result: pass
+    commit: 03dfd36b406b7fe6e5700894e8b8d6459b68c6ba
 feedback: []
 attempts: {}
 last_failure: {}
