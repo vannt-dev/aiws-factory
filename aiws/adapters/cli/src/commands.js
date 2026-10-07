@@ -154,6 +154,27 @@ function printStop(ws, st) {
   log('');
   log(`${st.req_id}: phase=${st.phase} status=${st.status}`);
   if (st.reason) log(`  ${st.reason}`);
+  // a gate is the moment a human can still raise the budget before the next steps reach it
+  const budget = budgetStatus(ws, st);
+  if (st.status === 'waiting_human' && budget.limit !== null && budget.spent >= BUDGET_WARN_RATIO * budget.limit) {
+    const how = atPrGate(ws, st)
+      ? `if a later step reaches it, the requirement is blocked until \`aiws resume ${st.req_id} --budget <USD>\`.`
+      : `raise it now with \`aiws resume ${st.req_id} --budget <USD>\`, or the requirement is blocked when it is reached.`;
+    log(`  ${budgetLine(budget)}. The budget is checked before each step; ${how}`);
+  }
+}
+
+function atPrGate(ws, st) {
+  return ws.phaseDef(st.phase)?.gate === 'pr';
+}
+
+const BUDGET_WARN_RATIO = 0.8;
+
+/** "budget: 15.72 of 20.00 USD used (79%)", or null when the requirement has no budget. */
+function budgetLine(budget) {
+  if (budget.limit === null) return null;
+  const percent = Math.round((budget.spent / budget.limit) * 100);
+  return `budget: ${budget.spent.toFixed(2)} of ${budget.limit.toFixed(2)} USD used (${percent}%)`;
 }
 
 /**
@@ -207,8 +228,8 @@ export function status(req) {
     if (st.reason) log(`  reason: ${st.reason}`);
     const usage = statsLine(runStats(ws, r));
     if (usage) log(`  ${usage}`);
-    const budget = budgetStatus(ws, st);
-    if (budget.limit !== null) log(`  budget: ${budget.spent.toFixed(2)} of ${budget.limit.toFixed(2)} USD used`);
+    const budget = budgetLine(budgetStatus(ws, st));
+    if (budget) log(`  ${budget}`);
     if (st.tasks.length) {
       log('  tasks:');
       for (const t of st.tasks) {
@@ -405,8 +426,27 @@ export async function redesign(req, opts = {}) {
 export async function resume(req, opts = {}) {
   await requireHuman('resume', req, opts);
   const { ws, st } = openForHuman(req);
-  if (st.status !== 'blocked') throw new AiwsError(`${req} is not blocked (status ${st.status}).`);
   const by = currentUser(ws.root);
+  if (st.status !== 'blocked') {
+    // Not blocked: at a human gate no run is active, so the budget can be raised ahead of time. Nothing else changes.
+    if (st.status !== 'waiting_human') throw new AiwsError(`${req} is not blocked (status ${st.status}).`);
+    if (opts.budget === undefined) {
+      throw new AiwsError(`${req} is not blocked (status ${st.status}). To raise its budget now, pass --budget <USD>.`);
+    }
+    if (atPrGate(ws, st)) {
+      // the change is a commit on the requirement branch, and that branch must stay exactly what the pull request merged
+      throw new AiwsError(
+        `${req} waits for its pull request, so its branch cannot take a budget commit now. Approve the PR first; ` +
+          `if a later step reaches the budget, \`aiws resume ${req} --budget <USD>\` raises it then.`
+      );
+    }
+    const spent = raiseBudget(ws, st, opts.budget);
+    addHistory(st, { phase: st.phase, result: 'budget_set', by, budget_usd: st.budget_usd });
+    saveState(ws, st);
+    G.commit(ws.root, `chore(${req}): budget set to ${st.budget_usd.toFixed(2)} USD by ${by}\n\nREQ-ID: ${req}\n`, [ws.workRel(req)]);
+    log(`Budget of ${req} is now ${st.budget_usd.toFixed(2)} USD (spent ${spent.toFixed(2)}). It still waits at ${st.phase}.`);
+    return;
+  }
   for (const k of Object.keys(st.attempts)) if (k.startsWith(`${st.phase}:`)) delete st.attempts[k];
   for (const t of st.tasks) {
     if (t.status === 'blocked') {
@@ -418,13 +458,8 @@ export async function resume(req, opts = {}) {
   // (counted from what is already spent) when the block was a budget block.
   let budgetNote = '';
   if (opts.budget !== undefined || st.blocked_by === 'budget') {
-    const b = budgetStatus(ws, st);
-    const limit = opts.budget !== undefined ? Number(opts.budget) : b.spent + (b.configured ?? b.limit ?? 0);
-    if (!(limit > b.spent)) {
-      throw new AiwsError(`--budget must be a number of USD above what is already spent (${b.spent.toFixed(2)}).`);
-    }
-    st.budget_usd = Math.round(limit * 100) / 100;
-    budgetNote = ` Budget is now ${st.budget_usd.toFixed(2)} USD (spent ${b.spent.toFixed(2)}).`;
+    const spent = raiseBudget(ws, st, opts.budget);
+    budgetNote = ` Budget is now ${st.budget_usd.toFixed(2)} USD (spent ${spent.toFixed(2)}).`;
   }
   delete st.blocked_by;
   if (opts.message) addFeedback(st, st.phase, `resume note by ${by}`, opts.message);
@@ -432,6 +467,20 @@ export async function resume(req, opts = {}) {
   setPhase(st, st.phase, 'running');
   saveState(ws, st);
   log(`${req} resumed at ${st.phase}.${budgetNote} Next: aiws run ${req}`);
+}
+
+/**
+ * Sets `st.budget_usd` to `value` USD, or without a value to one more configured budget on top of what is
+ * spent. The new limit must be above what is already spent. Returns the amount spent.
+ */
+function raiseBudget(ws, st, value) {
+  const b = budgetStatus(ws, st);
+  const limit = value !== undefined ? Number(value) : b.spent + (b.configured ?? b.limit ?? 0);
+  if (!(limit > b.spent)) {
+    throw new AiwsError(`--budget must be a number of USD above what is already spent (${b.spent.toFixed(2)}).`);
+  }
+  st.budget_usd = Math.round(limit * 100) / 100;
+  return b.spent;
 }
 
 export async function unlock(opts = {}) {

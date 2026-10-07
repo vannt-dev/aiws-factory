@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   can then run on a cheaper model in one phase only, for example
   `knowledge_update: sonnet` while `aiws discover` keeps the model of the
   discovery agent.
+- `aiws resume REQ --budget USD` also raises the budget ahead of time, while
+  the requirement waits at a human gate before the pull request, so a run no
+  longer has to stop in the middle of the implementation. From 80% of the
+  budget, `aiws run` says so when it stops at a gate, and `aiws status` shows
+  the percentage used.
 
 ### Changed
 
