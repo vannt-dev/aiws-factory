@@ -170,4 +170,55 @@ class InMemoryCustomerRepositoryTest {
         arguments("0911111111", CustomerStatus.ACTIVE, 1L, false),
         arguments("0912345678", CustomerStatus.ACTIVE, 999L, true));
   }
+
+  @ParameterizedTest
+  @MethodSource("statusChanges")
+  @DisplayName("TC-82: updateStatus changes only status and keeps id, name, email and phone")
+  void updateStatusChangesOnlyStatusAndKeepsIdNameEmailAndPhone(
+      CustomerStatus current, String phone, CustomerStatus target) {
+    // Arrange
+    InMemoryCustomerRepository repository = new InMemoryCustomerRepository();
+    Customer other = repository.insert("Other", "other@example.com", "0912345678", CustomerStatus.ACTIVE);
+    repository.insert("Nguyen Van An", "an@example.com", phone, current);
+
+    // Act
+    Optional<Customer> result = repository.updateStatus(2, target);
+
+    // Assert
+    Customer expected = new Customer(2, "Nguyen Van An", "an@example.com", phone, target);
+    assertEquals(Optional.of(expected), result);
+    assertEquals(Optional.of(expected), repository.findById(2));
+    assertEquals(List.of(other, expected), repository.findAll());
+  }
+
+  private static Stream<Arguments> statusChanges() {
+    return Stream.of(
+        arguments(CustomerStatus.ACTIVE, "0912345678", CustomerStatus.INACTIVE),
+        // Other is ACTIVE with the same phone; the repository still writes.
+        arguments(CustomerStatus.INACTIVE, "0912345678", CustomerStatus.ACTIVE),
+        arguments(CustomerStatus.ACTIVE, null, CustomerStatus.INACTIVE),
+        arguments(CustomerStatus.INACTIVE, null, CustomerStatus.ACTIVE),
+        // Old-format phone number.
+        arguments(CustomerStatus.INACTIVE, "01234567890", CustomerStatus.ACTIVE),
+        // Rewrites the value it already has.
+        arguments(CustomerStatus.ACTIVE, "0912345678", CustomerStatus.ACTIVE));
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {999L, 0L, 2L})
+  @DisplayName("TC-83: updateStatus with an unknown id returns Optional.empty() and inserts nothing")
+  void updateStatusUnknownIdReturnsEmptyAndInsertsNothing(long id) {
+    // Arrange
+    InMemoryCustomerRepository repository = new InMemoryCustomerRepository();
+    repository.insert("Nguyen Van An", "an@example.com", "0912345678", CustomerStatus.ACTIVE);
+    List<Customer> before = repository.findAll();
+
+    // Act
+    Optional<Customer> result = repository.updateStatus(id, CustomerStatus.INACTIVE);
+
+    // Assert
+    assertEquals(Optional.empty(), result);
+    assertEquals(Optional.empty(), repository.findById(id));
+    assertEquals(before, repository.findAll());
+  }
 }

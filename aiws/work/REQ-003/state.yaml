@@ -48,7 +48,10 @@ tasks:
       - TC-82
       - TC-83
     depends_on: []
-    status: pending
+    status: running
+    base: 1d83bcdf5b3bbcbc7be9aa650a490feaffe4a9b8
+    attempts: 1
+    test_result: pass
   - id: T2
     title: be - thêm CustomerService.updateStatus với kiểm tra trùng số khi kích hoạt lại
     type: feat
@@ -130,4 +133,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 4
+run_seq: 5

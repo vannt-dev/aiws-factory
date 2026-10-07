@@ -25,4 +25,7 @@ public interface CustomerRepository {
 
   /** Replaces name, email and phone of the customer with the given id; keeps its id and status, never inserts. */
   Optional<Customer> update(long id, String name, String email, String phone);
+
+  /** Sets the status of the customer with the given id; keeps its id, name, email and phone, never inserts. */
+  Optional<Customer> updateStatus(long id, CustomerStatus status);
 }
