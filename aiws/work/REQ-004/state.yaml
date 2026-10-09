@@ -46,7 +46,10 @@ tasks:
       - TC-92
       - TC-97
     depends_on: []
-    status: pending
+    status: running
+    base: 16384c6a0566045beb2509139d440d0a7bb7ddf8
+    attempts: 1
+    test_result: pass
   - id: T2
     title: fe - Object.hasOwn khi tra STATUS_ACTIONS
     type: fix
@@ -78,4 +81,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 4
+run_seq: 5

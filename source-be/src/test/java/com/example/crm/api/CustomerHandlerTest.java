@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 /** Exercises the HTTP layer against a real server on an ephemeral port. */
 class CustomerHandlerTest {
@@ -473,7 +472,7 @@ class CustomerHandlerTest {
   }
 
   @ParameterizedTest(name = "[{index}]")
-  @ValueSource(longs = {1, 2})
+  @MethodSource("reactivatedCustomerIds")
   @DisplayName("TC-92: PUT /api/customers/{id}/status reactivating returns 200 and the customer is exactly as before deactivation")
   void reactivateReturns200AndRestoresCustomer(long id) throws Exception {
     assertEquals(201, post("{\"name\":\"Tran Thi Binh\",\"email\":\"binh@example.com\",\"phone\":\"0912345678\"}").statusCode());
@@ -492,6 +491,10 @@ class CustomerHandlerTest {
     JsonNode fetched = CustomerHandler.JSON.readTree(get("/" + id).body());
     assertEquals(body, fetched);
     assertEquals(before, customers());
+  }
+
+  private static Stream<Long> reactivatedCustomerIds() {
+    return Stream.of(1L, 2L);
   }
 
   @ParameterizedTest(name = "[{index}]")
@@ -616,17 +619,7 @@ class CustomerHandlerTest {
   }
 
   @ParameterizedTest(name = "[{index}]")
-  @ValueSource(
-      strings = {
-        "{}",
-        "{\"state\":\"INACTIVE\"}",
-        "{\"status\":null}",
-        "{\"status\":\"\"}",
-        "{\"status\":\"DELETED\"}",
-        "{\"status\":\"active\"}",
-        "{\"status\":\"inactive\"}",
-        "{\"status\":\" INACTIVE \"}"
-      })
+  @MethodSource("invalidTargetStatusBodies")
   @DisplayName("TC-97: PUT /api/customers/{id}/status with an invalid target status returns 400 with errors.status")
   void invalidTargetStatusReturns400(String body) throws Exception {
     JsonNode before = customers();
@@ -639,6 +632,18 @@ class CustomerHandlerTest {
     assertEquals("Validation failed", responseBody.get("title").asText());
     assertEquals(Map.of("status", "must be ACTIVE or INACTIVE"), errorsOf(responseBody));
     assertEquals(before, customers());
+  }
+
+  private static Stream<String> invalidTargetStatusBodies() {
+    return Stream.of(
+        "{}",
+        "{\"state\":\"INACTIVE\"}",
+        "{\"status\":null}",
+        "{\"status\":\"\"}",
+        "{\"status\":\"DELETED\"}",
+        "{\"status\":\"active\"}",
+        "{\"status\":\"inactive\"}",
+        "{\"status\":\" INACTIVE \"}");
   }
 
   @ParameterizedTest(name = "[{index}]")
