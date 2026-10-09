@@ -65,6 +65,12 @@ history:
     run: run-0008
     commit: 5aa628b
     at: 2026-10-09T16:24:08Z
+  - phase: implementation
+    task: T5
+    result: done
+    run: run-0009
+    commit: 9caa593
+    at: 2026-10-09T16:27:33Z
 tasks:
   - id: T1
     title: be - repository.findAllByStatus
@@ -149,10 +155,10 @@ tasks:
       - TC-134
     depends_on:
       - T4
-    status: running
-    base: 852d193b579bba9e789fdd60a3c0a1d85a71f92f
+    status: done
     attempts: 1
     test_result: pass
+    commit: 9caa59316c399f3efec3015a817139c0a9353eb9
 feedback: []
 attempts: {}
 last_failure: {}
