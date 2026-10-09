@@ -4,8 +4,8 @@ requirement: requirements/REQ-004-status-button-hardening.md
 branch: aiws/REQ-004-knowledge
 base_branch: demo
 base_commit: 58fefb323e7c46a2407f24b57ddfa338de348e4d
-phase: knowledge_update
-status: running
+phase: done
+status: done
 history:
   - phase: new
     result: created
@@ -69,6 +69,11 @@ history:
     head: c103481
     merge: merge commit
     at: 2026-10-09T15:04:25Z
+  - phase: knowledge_update
+    agent: discovery
+    result: ok
+    run: run-0009
+    at: 2026-10-09T15:07:29Z
 tasks:
   - id: T1
     title: be - chuyển TC-92, TC-97 sang @MethodSource
@@ -120,7 +125,7 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 8
+run_seq: 9
 last_review:
   run: run-0008
   head: 376440dbbb0abd3c558f2bbac113efaf31d7667e
