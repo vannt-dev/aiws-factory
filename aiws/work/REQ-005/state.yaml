@@ -4,8 +4,9 @@ requirement: requirements/REQ-005-filter-by-status.md
 branch: aiws/REQ-005
 base_branch: demo
 base_commit: 20fdffd099fc5ab11376d722771808f86ec73a95
-phase: review
-status: running
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-005 pr` (or `aiws reject REQ-005 pr -m "..."`)
 history:
   - phase: new
     result: created
@@ -74,6 +75,11 @@ history:
   - phase: implementation
     result: all_tasks_done
     at: 2026-10-09T16:27:33Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0010
+    at: 2026-10-09T16:33:23Z
 tasks:
   - id: T1
     title: be - repository.findAllByStatus
@@ -166,5 +172,9 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 9
+run_seq: 10
 budget_usd: 55
+last_review:
+  run: run-0010
+  head: 8fe9a5cb9e769b9468bbb458380bf95dc05d4a01
+  approval: design-01.yaml
