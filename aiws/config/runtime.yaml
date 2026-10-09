@@ -22,6 +22,7 @@ claude:
   # `aiws run`. Ví dụ: agent discovery chạy model rẻ hơn khi cập nhật knowledge, nhưng `aiws discover` vẫn giữ nguyên:
   phase_models:
     planning: sonnet
+    review: claude-fable-5-1
     knowledge_update: sonnet
   extra_args: []
 
