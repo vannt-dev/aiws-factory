@@ -91,9 +91,12 @@ tasks:
       - TC-112
       - TC-113
     depends_on: []
-    status: pending
+    status: running
+    base: 13e5d88c94765c25e31d53a1174cdb5fdfcda961
+    attempts: 1
+    test_result: pass
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 6
+run_seq: 7

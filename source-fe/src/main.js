@@ -2,11 +2,13 @@ import { ApiError, createCustomer, getCustomer, listCustomers, updateCustomer, u
 import { renderCustomerEditForm } from './components/customerEditForm.js';
 import { renderCustomerTable } from './components/customerTable.js';
 import { describeStatusError } from './utils/describeStatusError.js';
+import { createDoubleClickGuard } from './utils/createDoubleClickGuard.js';
 
 const listEl = document.getElementById('customers');
 const editEl = document.getElementById('edit-customer');
 const messageEl = document.getElementById('message');
 const form = document.getElementById('create-form');
+const acceptStatusClick = createDoubleClickGuard();
 
 async function refresh() {
   try {
@@ -75,6 +77,7 @@ editEl.addEventListener('click', (event) => {
 listEl.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-status-id]');
   if (!button) return;
+  if (!acceptStatusClick(button.dataset.statusId, event.timeStamp)) return;
   messageEl.textContent = '';
   try {
     await updateCustomerStatus(button.dataset.statusId, button.dataset.targetStatus);
