@@ -41,6 +41,12 @@ history:
     result: ok
     run: run-0004
     at: 2026-10-09T16:14:55Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0005
+    commit: d33affd
+    at: 2026-10-09T16:18:10Z
 tasks:
   - id: T1
     title: be - repository.findAllByStatus
@@ -53,10 +59,10 @@ tasks:
       - TC-115
       - TC-116
     depends_on: []
-    status: running
-    base: 3e827b6b3acfc9f9645cfe65fb1d856dd6b7b6a7
+    status: done
     attempts: 1
     test_result: pass
+    commit: d33affd2058f046273219d0ca0e1841eef163c4a
   - id: T2
     title: be - CustomerService.list(statusValues) với kiểm tra đúng một giá trị hợp lệ
     type: feat
