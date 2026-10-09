@@ -53,6 +53,12 @@ history:
     run: run-0006
     commit: d8e24b0
     at: 2026-10-09T16:20:38Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0007
+    commit: 313e3fa
+    at: 2026-10-09T16:23:00Z
 tasks:
   - id: T1
     title: be - repository.findAllByStatus
@@ -99,10 +105,10 @@ tasks:
       - TC-124
     depends_on:
       - T2
-    status: running
-    base: 6d70279060085d3c1ce20fb642d0fc8d97d10092
+    status: done
     attempts: 1
     test_result: pass
+    commit: 313e3fa77648614f549ecb202de5f07401c249ec
   - id: T4
     title: fe - listCustomers nhận status trong options
     type: feat
