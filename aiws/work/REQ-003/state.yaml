@@ -4,8 +4,8 @@ requirement: requirements/REQ-003-customer-status.md
 branch: aiws/REQ-003-knowledge
 base_branch: demo
 base_commit: 7a881facf3a7612174a8390700c161fc4e7f2cc3
-phase: knowledge_update
-status: running
+phase: done
+status: done
 history:
   - phase: new
     result: created
@@ -87,6 +87,11 @@ history:
     head: 490ec42
     merge: merge commit
     at: 2026-10-09T13:46:49Z
+  - phase: knowledge_update
+    agent: discovery
+    result: ok
+    run: run-0012
+    at: 2026-10-09T13:53:36Z
 tasks:
   - id: T1
     title: be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
@@ -199,7 +204,7 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 11
+run_seq: 12
 last_review:
   run: run-0011
   head: 5e1278a508abf8d4d886725bdcea39d24073635e
