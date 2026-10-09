@@ -1,0 +1,66 @@
+# REQ-004 — Plan. Mỗi task nhỏ: <= 10 file, có test riêng. Mọi TC trong 03-test-spec.md thuộc đúng 1 task.
+# allowed_files: đường dẫn chính xác (hoặc glob hẹp) trong các thư mục source_paths, gồm cả file test,
+#   đặt đúng cấu trúc hiện có của dự án (không tạo cấu trúc mới, không đổi tên/di chuyển file).
+# type: loại commit theo Conventional Commits (feat | fix | refactor | perf | test | docs | build | chore...).
+tasks:
+  - id: T1
+    type: test
+    title: be - chuyển TC-92, TC-97 sang @MethodSource
+    description: >-
+      Trong CustomerHandlerTest.java, đổi @ValueSource(longs = {1, 2}) ở TC-92 và
+      @ValueSource(strings = {...}) ở TC-97 sang @MethodSource với provider private static
+      đặt ngay sau mỗi test (Stream<Long> cho TC-92, Stream<String> cho TC-97; giữ đúng 2 dòng
+      dữ liệu của TC-92 và đúng 8 dòng theo thứ tự cũ của TC-97); xoá import
+      org.junit.jupiter.params.provider.ValueSource vì không còn dùng. Giữ nguyên từng ký tự
+      @DisplayName, tên method, chữ ký và thân của hai test. Không sửa gì khác trong file,
+      không sửa file nào dưới source-be/src/main/.
+    allowed_files:
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests: [TC-92, TC-97]
+    depends_on: []
+  - id: T2
+    type: fix
+    title: fe - Object.hasOwn khi tra STATUS_ACTIONS
+    description: >-
+      Trong customerTable.js dòng 16, đổi cách tra STATUS_ACTIONS[c.status] sang
+      Object.hasOwn(STATUS_ACTIONS, c.status) ? STATUS_ACTIONS[c.status] : null, để trạng thái
+      trùng tên thuộc tính có sẵn của Object (constructor, toString, valueOf, hasOwnProperty,
+      __proto__) không còn hiện nhầm nút đổi trạng thái. Không đổi hằng STATUS_ACTIONS,
+      STATUS_LABELS, hay dòng dựng nút. Sửa TC-105 trong customerTable.test.js đúng hai điểm:
+      dòng dữ liệu "thiếu field status" dùng object thật sự không có key đó (thay cho
+      status: undefined), và thêm assertion html.match(/<td>/g).length === 6; giữ nguyên mã,
+      tên hiển thị, vị trí trong file và các assertion đang có. Thêm TC-114 (mã mới, đặt liền
+      sau TC-105 trong cùng file) kiểm năm trạng thái trùng tên thuộc tính có sẵn: chỉ còn nút
+      "Sửa", không có data-status-id/data-target-status/"Kích hoạt lại"/nút nhãn undefined,
+      đúng 1 thẻ <button, đúng 6 <td>, không assertion nào nhìn nội dung ô "Trạng thái". Không
+      sửa test nào khác trong file.
+    allowed_files:
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/customerTable.test.js
+    tests: [TC-105, TC-114]
+    depends_on: []
+  - id: T3
+    type: fix
+    title: fe - chống bấm đúp nút đổi trạng thái
+    description: >-
+      Thêm source-fe/src/utils/createDoubleClickGuard.js, export đúng một hàm
+      createDoubleClickGuard() không import gì; hàm tạo state riêng (Map) và trả về
+      (key, at) => boolean: true là "xử lý và ghi nhận", false là "bỏ qua". Quy tắc: hằng
+      DOUBLE_CLICK_WINDOW_MS = 500; theo từng key độc lập; chưa có mốc của key thì xử lý; có
+      mốc last và at - last < 500 thì bỏ qua (không dời mốc); at - last >= 500 thì xử lý và dời
+      mốc = at; so last với undefined (không dùng kiểm tra truthy, vì 0 là mốc hợp lệ); chỉ ghi
+      mốc khi trả true. Thêm source-fe/test/createDoubleClickGuard.test.js theo bảng hành vi của
+      02-design.md (D2) và 03-test-spec.md (TC-108..TC-113): mỗi dòng dữ liệu một guard mới, so
+      bằng assert.equal(..., true/false). Trong main.js: import createDoubleClickGuard, tạo
+      const acceptStatusClick = createDoubleClickGuard() một lần ở mức module (cạnh listEl,
+      messageEl, không tạo trong listener hay trong refresh()); trong listener click của
+      #customers, thêm đúng một dòng
+      if (!acceptStatusClick(button.dataset.statusId, event.timeStamp)) return; đặt TRƯỚC
+      messageEl.textContent = ''. Không gọi guard trong catch hay finally. Không đổi refresh(),
+      listener nút "Sửa", #edit-customer, #create-form, hay cách báo lỗi.
+    allowed_files:
+      - source-fe/src/utils/createDoubleClickGuard.js
+      - source-fe/test/createDoubleClickGuard.test.js
+      - source-fe/src/main.js
+    tests: [TC-108, TC-109, TC-110, TC-111, TC-112, TC-113]
+    depends_on: []

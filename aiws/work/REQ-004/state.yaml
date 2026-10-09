@@ -1,0 +1,121 @@
+req_id: REQ-004
+title: "Nút đổi trạng thái: chống bấm đúp và trạng thái lạ"
+requirement: requirements/REQ-004-status-button-hardening.md
+branch: aiws/REQ-004
+base_branch: demo
+base_commit: 58fefb323e7c46a2407f24b57ddfa338de348e4d
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-004 pr` (or `aiws reject REQ-004 pr -m "..."`)
+history:
+  - phase: new
+    result: created
+    by: Van Nguyen
+    at: 2026-10-09T14:01:41Z
+  - phase: analysis
+    agent: analyst
+    result: ok
+    run: run-0001
+    at: 2026-10-09T14:16:23Z
+  - phase: design
+    agent: architect
+    result: ok
+    run: run-0002
+    at: 2026-10-09T14:30:19Z
+  - phase: design
+    agent: test-designer
+    result: ok
+    run: run-0003
+    at: 2026-10-09T14:43:02Z
+  - phase: design_approval
+    result: approved
+    by: Van Nguyen
+    record: design-01.yaml
+    at: 2026-10-09T14:44:06Z
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0004
+    at: 2026-10-09T14:46:54Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0005
+    commit: c8e76a1
+    at: 2026-10-09T14:48:33Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0006
+    commit: 75cedc3
+    at: 2026-10-09T14:49:24Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0007
+    commit: 5ca2000
+    at: 2026-10-09T14:50:34Z
+  - phase: implementation
+    result: all_tasks_done
+    at: 2026-10-09T14:50:34Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0008
+    at: 2026-10-09T15:00:45Z
+tasks:
+  - id: T1
+    title: be - chuyển TC-92, TC-97 sang @MethodSource
+    type: test
+    allowed_files:
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests:
+      - TC-92
+      - TC-97
+    depends_on: []
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: c8e76a11d62d64858b03ae542fab621b443867a4
+  - id: T2
+    title: fe - Object.hasOwn khi tra STATUS_ACTIONS
+    type: fix
+    allowed_files:
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/customerTable.test.js
+    tests:
+      - TC-105
+      - TC-114
+    depends_on: []
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 75cedc3ab107301622614b15bd8b1c85370049e0
+  - id: T3
+    title: fe - chống bấm đúp nút đổi trạng thái
+    type: fix
+    allowed_files:
+      - source-fe/src/utils/createDoubleClickGuard.js
+      - source-fe/test/createDoubleClickGuard.test.js
+      - source-fe/src/main.js
+    tests:
+      - TC-108
+      - TC-109
+      - TC-110
+      - TC-111
+      - TC-112
+      - TC-113
+    depends_on: []
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 5ca2000ebf1f110eb546d78a09487b9b2b03395f
+feedback: []
+attempts: {}
+last_failure: {}
+step_index: 0
+run_seq: 8
+last_review:
+  run: run-0008
+  head: 376440dbbb0abd3c558f2bbac113efaf31d7667e
+  approval: design-01.yaml

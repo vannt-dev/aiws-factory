@@ -212,7 +212,28 @@ test('TC-104: renderCustomerTable escapes the id inside data-status-id', () => {
 });
 
 test('TC-105: renderCustomerTable does not show a status action button for status outside ACTIVE and INACTIVE', () => {
-  const statuses = ['DELETED', 'active', '', null, undefined];
+  const customers = [
+    { id: 1, name: 'A', email: 'a@example.com', phone: null, status: 'DELETED' },
+    { id: 1, name: 'A', email: 'a@example.com', phone: null, status: 'active' },
+    { id: 1, name: 'A', email: 'a@example.com', phone: null, status: '' },
+    { id: 1, name: 'A', email: 'a@example.com', phone: null, status: null },
+    { id: 1, name: 'A', email: 'a@example.com', phone: null },
+  ];
+
+  for (const customer of customers) {
+    const html = renderCustomerTable([customer]);
+
+    assert.match(html, /<td><button type="button" data-edit-id="1">Sửa<\/button><\/td><\/tr>/);
+    assert.doesNotMatch(html, /data-status-id/);
+    assert.doesNotMatch(html, /data-target-status/);
+    assert.doesNotMatch(html, /Kích hoạt lại/);
+    assert.equal(html.match(/<button /g).length, 1);
+    assert.equal(html.match(/<td>/g).length, 6);
+  }
+});
+
+test('TC-114: renderCustomerTable does not show a status action button for a status named like a built-in object property', () => {
+  const statuses = ['constructor', 'toString', 'valueOf', 'hasOwnProperty', '__proto__'];
 
   for (const status of statuses) {
     const customer = { id: 1, name: 'A', email: 'a@example.com', phone: null, status };
@@ -223,7 +244,9 @@ test('TC-105: renderCustomerTable does not show a status action button for statu
     assert.doesNotMatch(html, /data-status-id/);
     assert.doesNotMatch(html, /data-target-status/);
     assert.doesNotMatch(html, /Kích hoạt lại/);
+    assert.doesNotMatch(html, />undefined<\/button>/);
     assert.equal(html.match(/<button /g).length, 1);
+    assert.equal(html.match(/<td>/g).length, 6);
   }
 });
 

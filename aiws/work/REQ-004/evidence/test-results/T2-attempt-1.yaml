@@ -1,0 +1,124 @@
+req: REQ-004
+task: T2
+attempt: 1
+run: run-0006
+at: 2026-10-09T14:49:24Z
+tests:
+  - TC-105
+  - TC-114
+result: pass
+suites:
+  - side: fe
+    command: npm test --prefix source-fe
+    exit_code: 0
+    duration_ms: 742
+    output_tail: |-
+      ... per customer with a translated status
+        ---
+        duration_ms: 4.5026
+        ...
+      # Subtest: renderCustomerTable escapes HTML in customer data
+      ok 19 - renderCustomerTable escapes HTML in customer data
+        ---
+        duration_ms: 0.7141
+        ...
+      # Subtest: renderCustomerTable shows an empty state
+      ok 20 - renderCustomerTable shows an empty state
+        ---
+        duration_ms: 0.3557
+        ...
+      # Subtest: TC-36: renderCustomerTable has a phone column between email and status
+      ok 21 - TC-36: renderCustomerTable has a phone column between email and status
+        ---
+        duration_ms: 0.8869
+        ...
+      # Subtest: TC-37: renderCustomerTable shows a 10-character phone as 4-3-3
+      ok 22 - TC-37: renderCustomerTable shows a 10-character phone as 4-3-3
+        ---
+        duration_ms: 0.4596
+        ...
+      # Subtest: TC-38: renderCustomerTable shows an 11-character phone as 3-4-4
+      ok 23 - TC-38: renderCustomerTable shows an 11-character phone as 3-4-4
+        ---
+        duration_ms: 0.5171
+        ...
+      # Subtest: TC-39: renderCustomerTable shows an em dash when there is no phone
+      ok 24 - TC-39: renderCustomerTable shows an em dash when there is no phone
+        ---
+        duration_ms: 0.5294
+        ...
+      # Subtest: TC-40: renderCustomerTable shows a phone of any other length verbatim and HTML-escaped
+      ok 25 - TC-40: renderCustomerTable shows a phone of any other length verbatim and HTML-escaped
+        ---
+        duration_ms: 0.2866
+        ...
+      # Subtest: TC-41: renderCustomerTable formats the raw phone before escaping it
+      ok 26 - TC-41: renderCustomerTable formats the raw phone before escaping it
+        ---
+        duration_ms: 0.5942
+        ...
+      # Subtest: TC-74: renderCustomerTable adds an action column with one edit button carrying the id per row
+      ok 27 - TC-74: renderCustomerTable adds an action column with one edit button carrying the id per row
+        ---
+        duration_ms: 0.7775
+        ...
+      # Subtest: TC-103: renderCustomerTable adds a status action button carrying id and target status per row
+      ok 28 - TC-103: renderCustomerTable adds a status action button carrying id and target status per row
+        ---
+        duration_ms: 2.0728
+        ...
+      # Subtest: TC-104: renderCustomerTable escapes the id inside data-status-id
+      ok 29 - TC-104: renderCustomerTable escapes the id inside data-status-id
+        ---
+        duration_ms: 0.4701
+        ...
+      # Subtest: TC-105: renderCustomerTable does not show a status action button for status outside ACTIVE and INACTIVE
+      ok 30 - TC-105: renderCustomerTable does not show a status action button for status outside ACTIVE and INACTIVE
+        ---
+        duration_ms: 0.3432
+        ...
+      # Subtest: TC-114: renderCustomerTable does not show a status action button for a status named like a built-in object property
+      ok 31 - TC-114: renderCustomerTable does not show a status action button for a status named like a built-in object property
+        ---
+        duration_ms: 0.2994
+        ...
+      # Subtest: TC-75: renderCustomerTable escapes the id inside data-edit-id
+      ok 32 - TC-75: renderCustomerTable escapes the id inside data-edit-id
+        ---
+        duration_ms: 0.2086
+        ...
+      # Subtest: TC-106: describeStatusError returns the duplicate-phone message when the error has fieldErrors.phone
+      ok 33 - TC-106: describeStatusError returns the duplicate-phone message when the error has fieldErrors.phone
+        ---
+        duration_ms: 2.9747
+        ...
+      # Subtest: TC-107: describeStatusError returns the generic message for every other error
+      ok 34 - TC-107: describeStatusError returns the generic message for every other error
+        ---
+        duration_ms: 0.4739
+        ...
+      # Subtest: TC-33: formatPhone formats a 10-character string as 4-3-3
+      ok 35 - TC-33: formatPhone formats a 10-character string as 4-3-3
+        ---
+        duration_ms: 2.8139
+        ...
+      # Subtest: TC-34: formatPhone formats an 11-character string as 3-4-4
+      ok 36 - TC-34: formatPhone formats an 11-character string as 3-4-4
+        ---
+        duration_ms: 0.2935
+        ...
+      # Subtest: TC-35: formatPhone returns a string of any other length unchanged
+      ok 37 - TC-35: formatPhone returns a string of any other length unchanged
+        ---
+        duration_ms: 0.4581
+        ...
+      1..37
+      # tests 37
+      # suites 0
+      # pass 37
+      # fail 0
+      # cancelled 0
+      # skipped 0
+      # todo 0
+      # duration_ms 211.8048
+problems: []
