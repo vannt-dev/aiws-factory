@@ -4,8 +4,9 @@ requirement: requirements/REQ-004-status-button-hardening.md
 branch: aiws/REQ-004
 base_branch: demo
 base_commit: 58fefb323e7c46a2407f24b57ddfa338de348e4d
-phase: review
-status: running
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-004 pr` (or `aiws reject REQ-004 pr -m "..."`)
 history:
   - phase: new
     result: created
@@ -57,6 +58,11 @@ history:
   - phase: implementation
     result: all_tasks_done
     at: 2026-10-09T14:50:34Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0008
+    at: 2026-10-09T15:00:45Z
 tasks:
   - id: T1
     title: be - chuyển TC-92, TC-97 sang @MethodSource
@@ -108,4 +114,8 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 7
+run_seq: 8
+last_review:
+  run: run-0008
+  head: 376440dbbb0abd3c558f2bbac113efaf31d7667e
+  approval: design-01.yaml
