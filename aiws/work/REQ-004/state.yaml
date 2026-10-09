@@ -4,7 +4,7 @@ requirement: requirements/REQ-004-status-button-hardening.md
 branch: aiws/REQ-004
 base_branch: demo
 base_commit: 58fefb323e7c46a2407f24b57ddfa338de348e4d
-phase: implementation
+phase: review
 status: running
 history:
   - phase: new
@@ -53,6 +53,9 @@ history:
     result: done
     run: run-0007
     commit: 5ca2000
+    at: 2026-10-09T14:50:34Z
+  - phase: implementation
+    result: all_tasks_done
     at: 2026-10-09T14:50:34Z
 tasks:
   - id: T1
