@@ -59,6 +59,12 @@ history:
     run: run-0007
     commit: 313e3fa
     at: 2026-10-09T16:23:00Z
+  - phase: implementation
+    task: T4
+    result: done
+    run: run-0008
+    commit: 5aa628b
+    at: 2026-10-09T16:24:08Z
 tasks:
   - id: T1
     title: be - repository.findAllByStatus
@@ -121,10 +127,10 @@ tasks:
       - TC-127
     depends_on:
       - T3
-    status: running
-    base: 6e63b84442a2c19901f0926f21fe96e5a628942e
+    status: done
     attempts: 1
     test_result: pass
+    commit: 5aa628b119aaab8a5d3a3a5659022f5316b612fa
   - id: T5
     title: fe - bộ lọc trạng thái trên trang danh sách khách hàng
     type: feat
