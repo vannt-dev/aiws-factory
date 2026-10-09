@@ -21,6 +21,7 @@ claude:
   # Chọn model riêng cho một phase (ưu tiên hơn agent_models), áp dụng cho mọi agent của phase đó khi chạy
   # `aiws run`. Ví dụ: agent discovery chạy model rẻ hơn khi cập nhật knowledge, nhưng `aiws discover` vẫn giữ nguyên:
   phase_models:
+    planning: sonnet
     knowledge_update: sonnet
   extra_args: []
 
