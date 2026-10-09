@@ -26,6 +26,17 @@ public class CustomerService {
     return repository.findAll();
   }
 
+  /** Lists customers; exactly one status value keeps only customers in that status, no value lists them all. */
+  public List<Customer> list(List<String> statusValues) {
+    if (statusValues.isEmpty()) {
+      return list();
+    }
+    if (statusValues.size() > 1) {
+      throw invalidStatus();
+    }
+    return repository.findAllByStatus(parseStatus(statusValues.get(0)));
+  }
+
   public Customer get(long id) {
     return repository.findById(id).orElseThrow(() -> new NotFoundException("Customer " + id + " not found"));
   }
@@ -70,7 +81,11 @@ public class CustomerService {
     if (CustomerStatus.INACTIVE.name().equals(status)) {
       return CustomerStatus.INACTIVE;
     }
-    throw new ValidationException(Map.of("status", "must be ACTIVE or INACTIVE"));
+    throw invalidStatus();
+  }
+
+  private static ValidationException invalidStatus() {
+    return new ValidationException(Map.of("status", "must be ACTIVE or INACTIVE"));
   }
 
   /** Validates and normalizes the input; the predicates report whether another customer already uses the email or phone. */

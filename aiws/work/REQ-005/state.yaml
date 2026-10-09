@@ -75,7 +75,10 @@ tasks:
       - TC-119
     depends_on:
       - T1
-    status: pending
+    status: running
+    base: 7d9ad97df3388000237665755a093cfc15e8b56a
+    attempts: 1
+    test_result: pass
   - id: T3
     title: be - GET /api/customers lọc theo tham số query status
     type: feat
@@ -127,5 +130,5 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 5
+run_seq: 6
 budget_usd: 55
