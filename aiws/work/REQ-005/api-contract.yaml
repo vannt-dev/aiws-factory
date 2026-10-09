@@ -1,0 +1,208 @@
+# OpenAPI 3 cho MỌI endpoint mới/đổi của REQ-005. Cầu nối FE-BE: BE phải expose đúng, FE phải gọi đúng.
+# REQ-005 ĐỔI đúng một endpoint: GET /api/customers nhận thêm tham số query tuỳ chọn `status` và có thêm response 400.
+# Lời gọi không kèm `status` trả đúng như trước REQ-005. Schema Customer và format lỗi (RFC 9457) không đổi.
+# POST /api/customers (cùng path) và các endpoint khác KHÔNG đổi và không được chép lại ở đây: xem
+# aiws/work/REQ-001/api-contract.yaml, aiws/work/REQ-002/api-contract.yaml, aiws/work/REQ-003/api-contract.yaml.
+openapi: 3.0.3
+info:
+  title: REQ-005 API contract
+  version: 1.0.0
+  description: >-
+    CRM customers API (source-be, CustomerHandler). REQ-005 thêm việc lọc danh sách khách hàng theo trạng thái.
+    Đây là tham số query đầu tiên của API và là lần đầu `errors` của Problem mô tả một tham số query thay vì một
+    field của body (xem 02-design.md D1..D5). source-legacy không có lọc nên không có quy tắc legacy nào phải giữ.
+paths:
+  /api/customers:
+    get:
+      operationId: listCustomers
+      summary: Danh sách khách hàng, lọc được theo trạng thái (ĐỔI, REQ-005)
+      description: >-
+        Trả các khách hàng khớp giá trị lọc, tăng dần theo `id`. Không phân trang, không sắp xếp khác.
+        Quy tắc của tham số `status`:
+        (1) không có tham số `status` trong query string thì không lọc, trả toàn bộ khách hàng như trước REQ-005;
+        (2) tham số xuất hiện ĐÚNG MỘT LẦN và giá trị (sau khi giải mã percent-encoding) đúng bằng "ACTIVE" hoặc
+        "INACTIVE" thì chỉ trả khách hàng có `status` đó; không ai khớp thì trả 200 kèm mảng rỗng, không phải 404;
+        (3) mọi trường hợp khác có tham số `status` trả 400 với errors.status: giá trị lạ ("DELETED", "ALL"),
+        sai hoa thường ("active"), giá trị rỗng (`?status=` và `?status` không có dấu "="), có khoảng trắng
+        (`%20ACTIVE`, `INACTIVE%20`, `+ACTIVE`), hai giá trị trong một tham số ("ACTIVE,INACTIVE"), và tham số lặp
+        lại (`status=ACTIVE&status=INACTIVE`, kể cả lặp cùng một giá trị hợp lệ `status=ACTIVE&status=ACTIVE`).
+        So khớp chính xác: không trim, không đổi hoa thường. Giá trị lọc được kiểm tra trước khi đọc kho, nên 400
+        không phụ thuộc dữ liệu đang có.
+        Tham số có tên khác (`Status`, `state`, `foo`...) bị bỏ qua như trước REQ-005; tên tham số phân biệt hoa
+        thường.
+      parameters:
+        - $ref: "#/components/parameters/StatusFilter"
+      responses:
+        "200":
+          description: >-
+            Mảng các khách hàng khớp giá trị lọc, tăng dần theo `id`; mỗi phần tử đủ năm field (`phone` có mặt kể
+            cả khi `null`). Mảng rỗng khi không khách hàng nào khớp. Các ví dụ dưới đây dùng cùng một kho gồm bốn
+            khách hàng 1 (ACTIVE), 2 (INACTIVE), 3 (ACTIVE), 4 (INACTIVE).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+              examples:
+                all:
+                  summary: GET /api/customers (không kèm status), đúng như trước REQ-005
+                  value:
+                    - id: 1
+                      name: "Nguyen Van An"
+                      email: "an.nguyen@example.com"
+                      phone: "0912345678"
+                      status: "ACTIVE"
+                    - id: 2
+                      name: "Tran Thi Binh"
+                      email: "binh.tran@example.com"
+                      phone: null
+                      status: "INACTIVE"
+                    - id: 3
+                      name: "Le Van Cuong"
+                      email: "cuong.le@example.com"
+                      phone: "02438251234"
+                      status: "ACTIVE"
+                    - id: 4
+                      name: "Pham Thi Dung"
+                      email: "dung.pham@example.com"
+                      phone: "0987654321"
+                      status: "INACTIVE"
+                active:
+                  summary: "GET /api/customers?status=ACTIVE"
+                  value:
+                    - id: 1
+                      name: "Nguyen Van An"
+                      email: "an.nguyen@example.com"
+                      phone: "0912345678"
+                      status: "ACTIVE"
+                    - id: 3
+                      name: "Le Van Cuong"
+                      email: "cuong.le@example.com"
+                      phone: "02438251234"
+                      status: "ACTIVE"
+                inactive:
+                  summary: "GET /api/customers?status=INACTIVE"
+                  value:
+                    - id: 2
+                      name: "Tran Thi Binh"
+                      email: "binh.tran@example.com"
+                      phone: null
+                      status: "INACTIVE"
+                    - id: 4
+                      name: "Pham Thi Dung"
+                      email: "dung.pham@example.com"
+                      phone: "0987654321"
+                      status: "INACTIVE"
+                noMatch:
+                  summary: Giá trị lọc hợp lệ nhưng không khách hàng nào khớp (vd. kho chỉ có khách hàng ACTIVE, lọc INACTIVE)
+                  value: []
+        "400":
+          description: >-
+            Giá trị lọc không hợp lệ (MỚI, REQ-005): tham số `status` có mặt nhưng không phải đúng một lần với giá
+            trị "ACTIVE" hoặc "INACTIVE". `title` là "Validation failed" và `errors` có đúng một key `status`. Body
+            là một Problem, không bao giờ là mảng khách hàng. Thông điệp không lặp lại giá trị client gửi.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                invalidStatus:
+                  summary: "Vd. ?status=DELETED, ?status=active, ?status=, ?status=ACTIVE&status=INACTIVE"
+                  value:
+                    type: "about:blank"
+                    title: "Validation failed"
+                    status: 400
+                    detail: "The request has invalid fields"
+                    errors:
+                      status: "must be ACTIVE or INACTIVE"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  parameters:
+    StatusFilter:
+      name: status
+      in: query
+      required: false
+      description: >-
+        Giá trị lọc (MỚI, REQ-005). Bỏ tham số này để lấy tất cả; không có giá trị "ALL". Chỉ được xuất hiện một
+        lần. So khớp chính xác với "ACTIVE" hoặc "INACTIVE" sau khi giải mã percent-encoding; giá trị rỗng không
+        có nghĩa là "không lọc" mà là giá trị không hợp lệ (400).
+      schema:
+        $ref: "#/components/schemas/CustomerStatus"
+      examples:
+        active:
+          summary: Chỉ khách hàng đang hoạt động
+          value: "ACTIVE"
+        inactive:
+          summary: Chỉ khách hàng ngừng hoạt động
+          value: "INACTIVE"
+  responses:
+    InternalError:
+      description: Lỗi không mong đợi (RuntimeException khác).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: "about:blank"
+            title: "Internal Server Error"
+            status: 500
+            detail: "Unexpected error"
+  schemas:
+    CustomerStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    Customer:
+      type: object
+      description: >-
+        Khách hàng (record source-be domain/Customer.java). KHÔNG ĐỔI so với REQ-001..REQ-003; mọi field luôn có
+        mặt trong JSON.
+      required: [id, name, email, phone, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+          description: >-
+            Số điện thoại ở dạng đã chuẩn hoá, chưa định dạng hiển thị, hoặc `null` khi khách hàng không có số.
+            Không đặt `pattern` vì dữ liệu migrate từ legacy có thể theo quy tắc cũ (vd. "01234567890").
+          example: "0912345678"
+        status:
+          $ref: "#/components/schemas/CustomerStatus"
+    Problem:
+      type: object
+      description: >-
+        RFC 9457 problem details (source-be api/Problem.java), Content-Type application/problem+json.
+        Hình dạng KHÔNG ĐỔI. Từ REQ-005 key `status` của `errors` còn mô tả tham số query `status` của
+        GET /api/customers (trước đó chỉ mô tả field `status` trong body của PUT /api/customers/{id}/status).
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          description: Luôn "about:blank".
+          example: "about:blank"
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+          description: >-
+            Với "Validation failed" luôn là câu cố định "The request has invalid fields", kể cả khi thứ không hợp
+            lệ là một tham số query.
+        errors:
+          type: object
+          description: >-
+            Chỉ có khi `title` là "Validation failed". Map tên field hoặc tên tham số query -> message. Với
+            endpoint này `errors` có đúng một key `status` với message "must be ACTIVE or INACTIVE".
+          additionalProperties:
+            type: string
