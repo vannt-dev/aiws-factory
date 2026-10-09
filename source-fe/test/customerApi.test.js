@@ -231,3 +231,81 @@ test('TC-102: updateCustomerStatus throws ApiError with the status and field err
     );
   }
 });
+
+test('TC-125: listCustomers sends one GET whose URL carries the status filter', async () => {
+  const rows = [
+    { options: {}, url: '/api/customers' },
+    { options: { status: '' }, url: '/api/customers' },
+    { options: { status: undefined }, url: '/api/customers' },
+    { options: { status: null }, url: '/api/customers' },
+    { options: { status: 'ACTIVE' }, url: '/api/customers?status=ACTIVE' },
+    { options: { status: 'INACTIVE' }, url: '/api/customers?status=INACTIVE' },
+    { options: { status: 'A&B=C D' }, url: '/api/customers?status=A%26B%3DC%20D' },
+  ];
+
+  for (const { options, url } of rows) {
+    const calls = [];
+    await listCustomers({ ...options, fetchImpl: fakeFetch(200, [], calls) });
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, url);
+    assert.deepEqual(calls[0].init, { headers: { Accept: 'application/json' } });
+  }
+});
+
+test('TC-126: listCustomers returns the array sent by the API without filtering or sorting', async () => {
+  const AN = { id: 1, name: 'Nguyen Van An', email: 'an@example.com', phone: null, status: 'ACTIVE' };
+  const BINH = { id: 2, name: 'Tran Thi Binh', email: 'binh@example.com', phone: '0912345678', status: 'INACTIVE' };
+  const CUONG = { id: 3, name: 'Le Van Cuong', email: 'cuong@example.com', phone: '0987654321', status: 'ACTIVE' };
+  const DUNG = { id: 4, name: 'Pham Thi Dung', email: 'dung@example.com', phone: null, status: 'INACTIVE' };
+  const rows = [
+    { status: 'ACTIVE', body: [AN, BINH, CUONG, DUNG] },
+    { status: 'INACTIVE', body: [CUONG, BINH, AN] },
+    { status: 'INACTIVE', body: [] },
+    { status: '', body: [] },
+  ];
+
+  for (const { status, body } of rows) {
+    const result = await listCustomers({ status, fetchImpl: fakeFetch(200, body) });
+
+    assert.deepEqual(result, body);
+  }
+});
+
+test('TC-127: listCustomers throws ApiError with the status and field errors of the API', async () => {
+  const notFound500 = { type: 'about:blank', title: 'Internal Server Error', status: 500, detail: 'Unexpected error' };
+  const rows = [
+    {
+      options: { status: 'DELETED' },
+      status: 400,
+      problem: {
+        type: 'about:blank',
+        title: 'Validation failed',
+        status: 400,
+        detail: 'The request has invalid fields',
+        errors: { status: 'must be ACTIVE or INACTIVE' },
+      },
+      url: '/api/customers?status=DELETED',
+      fieldErrors: { status: 'must be ACTIVE or INACTIVE' },
+    },
+    { options: { status: 'ACTIVE' }, status: 500, problem: notFound500, url: '/api/customers?status=ACTIVE', fieldErrors: {} },
+    { options: {}, status: 500, problem: notFound500, url: '/api/customers', fieldErrors: {} },
+  ];
+
+  for (const row of rows) {
+    const calls = [];
+
+    await assert.rejects(
+      listCustomers({ ...row.options, fetchImpl: fakeFetch(row.status, row.problem, calls) }),
+      (error) => {
+        assert.ok(error instanceof ApiError);
+        assert.equal(error.status, row.status);
+        assert.deepEqual(error.fieldErrors, row.fieldErrors);
+        return true;
+      }
+    );
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, row.url);
+  }
+});

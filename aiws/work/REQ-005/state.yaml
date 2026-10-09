@@ -121,7 +121,10 @@ tasks:
       - TC-127
     depends_on:
       - T3
-    status: pending
+    status: running
+    base: 6e63b84442a2c19901f0926f21fe96e5a628942e
+    attempts: 1
+    test_result: pass
   - id: T5
     title: fe - bộ lọc trạng thái trên trang danh sách khách hàng
     type: feat
@@ -145,5 +148,5 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 7
+run_seq: 8
 budget_usd: 55
