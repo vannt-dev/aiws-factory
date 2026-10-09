@@ -4,9 +4,8 @@ requirement: requirements/REQ-005-filter-by-status.md
 branch: aiws/REQ-005
 base_branch: demo
 base_commit: 20fdffd099fc5ab11376d722771808f86ec73a95
-phase: design_approval
-status: waiting_human
-reason: 'design ready for review: 02-design.md, 03-test-spec.md, api-contract.yaml. Then run `aiws approve REQ-005 design` or `aiws reject REQ-005 design -m "..."`'
+phase: planning
+status: running
 history:
   - phase: new
     result: created
@@ -31,6 +30,11 @@ history:
     result: budget_set
     by: Van Nguyen
     budget_usd: 55
+    at: 2026-10-09T16:10:49Z
+  - phase: design_approval
+    result: approved
+    by: Van Nguyen
+    record: design-01.yaml
     at: 2026-10-09T16:10:49Z
 tasks: []
 feedback: []

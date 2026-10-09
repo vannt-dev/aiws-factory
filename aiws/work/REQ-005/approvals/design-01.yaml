@@ -1,0 +1,8 @@
+gate: design
+decision: approved
+by: Van Nguyen
+at: 2026-10-09T16:10:49Z
+artifacts:
+  02-design.md: sha256:1d309f9113008939349f27fb98433a8eeca1265b3a5c129e97e993c19a9878fa
+  03-test-spec.md: sha256:5bc1fbf5a3a8fe58cbb85ce2cfd3f179cf2ea007941654d820c8bb24048d9fac
+  api-contract.yaml: sha256:a51640ebf53b63a828d2d08c5395ec501921c52df47d34e051f8caea70ac27b3
