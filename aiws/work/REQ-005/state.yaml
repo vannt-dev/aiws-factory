@@ -4,7 +4,7 @@ requirement: requirements/REQ-005-filter-by-status.md
 branch: aiws/REQ-005
 base_branch: demo
 base_commit: 20fdffd099fc5ab11376d722771808f86ec73a95
-phase: planning
+phase: implementation
 status: running
 history:
   - phase: new
@@ -36,10 +36,87 @@ history:
     by: Van Nguyen
     record: design-01.yaml
     at: 2026-10-09T16:10:49Z
-tasks: []
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0004
+    at: 2026-10-09T16:14:55Z
+tasks:
+  - id: T1
+    title: be - repository.findAllByStatus
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests:
+      - TC-115
+      - TC-116
+    depends_on: []
+    status: pending
+  - id: T2
+    title: be - CustomerService.list(statusValues) với kiểm tra đúng một giá trị hợp lệ
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+    tests:
+      - TC-117
+      - TC-118
+      - TC-119
+    depends_on:
+      - T1
+    status: pending
+  - id: T3
+    title: be - GET /api/customers lọc theo tham số query status
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests:
+      - TC-120
+      - TC-121
+      - TC-122
+      - TC-123
+      - TC-124
+    depends_on:
+      - T2
+    status: pending
+  - id: T4
+    title: fe - listCustomers nhận status trong options
+    type: feat
+    allowed_files:
+      - source-fe/src/api/customerApi.js
+      - source-fe/test/customerApi.test.js
+    tests:
+      - TC-125
+      - TC-126
+      - TC-127
+    depends_on:
+      - T3
+    status: pending
+  - id: T5
+    title: fe - bộ lọc trạng thái trên trang danh sách khách hàng
+    type: feat
+    allowed_files:
+      - source-fe/src/utils/createCustomerListLoader.js
+      - source-fe/test/createCustomerListLoader.test.js
+      - source-fe/src/main.js
+      - source-fe/index.html
+    tests:
+      - TC-128
+      - TC-129
+      - TC-130
+      - TC-131
+      - TC-132
+      - TC-133
+      - TC-134
+    depends_on:
+      - T4
+    status: pending
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 3
+run_seq: 4
 budget_usd: 55

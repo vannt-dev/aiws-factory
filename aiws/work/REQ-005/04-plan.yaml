@@ -1,0 +1,312 @@
+# REQ-005 — Plan. Mỗi task nhỏ: <= 10 file, có test riêng. Mọi TC trong 03-test-spec.md thuộc đúng 1 task.
+# allowed_files: đường dẫn chính xác (hoặc glob hẹp) trong các thư mục source_paths, gồm cả file test,
+#   đặt đúng cấu trúc hiện có của dự án (không tạo cấu trúc mới, không đổi tên/di chuyển file).
+# type: loại commit theo Conventional Commits (feat | fix | refactor | perf | test | docs | build | chore...).
+#
+# Chia theo nhóm biên dịch của 02-design.md (BE change -> BE-1/BE-2/BE-3, FE change -> FE-1/FE-2) và bảng
+# "Phân bổ TC theo file và nhóm task" của 03-test-spec.md. Sau mỗi task orchestrator chạy toàn bộ `be_test`
+# hoặc `fe_test` của side bị chạm, nên mọi trạng thái trung gian phải biên dịch và pass cả test cũ: mỗi task
+# BE chỉ THÊM public API (CustomerRepository, CustomerService.list(), CustomerHandler route không đổi hành vi
+# khi vắng status), test cũ không bị sửa (D11).
+# Thứ tự: BE trước FE (design -> Migration: deploy BE trước, FE sau); FE-1 phụ thuộc T3 (BE-3) theo đúng quy
+# ước đó, dù FE-1/FE-2 không cần BE thật để build/test (fakeFetch). FE-2 phụ thuộc FE-1 vì loader và main.js
+# gọi listCustomers({ status }) với chữ ký mới của T4.
+tasks:
+  - id: T1
+    type: feat
+    title: be - repository.findAllByStatus
+    description: >-
+      Nhóm BE-1 (design D5). Chỉ THÊM một method, không đổi method cũ.
+      `repository/CustomerRepository.java`: thêm `List<Customer> findAllByStatus(CustomerStatus status)` kèm
+      một dòng Javadoc tiếng Anh, ví dụ "Returns the customers with the given status, ordered by id.". Chín
+      method cũ giữ nguyên chữ ký và Javadoc.
+      `repository/InMemoryCustomerRepository.java`: cài đặt
+      `customers.values().stream().filter(c -> c.status() == status).toList()`. Thứ tự tăng dần theo `id` có
+      sẵn nhờ `ConcurrentSkipListMap`; không tự sort. Kết quả là list mới (`toList()`), không phải view của
+      kho. Không sửa `findAll()` hay tám method còn lại.
+      Không sửa file nào khác: `CustomerService` chưa gọi method này (việc của T2); mọi test cũ phải biên
+      dịch và pass không đổi.
+      Test: thêm TC-115, TC-116 vào `InMemoryCustomerRepositoryTest.java` theo đúng preconditions và bảng dữ
+      liệu trong 03-test-spec.md, thành một khối liền nhau, đặt sau test hiện có. Mỗi dòng dữ liệu tự tạo
+      `InMemoryCustomerRepository` mới, `insert` kho theo đúng danh sách trạng thái của dòng (thứ tự insert
+      quyết định `id`), giữ các `Customer` do `insert` trả về để dựng list mong đợi.
+      TC-115 (7 dòng, bảng dữ liệu trong spec): so `findAllByStatus(status)` bằng `assertEquals` với list các
+      `Customer` mong đợi đúng thứ tự (dòng rỗng so với `List.of()`); đọc lại `findAll()` phải vẫn đủ mọi
+      khách hàng tăng dần theo `id`.
+      TC-116 (2 dòng): chụp `activeBefore = findAllByStatus(ACTIVE)` và `inactiveBefore = findAllByStatus(INACTIVE)`
+      trên kho K4 trước khi gọi `updateStatus(id, trạng thái mới)`; sau đó hai kết quả mới phải đúng theo bảng,
+      phần tử vừa đổi chỉ khác `status`, và `activeBefore`/`inactiveBefore` đã chụp KHÔNG bị đổi theo (list trả
+      về là bản chụp riêng, không phải view của kho); `findAll()` vẫn có 4 phần tử.
+      Bảng dữ liệu theo cách của class này: `@ParameterizedTest` trần (tên mặc định, không `name = ...`) +
+      `@MethodSource`, provider `private static` đặt ngay sau test, trả `Stream<Arguments>` dùng
+      `arguments(...)` import static. `@DisplayName("TC-n: ...")` ở mức method bằng câu tiếng Anh đúng tên
+      hiển thị trong 03-test-spec.md; tên method camelCase, không chứa mã TC. Arrange-Act-Assert (comment
+      `// Arrange`, `// Act`, `// Assert` theo đúng cách đang có của các test TC-44..TC-47 trong file này).
+      Test cũ (TC-11, TC-12, TC-44..TC-47) KHÔNG sửa và phải pass.
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests: [TC-115, TC-116]
+    depends_on: []
+
+  - id: T2
+    type: feat
+    title: be - CustomerService.list(statusValues) với kiểm tra đúng một giá trị hợp lệ
+    description: >-
+      Nhóm BE-2 (design D4), phụ thuộc T1 (gọi `repository.findAllByStatus`). Thêm overload
+      `public List<Customer> list(List<String> statusValues)` kèm một dòng Javadoc tiếng Anh, ví dụ
+      "Lists customers; exactly one status value keeps only customers in that status, no value lists them
+      all.". Thân hàm đúng theo hình dạng của D4:
+      danh sách rỗng trả đúng `list()` (tách ra TRƯỚC khi gọi `parseStatus`, không gọi `parseStatus(null)`);
+      nhiều hơn một giá trị ném `ValidationException` với đúng map `{"status": "must be ACTIVE or INACTIVE"}`,
+      bất kể các giá trị là gì, KHÔNG đọc kho trước khi ném; đúng một giá trị thì đi qua `parseStatus` có sẵn
+      (dòng 66-74) rồi `repository.findAllByStatus(...)`. Hành vi của `parseStatus` với mọi đầu vào hiện có
+      KHÔNG đổi (so khớp chính xác, không trim, không đổi hoa thường). Được phép tách phần tạo
+      `ValidationException` đó thành một hàm private (ví dụ `invalidStatus()`) dùng chung ở nhánh "nhiều hơn
+      một giá trị" và ở dòng cuối của `parseStatus`, miễn giữ đúng hành vi và đúng MỘT nguyên văn thông điệp
+      cho mọi ca; có thể chọn cách khác (hằng) nếu không đổi hành vi. KHÔNG đổi chữ ký hay hành vi của `list()`,
+      `get`, `create`, `update`, `updateStatus`, `check`. KHÔNG đọc kho khi giá trị lọc không hợp lệ.
+      Không sửa file nào khác.
+      Test: thêm TC-117, TC-118, TC-119 vào `CustomerServiceTest.java` theo đúng preconditions và bảng dữ
+      liệu trong 03-test-spec.md, thành một khối liền nhau. Dùng field `repository` và `service` của
+      `@BeforeEach` có sẵn (không tạo repository cục bộ); khách hàng `INACTIVE` dựng bằng
+      `repository.insert(..., CustomerStatus.INACTIVE)`.
+      TC-117 (3 dòng): `service.list(List.of())` không ném exception, bằng đúng `service.list()`, bằng đúng
+      list mọi `Customer` đã `insert` (kể cả dòng kho toàn `INACTIVE`, bắt cách hiện thực mặc định nhầm sang
+      "chỉ ACTIVE"; kể cả kho rỗng).
+      TC-118 (5 dòng): đúng một giá trị hợp lệ trả đúng các khách hàng khớp, tăng dần theo `id` (có dòng không
+      ai khớp, trả `List.of()`, không ném exception); `service.list()` đọc lại vẫn đủ.
+      TC-119: mỗi dòng dữ liệu của bảng trong spec (giá trị lạ, sai hoa thường, rỗng/chỉ dấu cách, thừa dấu
+      cách, hai giá trị trong một tham số, tham số lặp hai giá trị khác nhau, tham số lặp cùng một giá trị hợp
+      lệ, tham số lặp có giá trị rỗng, ba giá trị) chạy HAI LẦN, trên kho K4 và trên kho rỗng (provider nhân
+      chéo như TC-89 của REQ-003): chụp `before = service.list()` trước Act; ném `ValidationException` qua
+      `assertThrows`, `error.errors()` bằng đúng `Map.of("status", "must be ACTIVE or INACTIVE")`,
+      `service.list()` sau đó bằng đúng `before` (không ghi, không đọc kho làm lệch gì).
+      Bảng dữ liệu theo cách của class này: `@ParameterizedTest(name = ROW_NAME)` + `@MethodSource`, provider
+      `private static` đặt ngay sau test, `arguments(...)` import static. `@DisplayName("TC-n: ...")` đúng câu
+      tiếng Anh trong 03-test-spec.md; tên method camelCase, không chứa mã TC. Test cũ (TC-13..TC-26,
+      TC-48..TC-60 và 5 test không mã TC) KHÔNG sửa và phải pass.
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+    tests: [TC-117, TC-118, TC-119]
+    depends_on: [T1]
+
+  - id: T3
+    type: feat
+    title: "be - GET /api/customers lọc theo tham số query status"
+    description: >-
+      Nhóm BE-3 (design D1, D3; api-contract.yaml), phụ thuộc T2 (gọi `service.list(List<String>)`).
+      `api/CustomerHandler.java`: trong khối route `GET /api/customers` (dòng 53-56), đổi dòng gọi service
+      thành
+      `send(exchange, 200, service.list(queryValues(exchange.getRequestURI().getRawQuery(), "status")));`
+      (giữ `return;` sau đó). Thêm MỘT hàm private static mới, đúng theo hình dạng của D3:
+      ```
+      private static List<String> queryValues(String rawQuery, String name) {
+        List<String> values = new ArrayList<>();
+        if (rawQuery == null) {
+          return values;
+        }
+        for (String pair : rawQuery.split("&")) {
+          int separator = pair.indexOf('=');
+          String rawName = separator < 0 ? pair : pair.substring(0, separator);
+          String rawValue = separator < 0 ? "" : pair.substring(separator + 1);
+          if (URLDecoder.decode(rawName, StandardCharsets.UTF_8).equals(name)) {
+            values.add(URLDecoder.decode(rawValue, StandardCharsets.UTF_8));
+          }
+        }
+        return values;
+      }
+      ```
+      BẮT BUỘC: dùng `getRawQuery()`, TÁCH theo `&` rồi tại dấu `=` ĐẦU TIÊN TRƯỚC, GIẢI MÃ tên và giá trị
+      SAU (không dùng `getQuery()`, không giải mã trước khi tách — `%26`/`%3D` trong một giá trị phải KHÔNG bị
+      hiểu thành dấu tách); đoạn không có dấu `=` (`?status`) cho giá trị CHUỖI RỖNG, không phải vắng mặt;
+      không có query, query rỗng, hoặc không đoạn nào tên `status` thì trả danh sách RỖNG (không gọi
+      `parseStatus`/ném exception ở đây); so tên CHÍNH XÁC sau khi giải mã, phân biệt hoa thường; giữ ĐỦ mọi
+      lần xuất hiện theo đúng thứ tự (không bỏ trùng, không lấy phần tử đầu/cuối). Handler KHÔNG tự ném
+      `ValidationException`, KHÔNG so giá trị với `ACTIVE`/`INACTIVE` — việc đó của `service.list` (T2). Thêm
+      import `java.net.URLDecoder`, `java.nio.charset.StandardCharsets`, `java.util.ArrayList` (thêm `List`
+      nếu chưa có). Cập nhật Javadoc của class, thêm ví dụ tham số lọc (ví dụ
+      "GET /api/customers (optional ?status=ACTIVE|INACTIVE)"). KHÔNG đổi `handle`, `send`, `BY_ID`,
+      `STATUS_BY_ID` hay bốn khối route còn lại — các route đó không đọc query string, nên
+      `?status=...` trên chúng vẫn bị bỏ qua như trước.
+      Không sửa file nào khác (domain, service, repository đã xong ở T1/T2; `App.java` không đổi).
+      Test: thêm TC-120..TC-124 vào `CustomerHandlerTest.java` theo đúng preconditions và bảng dữ liệu trong
+      03-test-spec.md, thành một khối liền nhau. Dùng NGUYÊN các helper có sẵn `get(path)`, `post(json)`,
+      `put(path, json)`, `customers()`, `errorsOf(body)`; `path` nối vào `/api/customers`
+      (`get("?status=ACTIVE")`). Kho K4 (bốn khách hàng chuẩn, xem "Dữ liệu chung" trong spec) dựng qua CHÍNH
+      API: `post` khách hàng 2, 3, 4 (mỗi lần 201) rồi `put("/2/status", "{\"status\":\"INACTIVE\"}")` và
+      `put("/4/status", ...)` (mỗi lần 200); gom thành một helper `private` dùng chung cho TC-120 và TC-122
+      (tên do developer chọn). Dấu cách trong URL viết `%20` (`URI.create` không nhận dấu cách thô).
+      TC-120 (15 dòng theo bảng): mọi dòng 200, body là mảng đúng `id` mong đợi theo thứ tự, mỗi phần tử bằng
+      đúng (so `JsonNode`) phần tử cùng `id` trong `all` đã chụp, đủ năm field; ở các dòng có lọc mọi phần tử
+      đúng `status` lọc.
+      TC-121 (2 dòng): giá trị lọc hợp lệ mà không ai khớp trả 200 kèm `[]` (không phải 404); `customers()`
+      không lọc vẫn đủ.
+      TC-122 (2 dòng): sau `PUT .../status` thành công, hai `GET` lọc (`?status=ACTIVE`, `?status=INACTIVE`)
+      phản ánh đúng trạng thái đang lưu; khách hàng khác không đổi chỗ.
+      TC-123 (bảng trong spec, gồm cả hai dòng "D3" `?status=ACTIVE%26foo%3D1` và `?status=ACTIVE=1`): mọi
+      dòng 400 `application/problem+json`, `title`/`detail` cố định, `errorsOf(body)` bằng đúng
+      `Map.of("status", "must be ACTIVE or INACTIVE")`, `customers()` bằng đúng `before` (không ghi, không
+      đọc kho làm lệch).
+      TC-124 (4 dòng): `GET`/`PUT /api/customers/{id}` và `PUT /api/customers/{id}/status` kèm
+      `?status=DELETED` cho kết quả như không có query string (không dòng nào 400, không key `errors`).
+      Bảng dữ liệu theo cách của class này: `@ParameterizedTest(name = "[{index}]")` + `@MethodSource`,
+      provider `private static` đặt ngay sau test, `Arguments.of(...)`. `@DisplayName("TC-n: ...")` đúng câu
+      tiếng Anh trong 03-test-spec.md; tên method camelCase, không chứa mã TC. Test cũ (TC-27..TC-32,
+      TC-61..TC-69, TC-91..TC-100 và 4 test không mã TC) KHÔNG sửa và phải pass.
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests: [TC-120, TC-121, TC-122, TC-123, TC-124]
+    depends_on: [T2]
+
+  - id: T4
+    type: feat
+    title: fe - listCustomers nhận status trong options
+    description: >-
+      Nhóm FE-1 (design D6), phụ thuộc T3 (BE đã nhận và trả đúng theo `status`; thứ tự deploy BE trước FE).
+      `src/api/customerApi.js`: đổi chữ ký `listCustomers` thành đúng hình dạng của D6:
+      ```
+      export function listCustomers({ status, ...options } = {}) {
+        return request(status ? `/customers?status=${encodeURIComponent(status)}` : '/customers', options);
+      }
+      ```
+      kèm một dòng JSDoc tiếng Anh, ví dụ
+      "/** Lists customers; `status` ('ACTIVE' or 'INACTIVE') asks the API for customers in that status
+      only. */". BẮT BUỘC: `status` là `undefined`/`null`/`''` thì URL đúng bằng `/api/customers`, KHÔNG có
+      `?`; giá trị khác thì `/api/customers?status=` nối `encodeURIComponent(status)`; `status` được tách
+      khỏi `options` TRƯỚC khi gọi `request()` (không để nó rơi vào `...init` của `fetch`); hàm KHÔNG kiểm
+      tra, không lọc, không sắp xếp — trả nguyên body API trả, lỗi non-2xx vẫn ném `ApiError` qua `request()`
+      như hiện nay; KHÔNG gửi `method`, `body`, `Content-Type`. `request`, `ApiError` và bốn hàm còn lại
+      (`createCustomer`, `getCustomer`, `updateCustomer`, `updateCustomerStatus`) KHÔNG đổi.
+      Test: thêm TC-125, TC-126, TC-127 vào `test/customerApi.test.js` theo đúng preconditions và bảng dữ
+      liệu trong 03-test-spec.md, thành một khối liền nhau, dùng `fakeFetch` có sẵn qua `{ fetchImpl }`.
+      TC-125 (5 dòng: `{}`, `{status:''}`, `{status:undefined}`, `{status:null}`, `{status:'ACTIVE'}`, và các
+      dòng còn lại của bảng gồm `'INACTIVE'` và `'A&B=C D'` → `%26`/`%3D`/`%20`): mỗi dòng dùng mảng `calls`
+      mới; `calls.length` là 1; `calls[0].url` đúng bằng chuỗi mong đợi (bốn dòng đầu KHÔNG có `?`);
+      `calls[0].init` bằng đúng (gọn nhất `assert.deepEqual`) `{ headers: { Accept: 'application/json' } }`
+      (không `method`, không `body`, không key `status`).
+      TC-126 (4 dòng): `listCustomers({ status, fetchImpl })` trả ĐÚNG (`assert.deepEqual`, so chặt số phần
+      tử/thứ tự/field) `body` mà `fakeFetch` trả, kể cả khi có khách hàng không khớp lọc, sai thứ tự `id`,
+      hoặc mảng rỗng.
+      TC-127 (3 dòng): response non-2xx (400 với `errors.status`, và hai dòng 500) làm promise reject với
+      `ApiError` đúng `status` và `fieldErrors` (`assert.deepEqual`); `calls.length` là 1, `calls[0].url` đúng.
+      Tên test `test('TC-n: listCustomers ...', ...)` bằng câu tiếng Anh. Test cũ (TC-42, TC-43, TC-70..TC-73,
+      TC-101, TC-102 và 3 test không mã TC — gồm `listCustomers calls GET /api/customers and returns the
+      body`) KHÔNG sửa và phải pass nguyên vẹn.
+    allowed_files:
+      - source-fe/src/api/customerApi.js
+      - source-fe/test/customerApi.test.js
+    tests: [TC-125, TC-126, TC-127]
+    depends_on: [T3]
+
+  - id: T5
+    type: feat
+    title: fe - bộ lọc trạng thái trên trang danh sách khách hàng
+    description: >-
+      Nhóm FE-2 (design D7, D8, D9), phụ thuộc T4 (gọi `listCustomers({ status })` với chữ ký mới).
+      Tạo `src/utils/createCustomerListLoader.js` (không import gì), đúng theo hình dạng của D8:
+      ```
+      export function createCustomerListLoader(listCustomers, getStatus) {
+        let latest = 0;
+        return async () => {
+          const call = ++latest;
+          try {
+            const customers = await listCustomers({ status: getStatus() });
+            return call === latest ? { current: true, customers } : { current: false };
+          } catch (error) {
+            if (call === latest) throw error;
+            return { current: false };
+          }
+        };
+      }
+      ```
+      kèm một dòng JSDoc tiếng Anh. BẮT BUỘC: `getStatus()` gọi đúng MỘT lần BÊN TRONG mỗi lần gọi hàm trả
+      về (không lúc tạo, không lưu lại giữa các lần); bộ đếm tăng TRƯỚC khi gọi API, so `call === latest`
+      SAU khi API trả về/lỗi; hai loader tạo bằng hai lời gọi riêng KHÔNG chung state (state trong closure,
+      không ở mức module, không `class`); kết quả API được trả NGUYÊN (`customers` chính là giá trị API trả,
+      kể cả `null`, `[]`); lỗi của lần tải KHÔNG bị vượt reject với CHÍNH lỗi đó, lần bị vượt (dù trả về hay
+      lỗi) luôn `{ current: false }`, không reject. Tên file, tên export, thứ tự hai tham số và hình dạng kết
+      quả (`{ current: true, customers }` / `{ current: false }`) là CỐ ĐỊNH.
+      `index.html`: thêm đúng theo D7, đặt GIỮA `#edit-customer` và `#customers`:
+      ```
+      <p>
+        <label for="status-filter">Lọc theo trạng thái</label>
+        <select id="status-filter" autocomplete="off">
+          <option value="" selected>Tất cả</option>
+          <option value="ACTIVE">Đang hoạt động</option>
+          <option value="INACTIVE">Ngừng hoạt động</option>
+        </select>
+      </p>
+      ```
+      Đúng ba `<option>`, đúng thứ tự, đúng `value` và nhãn; NẰM NGOÀI `#customers`, NGOÀI `#edit-customer` và
+      NGOÀI mọi `<form>` (kể cả `#create-form`, vì `form.reset()` sau khi thêm khách hàng không được đụng tới
+      nó); có `autocomplete="off"`. Có thể thêm `select` vào luật CSS `input, select { ... }` đã có (dòng 13);
+      không đổi luật CSS nào khác.
+      `src/main.js`: import `createCustomerListLoader`; thêm `const filterEl =
+      document.getElementById('status-filter');` và tạo loader MỘT LẦN ở mức module (cạnh `listEl`,
+      `messageEl`, `acceptStatusClick`), KHÔNG tạo trong `refresh()`:
+      `const loadCustomers = createCustomerListLoader(listCustomers, () => filterEl.value);`. Đổi `refresh()`
+      thành:
+      ```
+      async function refresh() {
+        try {
+          const { current, customers } = await loadCustomers();
+          if (current) listEl.innerHTML = renderCustomerTable(customers);
+        } catch {
+          listEl.textContent = 'Không tải được danh sách khách hàng.';
+        }
+      }
+      ```
+      (câu lỗi và việc ghi vào `#customers` giữ nguyên như hiện nay; `refresh()` không đổi giá trị của
+      `filterEl`, không xoá `#message`). Thêm listener:
+      `filterEl.addEventListener('change', () => { messageEl.textContent = ''; refresh(); });` (xoá
+      `#message` trước, không đụng `#edit-customer`). Ngay TRƯỚC lời gọi `refresh()` cuối file, thêm
+      `filterEl.value = '';` rồi gọi `refresh();` (D7, Q8: trang luôn mở ở "Tất cả" kể cả khi trình duyệt
+      khôi phục giá trị cũ). BẮT BUỘC: `getStatus` là `() => filterEl.value` — đọc điều khiển MỖI LẦN được
+      gọi, KHÔNG gán `filterEl.value` vào biến ở mức module hay đầu một handler. Không đổi submit của
+      `#create-form`, hai listener `click` trên `#customers`, hai listener trên `#edit-customer`,
+      `acceptStatusClick` và key của nó, hay việc thao tác thất bại không tải lại danh sách.
+      `src/components/customerTable.js`, `src/api/customerApi.js`, `src/utils/createDoubleClickGuard.js`,
+      `src/utils/describeStatusError.js` và mọi file test khác CỐ Ý không nằm trong allowed_files; nếu thấy
+      cần sửa thì ghi câu hỏi vào `aiws/work/REQ-005/questions.md` và dừng.
+      Test: tạo `test/createCustomerListLoader.test.js` với TC-128..TC-134 theo đúng preconditions và bảng
+      hành vi/dữ liệu trong 03-test-spec.md (`node:test` + `node:assert/strict`, import
+      `createCustomerListLoader` từ `../src/utils/createCustomerListLoader.js`; KHÔNG `fetch`, không DOM,
+      không timer). Mỗi dòng dữ liệu dùng loader mới (trừ khi spec nói khác), với `calls` và bộ đếm
+      `getStatus` mới. `getStatus` giả: trả giá trị của một biến `selected` mà test gán lại, đếm số lần được
+      gọi. `listCustomers` giả: ghi tham số nhận được vào `calls`, trả promise DO TEST ĐIỀU KHIỂN (deferred,
+      `Promise.withResolvers()` hoặc tự dựng bằng `new Promise`). Với lần `load` mong đợi bị reject: gắn
+      `assert.rejects(promise, ...)` TRƯỚC khi cho API của lần đó lỗi, giữ promise rồi `await` sau (tránh
+      unhandled rejection).
+      TC-128 (3 chuỗi lựa chọn nối tiếp): mỗi lần `load` gọi `getStatus()` đúng 1 lần và `listCustomers` đúng
+      1 lần với `{ status: s }`; mọi lần đều `current: true`.
+      TC-129 (4 dòng: lựa chọn lúc tạo khác lựa chọn lúc tải): `getStatus` không gọi lúc tạo hay trước lần
+      tải đầu (0 lần); mỗi lần tải mang giá trị ĐANG CÓ lúc gọi `load`, không phải lúc tạo hay lần tải trước;
+      đổi `selected` sau khi `load()` được gọi (yêu cầu còn chờ) KHÔNG làm đổi yêu cầu đó (`'CHANGED'` không
+      bao giờ xuất hiện trong `calls`).
+      TC-130 (4 dòng, gồm dòng `null`): lần tải không bị vượt trả `{ current: true, customers: <nguyên giá
+      trị API trả> }` — không lọc, không sắp xếp, `result.customers` CÙNG THAM CHIẾU với mảng test trao cho
+      `listCustomers` giả (`assert.equal`), kể cả `null`.
+      TC-131 (2 dòng lỗi): lần tải lỗi (không bị vượt) reject với CHÍNH lỗi đó (`assert.equal`); lần tải kế
+      tiếp vẫn chạy bình thường và `calls` đủ hai lời gọi đúng tham số.
+      TC-132 (4 kịch bản thứ tự response): chỉ lần `load` được GỌI sau cùng là `current: true` với
+      `customers` của chính nó, bất kể thứ tự response về; mọi lần khác `{ current: false }` đúng
+      (`assert.deepEqual`, không mang `customers`).
+      TC-133 (4 dòng): lần bị vượt luôn `{ current: false }`, KHÔNG reject dù API của nó lỗi; lần mới nhất
+      reject với CHÍNH lỗi của nó (không phải lỗi của lần cũ), dù lần cũ thành công hay lỗi.
+      TC-134: hai loader tạo bằng hai lời gọi riêng không chung state — lần tải đang chờ của loader thứ nhất
+      vẫn `current: true` dù loader thứ hai được gọi và trả về trước.
+      Tên test `test('TC-n: createCustomerListLoader ...', ...)` bằng câu tiếng Anh, lặp bảng dữ liệu bằng
+      `for...of` trong MỘT `test(...)` khi phù hợp (không `describe`, không subtest). `index.html` và phần
+      nối trong `main.js` không có test tự động (`node:test` không có DOM): các điểm bắt buộc trên được
+      review và chạy tay theo mười hai bước ở `02-design.md` → FE change, KHÔNG phải việc của task này.
+    allowed_files:
+      - source-fe/src/utils/createCustomerListLoader.js
+      - source-fe/test/createCustomerListLoader.test.js
+      - source-fe/src/main.js
+      - source-fe/index.html
+    tests: [TC-128, TC-129, TC-130, TC-131, TC-132, TC-133, TC-134]
+    depends_on: [T4]
