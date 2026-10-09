@@ -4,8 +4,8 @@ requirement: requirements/REQ-005-filter-by-status.md
 branch: aiws/REQ-005-knowledge
 base_branch: demo
 base_commit: 20fdffd099fc5ab11376d722771808f86ec73a95
-phase: knowledge_update
-status: running
+phase: done
+status: done
 history:
   - phase: new
     result: created
@@ -86,6 +86,11 @@ history:
     head: 092eb99
     merge: merge commit
     at: 2026-10-09T16:37:23Z
+  - phase: knowledge_update
+    agent: discovery
+    result: ok
+    run: run-0011
+    at: 2026-10-09T16:43:52Z
 tasks:
   - id: T1
     title: be - repository.findAllByStatus
@@ -178,7 +183,7 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 10
+run_seq: 11
 budget_usd: 55
 last_review:
   run: run-0010
