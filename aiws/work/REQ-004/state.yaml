@@ -48,6 +48,12 @@ history:
     run: run-0006
     commit: 75cedc3
     at: 2026-10-09T14:49:24Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0007
+    commit: 5ca2000
+    at: 2026-10-09T14:50:34Z
 tasks:
   - id: T1
     title: be - chuyển TC-92, TC-97 sang @MethodSource
@@ -91,10 +97,10 @@ tasks:
       - TC-112
       - TC-113
     depends_on: []
-    status: running
-    base: 13e5d88c94765c25e31d53a1174cdb5fdfcda961
+    status: done
     attempts: 1
     test_result: pass
+    commit: 5ca2000ebf1f110eb546d78a09487b9b2b03395f
 feedback: []
 attempts: {}
 last_failure: {}
