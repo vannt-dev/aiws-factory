@@ -5,6 +5,8 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.example.crm.domain.Customer;
 import com.example.crm.domain.CustomerStatus;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -220,5 +222,102 @@ class InMemoryCustomerRepositoryTest {
     assertEquals(Optional.empty(), result);
     assertEquals(Optional.empty(), repository.findById(id));
     assertEquals(before, repository.findAll());
+  }
+
+  @ParameterizedTest
+  @MethodSource("statusFilters")
+  @DisplayName("TC-115: findAllByStatus returns only the customers with the given status, ordered by id")
+  void findAllByStatusReturnsOnlyCustomersWithGivenStatusOrderedById(
+      List<CustomerStatus> storeStatuses, CustomerStatus status, List<Long> expectedIds) {
+    // Arrange
+    InMemoryCustomerRepository repository = new InMemoryCustomerRepository();
+    List<Customer> inserted = insertStandardCustomers(repository, storeStatuses);
+
+    // Act
+    List<Customer> result = repository.findAllByStatus(status);
+
+    // Assert
+    List<Customer> expected = expectedIds.stream().map(id -> inserted.get((int) (id - 1))).toList();
+    assertEquals(expected, result);
+    assertEquals(inserted, repository.findAll());
+  }
+
+  private static Stream<Arguments> statusFilters() {
+    return Stream.of(
+        arguments(
+            List.of(CustomerStatus.ACTIVE, CustomerStatus.INACTIVE, CustomerStatus.ACTIVE, CustomerStatus.INACTIVE),
+            CustomerStatus.ACTIVE,
+            List.of(1L, 3L)),
+        arguments(
+            List.of(CustomerStatus.ACTIVE, CustomerStatus.INACTIVE, CustomerStatus.ACTIVE, CustomerStatus.INACTIVE),
+            CustomerStatus.INACTIVE,
+            List.of(2L, 4L)),
+        arguments(
+            List.of(CustomerStatus.INACTIVE, CustomerStatus.ACTIVE, CustomerStatus.ACTIVE, CustomerStatus.ACTIVE),
+            CustomerStatus.ACTIVE,
+            List.of(2L, 3L, 4L)),
+        arguments(
+            List.of(CustomerStatus.INACTIVE, CustomerStatus.ACTIVE, CustomerStatus.ACTIVE, CustomerStatus.ACTIVE),
+            CustomerStatus.INACTIVE,
+            List.of(1L)),
+        arguments(List.of(CustomerStatus.ACTIVE, CustomerStatus.ACTIVE), CustomerStatus.INACTIVE, List.of()),
+        arguments(List.of(CustomerStatus.INACTIVE, CustomerStatus.INACTIVE), CustomerStatus.ACTIVE, List.of()),
+        arguments(List.of(), CustomerStatus.ACTIVE, List.of()));
+  }
+
+  @ParameterizedTest
+  @MethodSource("statusChanges116")
+  @DisplayName("TC-116: findAllByStatus follows the status stored by updateStatus")
+  void findAllByStatusFollowsStatusStoredByUpdateStatus(
+      long id, CustomerStatus newStatus, List<Long> expectedActiveIds, List<Long> expectedInactiveIds) {
+    // Arrange
+    InMemoryCustomerRepository repository = new InMemoryCustomerRepository();
+    List<Customer> inserted =
+        insertStandardCustomers(
+            repository,
+            List.of(
+                CustomerStatus.ACTIVE, CustomerStatus.INACTIVE, CustomerStatus.ACTIVE, CustomerStatus.INACTIVE));
+    List<Customer> activeBefore = repository.findAllByStatus(CustomerStatus.ACTIVE);
+    List<Customer> inactiveBefore = repository.findAllByStatus(CustomerStatus.INACTIVE);
+
+    // Act
+    repository.updateStatus(id, newStatus);
+    List<Customer> activeAfter = repository.findAllByStatus(CustomerStatus.ACTIVE);
+    List<Customer> inactiveAfter = repository.findAllByStatus(CustomerStatus.INACTIVE);
+
+    // Assert
+    Customer before = inserted.get((int) (id - 1));
+    Customer changed = new Customer(before.id(), before.name(), before.email(), before.phone(), newStatus);
+    assertEquals(
+        expectedActiveIds.stream().map(eid -> eid == id ? changed : inserted.get((int) (eid - 1))).toList(),
+        activeAfter);
+    assertEquals(
+        expectedInactiveIds.stream().map(eid -> eid == id ? changed : inserted.get((int) (eid - 1))).toList(),
+        inactiveAfter);
+    assertEquals(List.of(inserted.get(0), inserted.get(2)), activeBefore);
+    assertEquals(List.of(inserted.get(1), inserted.get(3)), inactiveBefore);
+    assertEquals(4, repository.findAll().size());
+  }
+
+  private static Stream<Arguments> statusChanges116() {
+    return Stream.of(
+        arguments(1L, CustomerStatus.INACTIVE, List.of(3L), List.of(1L, 2L, 4L)),
+        arguments(2L, CustomerStatus.ACTIVE, List.of(1L, 2L, 3L), List.of(4L)));
+  }
+
+  /**
+   * Inserts the standard four-customer table (Nguyen Van An, Tran Thi Binh, Le Van Cuong, Pham Thi Dung), using
+   * the first {@code statuses.size()} rows with status overridden by the matching entry of {@code statuses}.
+   */
+  private static List<Customer> insertStandardCustomers(
+      InMemoryCustomerRepository repository, List<CustomerStatus> statuses) {
+    List<String> names = List.of("Nguyen Van An", "Tran Thi Binh", "Le Van Cuong", "Pham Thi Dung");
+    List<String> emails = List.of("an@example.com", "binh@example.com", "cuong@example.com", "dung@example.com");
+    List<String> phones = Arrays.asList(null, "0912345678", "0987654321", null);
+    List<Customer> inserted = new ArrayList<>();
+    for (int i = 0; i < statuses.size(); i++) {
+      inserted.add(repository.insert(names.get(i), emails.get(i), phones.get(i), statuses.get(i)));
+    }
+    return inserted;
   }
 }

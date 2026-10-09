@@ -8,6 +8,9 @@ import java.util.Optional;
 public interface CustomerRepository {
   List<Customer> findAll();
 
+  /** Returns the customers with the given status, ordered by id. */
+  List<Customer> findAllByStatus(CustomerStatus status);
+
   Optional<Customer> findById(long id);
 
   boolean existsByEmail(String email);

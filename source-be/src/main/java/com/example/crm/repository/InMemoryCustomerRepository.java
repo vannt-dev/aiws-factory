@@ -20,6 +20,11 @@ public class InMemoryCustomerRepository implements CustomerRepository {
   }
 
   @Override
+  public List<Customer> findAllByStatus(CustomerStatus status) {
+    return customers.values().stream().filter(c -> c.status() == status).toList();
+  }
+
+  @Override
   public Optional<Customer> findById(long id) {
     return Optional.ofNullable(customers.get(id));
   }
