@@ -1,0 +1,18 @@
+req_id: REQ-004
+title: "Nút đổi trạng thái: chống bấm đúp và trạng thái lạ"
+requirement: requirements/REQ-004-status-button-hardening.md
+branch: aiws/REQ-004
+base_branch: demo
+base_commit: 58fefb323e7c46a2407f24b57ddfa338de348e4d
+phase: analysis
+status: running
+history:
+  - phase: new
+    result: created
+    by: Van Nguyen
+    at: 2026-10-09T14:01:41Z
+tasks: []
+feedback: []
+attempts: {}
+last_failure: {}
+step_index: 0
