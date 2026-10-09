@@ -1,0 +1,38 @@
+{
+  "run_id": "run-0003",
+  "req": "REQ-005",
+  "phase": "design",
+  "agent": "test-designer",
+  "task": null,
+  "attempt": 1,
+  "adapter": "claude",
+  "command": "claude \"-p\" \"--output-format\" \"json\" \"--permission-mode\" \"dontAsk\" \"--allowedTools\" \"Read,Grep,Glob,Write,Edit,MultiEdit\" \"--model\" \"opus\"",
+  "allowed_tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write",
+    "Edit",
+    "MultiEdit"
+  ],
+  "prompt_file": "run-0003.prompt.md",
+  "prompt_sha256": "b35983a682d7729a7f682374b8b1619e8e8765a11b4590e86f5ccbd7d90d7b6f",
+  "started_at": "2026-10-09T15:46:29Z",
+  "duration_ms": 1307626,
+  "exit_code": 0,
+  "report": {
+    "is_error": false,
+    "result": "## Báo cáo — REQ-005 / design / test-designer\n\n**File đã ghi:** `aiws/work/REQ-005/03-test-spec.md`, và chỉ file này. `02-design.md` và `api-contract.yaml` không bị đụng tới. Không chạy lệnh nào, nên các nhận định \"chưa chạy kiểm chứng\" trong file vẫn mang `[CẦN XÁC NHẬN]`.\n\n### Kết quả\n- 20 test case, **TC-115..TC-134**, đánh số tiếp sau TC-114 của REQ-004. Mỗi TC đủ các trường theo ISO/IEC/IEEE 29119-3.\n- **Không test có sẵn nào bị sửa hay định nghĩa lại.**\n- Mọi AC đều có TC:\n\n| AC | Test cases |\n| --- | --- |\n| AC-1 | TC-115, TC-116, TC-117, TC-118, TC-120, TC-121, TC-122 |\n| AC-2 | TC-119, TC-123, TC-124 |\n| AC-3 | TC-125, TC-126, TC-127 |\n| AC-4 | TC-127, TC-128, TC-130, TC-131, TC-132, TC-133, TC-134 |\n| AC-5 | TC-129 |\n\n- Phân bổ theo nhóm task của design:\n\n| Nhóm | File test | TC |\n| --- | --- | --- |\n| BE-1 | `InMemoryCustomerRepositoryTest` | TC-115, TC-116 |\n| BE-2 | `CustomerServiceTest` | TC-117..TC-119 |\n| BE-3 | `CustomerHandlerTest` | TC-120..TC-124 |\n| FE-1 | `customerApi.test.js` | TC-125..TC-127 |\n| FE-2 | `createCustomerListLoader.test.js` (mới) | TC-128..TC-134 |\n\n- Số test mong đợi, tính theo số dòng dữ liệu trong file: BE từ 311 lên **399** lần chạy, FE từ 43 lên **53** test.\n\n### Quyết định chính\n- **Biến thể dữ liệu là dòng của một TC tham số hoá.** Ca \"không khách hàng nào khớp\" là dòng dữ liệu ở repository và service, nhưng là TC riêng ở HTTP (TC-121) vì kho phải dựng qua API theo cách khác.\n- **Một bộ dữ liệu chung** gồm bốn khách hàng (1 `ACTIVE`, 2 `INACTIVE`, 3 `ACTIVE`, 4 `INACTIVE`) dùng cho mọi tầng BE. Cả hai danh sách lọc đều có một khách hàng `phone = null`.\n- **TC-120 và TC-123 có thêm dòng đoán lỗi cho quy tắc tách query của D3**, ngoài bảng ở mục API của design: `?status=ACTIVE%26foo%3D1`, `?status=ACTIVE=1`, `?foo=1%26status%3DACTIVE`, `?status%3DACTIVE`, `?xstatus=INACTIVE`, `?%73tatus=INACTIVE`.\n- **Ba TC phần Q7 (TC-132..TC-134) xếp cuối.** Nếu người duyệt không nhận phần \"bỏ qua response đến trễ\" thì bỏ ba TC này mà dãy mã vẫn liền; AC-4 vẫn còn TC-127, TC-128, TC-130, TC-131.\n\n### Điểm người duyệt cần biết\nCác kỳ vọng sau đi xa hơn một chút so với chữ của design:\n- **TC-119:** mỗi giá trị không hợp lệ chạy trên cả kho bốn khách hàng lẫn kho rỗng. Đây là cách tôi đọc câu \"400 không phụ thuộc dữ liệu đang có\" của D2.\n- **TC-130:** có dòng API trả `null`, mong đợi `{ current: true, customers: null }`. Dòng này lấy từ phần lý do của D8, không có trong bảng hành vi.\n- **TC-116:** khẳng định list đã trả về trước đó không đổi sau `updateStatus`, dựa trên câu \"list mới, không phải view\" của D5.\n- **TC-127:** truy vết tới cả AC-3 và AC-4 (biến thể \"yêu cầu lấy danh sách thất bại\"). Nó nằm trong `customerApi.test.js`, nên task FE-1 sẽ mang một TC có truy vết AC-4, khác bảng D11.\n- **TC-125:** so chặt toàn bộ tham số thứ hai của `fetch` để ép điểm bắt buộc của D6 (không `method`, `body`, `Content-Type`, `status`).\n- **TC-124:** sinh từ D3 (route khác bỏ qua query string), truy vết tới AC-2. TC này pass cả trước lẫn sau REQ-005.\n\nPhần không có TC tự động:\n- `index.html` và phần nối trong `main.js`: file có checklist review theo D7, D9 và bảng ánh xạ từng biến thể AC-4, AC-5 sang mười hai bước chạy tay của design.\n- `listCustomers()` không tham số: không có chỗ thay `fetch` toàn cục trong test.\n- `POST /api/customers?status=x`: helper `post(json)` không nhận path.\n- \"Không đọc kho khi giá trị lọc không hợp lệ\" (D4): không quan sát được với repository thật.\n- Dòng `?` (query rỗng) của TC-120: `[CẦN XÁC NHẬN]` `java.net.http.HttpClient` nhiều khả năng không gửi dấu `?`, khi đó dòng này trùng với dòng không có query và nhánh query rỗng chỉ kiểm bằng review.\n\nCác TC sẽ đổi nếu người duyệt chọn khác ở \"Quyết định cần duyệt\" của design:\n- **Lặp cùng một giá trị hợp lệ:** các dòng tương ứng của TC-119, TC-123 chuyển sang TC-118, TC-120.\n- **Tham số tên lạ:** nếu chọn 400 thì bảy dòng \"tên khác\" của TC-120 chuyển sang TC-123 và cần AC mới.\n- **Chữ ký `listCustomers`:** TC-125..TC-129 đổi, và một test có sẵn phải sửa.\n- **Q7:** bỏ TC-132..TC-134; hình dạng kết quả trong TC-128, TC-130, TC-131 phải xét lại.\n- **Q1 (bấm đúp khi đang lọc):** hiện không có AC và không có TC; chọn phương án B hoặc C thì cần AC mới và TC mới.",
+    "num_turns": 41,
+    "cost_usd": 6.852289600000001,
+    "session_id": "b22056e1-5443-4268-97b1-4bb39cb25486",
+    "model": null
+  },
+  "stderr_tail": null,
+  "files_changed": [
+    "aiws/work/REQ-005/03-test-spec.md"
+  ],
+  "scope_violations_reverted": [],
+  "validation": [],
+  "outcome": "ok"
+}
