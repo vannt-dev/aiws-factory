@@ -1,0 +1,180 @@
+req_id: REQ-005
+title: Lọc danh sách khách hàng theo trạng thái
+requirement: requirements/REQ-005-filter-by-status.md
+branch: aiws/REQ-005
+base_branch: demo
+base_commit: 20fdffd099fc5ab11376d722771808f86ec73a95
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-005 pr` (or `aiws reject REQ-005 pr -m "..."`)
+history:
+  - phase: new
+    result: created
+    by: Van Nguyen
+    at: 2026-10-09T15:10:10Z
+  - phase: analysis
+    agent: analyst
+    result: ok
+    run: run-0001
+    at: 2026-10-09T15:24:06Z
+  - phase: design
+    agent: architect
+    result: ok
+    run: run-0002
+    at: 2026-10-09T15:46:29Z
+  - phase: design
+    agent: test-designer
+    result: ok
+    run: run-0003
+    at: 2026-10-09T16:08:17Z
+  - phase: design_approval
+    result: budget_set
+    by: Van Nguyen
+    budget_usd: 55
+    at: 2026-10-09T16:10:49Z
+  - phase: design_approval
+    result: approved
+    by: Van Nguyen
+    record: design-01.yaml
+    at: 2026-10-09T16:10:49Z
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0004
+    at: 2026-10-09T16:14:55Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0005
+    commit: d33affd
+    at: 2026-10-09T16:18:10Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0006
+    commit: d8e24b0
+    at: 2026-10-09T16:20:38Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0007
+    commit: 313e3fa
+    at: 2026-10-09T16:23:00Z
+  - phase: implementation
+    task: T4
+    result: done
+    run: run-0008
+    commit: 5aa628b
+    at: 2026-10-09T16:24:08Z
+  - phase: implementation
+    task: T5
+    result: done
+    run: run-0009
+    commit: 9caa593
+    at: 2026-10-09T16:27:33Z
+  - phase: implementation
+    result: all_tasks_done
+    at: 2026-10-09T16:27:33Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0010
+    at: 2026-10-09T16:33:23Z
+tasks:
+  - id: T1
+    title: be - repository.findAllByStatus
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/repository/CustomerRepository.java
+      - source-be/src/main/java/com/example/crm/repository/InMemoryCustomerRepository.java
+      - source-be/src/test/java/com/example/crm/repository/InMemoryCustomerRepositoryTest.java
+    tests:
+      - TC-115
+      - TC-116
+    depends_on: []
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: d33affd2058f046273219d0ca0e1841eef163c4a
+  - id: T2
+    title: be - CustomerService.list(statusValues) với kiểm tra đúng một giá trị hợp lệ
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/service/CustomerService.java
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+    tests:
+      - TC-117
+      - TC-118
+      - TC-119
+    depends_on:
+      - T1
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: d8e24b056a435650d8d6c25df0053f0f51c4c651
+  - id: T3
+    title: be - GET /api/customers lọc theo tham số query status
+    type: feat
+    allowed_files:
+      - source-be/src/main/java/com/example/crm/api/CustomerHandler.java
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests:
+      - TC-120
+      - TC-121
+      - TC-122
+      - TC-123
+      - TC-124
+    depends_on:
+      - T2
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 313e3fa77648614f549ecb202de5f07401c249ec
+  - id: T4
+    title: fe - listCustomers nhận status trong options
+    type: feat
+    allowed_files:
+      - source-fe/src/api/customerApi.js
+      - source-fe/test/customerApi.test.js
+    tests:
+      - TC-125
+      - TC-126
+      - TC-127
+    depends_on:
+      - T3
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 5aa628b119aaab8a5d3a3a5659022f5316b612fa
+  - id: T5
+    title: fe - bộ lọc trạng thái trên trang danh sách khách hàng
+    type: feat
+    allowed_files:
+      - source-fe/src/utils/createCustomerListLoader.js
+      - source-fe/test/createCustomerListLoader.test.js
+      - source-fe/src/main.js
+      - source-fe/index.html
+    tests:
+      - TC-128
+      - TC-129
+      - TC-130
+      - TC-131
+      - TC-132
+      - TC-133
+      - TC-134
+    depends_on:
+      - T4
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: 9caa59316c399f3efec3015a817139c0a9353eb9
+feedback: []
+attempts: {}
+last_failure: {}
+step_index: 0
+run_seq: 10
+budget_usd: 55
+last_review:
+  run: run-0010
+  head: 8fe9a5cb9e769b9468bbb458380bf95dc05d4a01
+  approval: design-01.yaml

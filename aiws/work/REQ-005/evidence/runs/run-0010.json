@@ -1,0 +1,36 @@
+{
+  "run_id": "run-0010",
+  "req": "REQ-005",
+  "phase": "review",
+  "agent": "reviewer",
+  "task": null,
+  "attempt": 1,
+  "adapter": "claude",
+  "command": "claude \"-p\" \"--output-format\" \"json\" \"--permission-mode\" \"dontAsk\" \"--allowedTools\" \"Read,Grep,Glob,Write\" \"--model\" \"claude-fable-5-1\"",
+  "allowed_tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write"
+  ],
+  "prompt_file": "run-0010.prompt.md",
+  "prompt_sha256": "e71be295648a03901debbae2296b1da73d365fe9e61f9b8a9b1ced5282dcba4c",
+  "started_at": "2026-10-09T16:27:34Z",
+  "duration_ms": 348452,
+  "exit_code": 0,
+  "report": {
+    "is_error": false,
+    "result": "Review written to `aiws/work/REQ-005/05-review.md`. Nothing else was created or modified.\n\n**Verdict: ready for PR.** No critical or major findings. Four minor findings, all in test code.\n\n**What I checked**\n\n- All 13 changed source files against the design decisions D1 through D11, the API contract, the plan, and the trace. Every source change matches the design's sample code line for line, including the handler's `queryValues`, the service overload, the repository query, `listCustomers`, the loader, `index.html`, and the `main.js` wiring.\n- The changed-file set equals the union of the five tasks' allowed files. No renames, moves, or reformatting. No existing test was modified.\n- Recorded evidence shows 399 BE runs and 53 FE tests passing, exactly the counts the test spec predicted. All 20 new TC codes are present with standard metadata.\n- The API contract reconciliation found no mismatch between BE, FE, and the contract for the 200, 400, and 500 responses or the `status` parameter rules.\n\n**Minor findings recorded**\n\n- Service tests TC-117 and TC-118 use generic customer data instead of the spec's standard four-customer table.\n- HTTP test TC-120 checks the five-field shape only indirectly by comparing against a snapshot from the same endpoint.\n- HTTP test TC-122 asserts only `status` on the changed customer, not name, email, and phone as the spec asks.\n- A variable in the FE API test is named as if it held a 404 problem when it holds a 500 problem.\n\n**For the PR reviewer**\n\n- The twelve manual steps in the design's FE change section are still required, since `index.html` and the `main.js` wiring have no automated tests. Steps 8 and 11 cover the browser-restore and double-click cases.\n- Deploy order is BE before FE, rollback in reverse.",
+    "num_turns": 33,
+    "cost_usd": 4.3993702500000005,
+    "session_id": "fa721e50-f5e1-49c8-a0b3-e911a9e21cda",
+    "model": null
+  },
+  "stderr_tail": null,
+  "files_changed": [
+    "aiws/work/REQ-005/05-review.md"
+  ],
+  "scope_violations_reverted": [],
+  "validation": [],
+  "outcome": "ok"
+}

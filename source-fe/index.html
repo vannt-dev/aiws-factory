@@ -10,7 +10,7 @@
     th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid #e5e7eb; }
     th { background: #f3f4f6; }
     form { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.5rem 0; max-width: 760px; }
-    input { padding: .45rem .6rem; border: 1px solid #d1d5db; border-radius: 6px; }
+    input, select { padding: .45rem .6rem; border: 1px solid #d1d5db; border-radius: 6px; }
     .error { color: #b91c1c; }
     .field { display: flex; flex-direction: column; gap: .25rem; }
   </style>
@@ -25,6 +25,14 @@
   </form>
   <p id="message" class="error" role="alert"></p>
   <div id="edit-customer"></div>
+  <p>
+    <label for="status-filter">Lọc theo trạng thái</label>
+    <select id="status-filter" autocomplete="off">
+      <option value="" selected>Tất cả</option>
+      <option value="ACTIVE">Đang hoạt động</option>
+      <option value="INACTIVE">Ngừng hoạt động</option>
+    </select>
+  </p>
   <div id="customers">Đang tải…</div>
   <script type="module" src="./src/main.js"></script>
 </body>

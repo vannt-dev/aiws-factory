@@ -10,13 +10,17 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * REST endpoints under /api/customers: GET /api/customers, GET /api/customers/{id},
- * POST /api/customers, PUT /api/customers/{id} and PUT /api/customers/{id}/status.
- * Errors are returned as RFC 9457 problem details.
+ * REST endpoints under /api/customers: GET /api/customers (optional ?status=ACTIVE|INACTIVE),
+ * GET /api/customers/{id}, POST /api/customers, PUT /api/customers/{id} and
+ * PUT /api/customers/{id}/status. Errors are returned as RFC 9457 problem details.
  */
 public class CustomerHandler implements HttpHandler {
   private static final Pattern BY_ID = Pattern.compile("^/api/customers/(\\d+)$");
@@ -51,7 +55,7 @@ public class CustomerHandler implements HttpHandler {
     String method = exchange.getRequestMethod();
     String path = exchange.getRequestURI().getPath();
     if (path.equals("/api/customers") && method.equals("GET")) {
-      send(exchange, 200, service.list());
+      send(exchange, 200, service.list(queryValues(exchange.getRequestURI().getRawQuery(), "status")));
       return;
     }
     if (path.equals("/api/customers") && method.equals("POST")) {
@@ -76,6 +80,23 @@ public class CustomerHandler implements HttpHandler {
       return;
     }
     send(exchange, 404, Problem.of(404, "Not Found", "No route for " + method + " " + path));
+  }
+
+  /** Returns the decoded values of every occurrence of the query parameter, in request order; empty when absent. */
+  private static List<String> queryValues(String rawQuery, String name) {
+    List<String> values = new ArrayList<>();
+    if (rawQuery == null) {
+      return values;
+    }
+    for (String pair : rawQuery.split("&")) {
+      int separator = pair.indexOf('=');
+      String rawName = separator < 0 ? pair : pair.substring(0, separator);
+      String rawValue = separator < 0 ? "" : pair.substring(separator + 1);
+      if (URLDecoder.decode(rawName, StandardCharsets.UTF_8).equals(name)) {
+        values.add(URLDecoder.decode(rawValue, StandardCharsets.UTF_8));
+      }
+    }
+    return values;
   }
 
   private static void send(HttpExchange exchange, int status, Object body) throws IOException {

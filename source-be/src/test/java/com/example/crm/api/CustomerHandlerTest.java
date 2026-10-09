@@ -15,6 +15,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -709,5 +710,200 @@ class CustomerHandlerTest {
     JsonNode byIdBody = CustomerHandler.JSON.readTree(byIdResponse.body());
     assertEquals(1, byIdBody.get("id").asLong());
     assertEquals("ACTIVE", byIdBody.get("status").asText());
+  }
+
+  /** Builds the standard four-customer store (1 ACTIVE, 2 INACTIVE, 3 ACTIVE, 4 INACTIVE) on top of seed customer 1. */
+  private void insertStandardFour() throws Exception {
+    assertEquals(201, post("{\"name\":\"Tran Thi Binh\",\"email\":\"binh@example.com\",\"phone\":\"0912345678\"}").statusCode());
+    assertEquals(201, post("{\"name\":\"Le Van Cuong\",\"email\":\"cuong@example.com\",\"phone\":\"0987654321\"}").statusCode());
+    assertEquals(201, post("{\"name\":\"Pham Thi Dung\",\"email\":\"dung@example.com\"}").statusCode());
+    assertEquals(200, put("/2/status", "{\"status\":\"INACTIVE\"}").statusCode());
+    assertEquals(200, put("/4/status", "{\"status\":\"INACTIVE\"}").statusCode());
+  }
+
+  @ParameterizedTest(name = "[{index}]")
+  @MethodSource("statusFilterPathsAndIds")
+  @DisplayName("TC-120: GET /api/customers returns 200 with exactly the customers matching the status query parameter")
+  void listFiltersByStatusQueryParameter(String path, List<Long> expectedIds, String expectedFilterStatus) throws Exception {
+    insertStandardFour();
+    JsonNode all = customers();
+    assertEquals(4, all.size());
+
+    HttpResponse<String> response = get(path);
+
+    assertEquals(200, response.statusCode());
+    assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertEquals(expectedIds.size(), body.size());
+    for (int i = 0; i < expectedIds.size(); i++) {
+      long id = expectedIds.get(i);
+      assertEquals(id, body.get(i).get("id").asLong());
+      assertEquals(all.get((int) id - 1), body.get(i));
+      if (expectedFilterStatus != null) {
+        assertEquals(expectedFilterStatus, body.get(i).get("status").asText());
+      }
+    }
+  }
+
+  private static Stream<Arguments> statusFilterPathsAndIds() {
+    return Stream.of(
+        Arguments.of("", List.of(1L, 2L, 3L, 4L), null),
+        Arguments.of("?status=ACTIVE", List.of(1L, 3L), "ACTIVE"),
+        Arguments.of("?status=INACTIVE", List.of(2L, 4L), "INACTIVE"),
+        Arguments.of("?status=ACTIVE&foo=1", List.of(1L, 3L), "ACTIVE"),
+        Arguments.of("?foo=1&status=ACTIVE", List.of(1L, 3L), "ACTIVE"),
+        Arguments.of("?status=%41CTIVE", List.of(1L, 3L), "ACTIVE"),
+        Arguments.of("?%73tatus=INACTIVE", List.of(2L, 4L), "INACTIVE"),
+        Arguments.of("?", List.of(1L, 2L, 3L, 4L), null),
+        Arguments.of("?foo=1", List.of(1L, 2L, 3L, 4L), null),
+        Arguments.of("?Status=ACTIVE", List.of(1L, 2L, 3L, 4L), null),
+        Arguments.of("?STATUS=ACTIVE", List.of(1L, 2L, 3L, 4L), null),
+        Arguments.of("?state=ACTIVE", List.of(1L, 2L, 3L, 4L), null),
+        Arguments.of("?xstatus=INACTIVE", List.of(1L, 2L, 3L, 4L), null),
+        Arguments.of("?foo=1%26status%3DACTIVE", List.of(1L, 2L, 3L, 4L), null),
+        Arguments.of("?status%3DACTIVE", List.of(1L, 2L, 3L, 4L), null));
+  }
+
+  @ParameterizedTest(name = "[{index}]")
+  @MethodSource("noMatchStatusScenarios")
+  @DisplayName("TC-121: GET /api/customers with a valid status that no customer has returns 200 with an empty array")
+  void listWithValidStatusAndNoMatchReturnsEmptyArray(List<Long> idsToDeactivateFirst, String path) throws Exception {
+    assertEquals(201, post("{\"name\":\"Tran Thi Binh\",\"email\":\"binh@example.com\",\"phone\":\"0912345678\"}").statusCode());
+    for (long id : idsToDeactivateFirst) {
+      assertEquals(200, put("/" + id + "/status", "{\"status\":\"INACTIVE\"}").statusCode());
+    }
+
+    HttpResponse<String> response = get(path);
+
+    assertEquals(200, response.statusCode());
+    assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertTrue(body.isArray());
+    assertEquals(0, body.size());
+    assertEquals(2, customers().size());
+  }
+
+  private static Stream<Arguments> noMatchStatusScenarios() {
+    return Stream.of(
+        Arguments.of(List.of(), "?status=INACTIVE"),
+        Arguments.of(List.of(1L, 2L), "?status=ACTIVE"));
+  }
+
+  @ParameterizedTest(name = "[{index}]")
+  @MethodSource("statusChangeScenarios")
+  @DisplayName("TC-122: GET /api/customers filters by the status currently stored after a status change")
+  void listFiltersByCurrentlyStoredStatusAfterChange(
+      long changedId, String changeBody, List<Long> expectedActiveIds, List<Long> expectedInactiveIds)
+      throws Exception {
+    insertStandardFour();
+    JsonNode all = customers();
+
+    HttpResponse<String> changed = put("/" + changedId + "/status", changeBody);
+    assertEquals(200, changed.statusCode());
+
+    HttpResponse<String> activeResponse = get("?status=ACTIVE");
+    HttpResponse<String> inactiveResponse = get("?status=INACTIVE");
+
+    assertEquals(200, activeResponse.statusCode());
+    assertEquals(200, inactiveResponse.statusCode());
+    JsonNode activeBody = CustomerHandler.JSON.readTree(activeResponse.body());
+    JsonNode inactiveBody = CustomerHandler.JSON.readTree(inactiveResponse.body());
+    assertEquals(expectedActiveIds.size(), activeBody.size());
+    for (int i = 0; i < expectedActiveIds.size(); i++) {
+      long id = expectedActiveIds.get(i);
+      assertEquals(id, activeBody.get(i).get("id").asLong());
+      if (id == changedId) {
+        assertEquals("ACTIVE", activeBody.get(i).get("status").asText());
+      } else {
+        assertEquals(all.get((int) id - 1), activeBody.get(i));
+      }
+    }
+    assertEquals(expectedInactiveIds.size(), inactiveBody.size());
+    for (int i = 0; i < expectedInactiveIds.size(); i++) {
+      long id = expectedInactiveIds.get(i);
+      assertEquals(id, inactiveBody.get(i).get("id").asLong());
+      if (id == changedId) {
+        assertEquals("INACTIVE", inactiveBody.get(i).get("status").asText());
+      } else {
+        assertEquals(all.get((int) id - 1), inactiveBody.get(i));
+      }
+    }
+  }
+
+  private static Stream<Arguments> statusChangeScenarios() {
+    return Stream.of(
+        Arguments.of(1L, "{\"status\":\"INACTIVE\"}", List.of(3L), List.of(1L, 2L, 4L)),
+        Arguments.of(2L, "{\"status\":\"ACTIVE\"}", List.of(1L, 2L, 3L), List.of(4L)));
+  }
+
+  @ParameterizedTest(name = "[{index}]")
+  @MethodSource("invalidStatusFilterPaths")
+  @DisplayName("TC-123: GET /api/customers with an invalid status query parameter returns 400 with errors.status")
+  void listWithInvalidStatusReturnsProblem(String path) throws Exception {
+    JsonNode before = customers();
+
+    HttpResponse<String> response = get(path);
+
+    assertEquals(400, response.statusCode());
+    assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/problem+json"));
+    JsonNode body = CustomerHandler.JSON.readTree(response.body());
+    assertTrue(body.isObject());
+    assertEquals("about:blank", body.get("type").asText());
+    assertEquals("Validation failed", body.get("title").asText());
+    assertEquals(400, body.get("status").asInt());
+    assertEquals("The request has invalid fields", body.get("detail").asText());
+    assertEquals(Map.of("status", "must be ACTIVE or INACTIVE"), errorsOf(body));
+    assertEquals(before, customers());
+  }
+
+  private static Stream<String> invalidStatusFilterPaths() {
+    return Stream.of(
+        "?status=DELETED",
+        "?status=ALL",
+        "?status=active",
+        "?status=Inactive",
+        "?status=",
+        "?status",
+        "?status=%20ACTIVE",
+        "?status=INACTIVE%20",
+        "?status=+ACTIVE",
+        "?status=ACTIVE,INACTIVE",
+        "?status=ACTIVE&status=INACTIVE",
+        "?status=ACTIVE&status=ACTIVE",
+        "?status=ACTIVE&status=",
+        "?foo=1&status=DELETED",
+        "?status=ACTIVE%26foo%3D1",
+        "?status=ACTIVE=1");
+  }
+
+  @ParameterizedTest(name = "[{index}]")
+  @MethodSource("statusQueryOnOtherRoutes")
+  @DisplayName("TC-124: routes other than GET /api/customers ignore the status query parameter")
+  void otherRoutesIgnoreStatusQueryParameter(
+      String method, String path, String body, int expectedStatus, String fieldName, String expectedValue)
+      throws Exception {
+    HttpResponse<String> response = method.equals("GET") ? get(path) : put(path, body);
+
+    assertEquals(expectedStatus, response.statusCode());
+    JsonNode responseBody = CustomerHandler.JSON.readTree(response.body());
+    assertFalse(responseBody.has("errors"));
+    if (fieldName != null) {
+      assertEquals(expectedValue, responseBody.get(fieldName).asText());
+    }
+  }
+
+  private static Stream<Arguments> statusQueryOnOtherRoutes() {
+    return Stream.of(
+        Arguments.of("GET", "/1?status=DELETED", null, 200, "email", "an@example.com"),
+        Arguments.of("GET", "/999?status=DELETED", null, 404, "detail", "Customer 999 not found"),
+        Arguments.of(
+            "PUT",
+            "/1?status=DELETED",
+            "{\"name\":\"Nguyen Van Anh\",\"email\":\"an@example.com\"}",
+            200,
+            "name",
+            "Nguyen Van Anh"),
+        Arguments.of(
+            "PUT", "/1/status?status=DELETED", "{\"status\":\"INACTIVE\"}", 200, "status", "INACTIVE"));
   }
 }

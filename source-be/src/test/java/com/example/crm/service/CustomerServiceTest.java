@@ -10,6 +10,7 @@ import com.example.crm.domain.CustomerStatus;
 import com.example.crm.error.NotFoundException;
 import com.example.crm.error.ValidationException;
 import com.example.crm.repository.InMemoryCustomerRepository;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -765,6 +766,100 @@ class CustomerServiceTest {
 
   private static Stream<String> roundTripPhones() {
     return Stream.of("0912345678", null, "01234567890");
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("statusListsForNoFilter")
+  @DisplayName("TC-117: list with no status value returns the same customers as list()")
+  void listWithNoStatusValueReturnsSameAsList(List<CustomerStatus> statuses) {
+    List<Customer> inserted = insertByStatuses(statuses);
+
+    List<Customer> result = service.list(List.of());
+
+    assertEquals(service.list(), result);
+    assertEquals(inserted, result);
+  }
+
+  private static Stream<List<CustomerStatus>> statusListsForNoFilter() {
+    return Stream.of(
+        List.of(CustomerStatus.ACTIVE, CustomerStatus.INACTIVE, CustomerStatus.ACTIVE, CustomerStatus.INACTIVE),
+        List.of(CustomerStatus.INACTIVE, CustomerStatus.INACTIVE),
+        List.of());
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("statusListsWithOneFilterValue")
+  @DisplayName("TC-118: list with one valid status value returns only the customers in that status, ordered by id")
+  void listWithOneValidStatusValueReturnsMatchingCustomers(
+      List<CustomerStatus> statuses, String filter, List<Integer> expectedIds) {
+    List<Customer> inserted = insertByStatuses(statuses);
+
+    List<Customer> result = service.list(List.of(filter));
+
+    List<Customer> expected = expectedIds.stream().map(id -> inserted.get(id - 1)).toList();
+    assertEquals(expected, result);
+    assertEquals(inserted, service.list());
+  }
+
+  private static Stream<Arguments> statusListsWithOneFilterValue() {
+    return Stream.of(
+        arguments(
+            List.of(CustomerStatus.ACTIVE, CustomerStatus.INACTIVE, CustomerStatus.ACTIVE, CustomerStatus.INACTIVE),
+            "ACTIVE", List.of(1, 3)),
+        arguments(
+            List.of(CustomerStatus.ACTIVE, CustomerStatus.INACTIVE, CustomerStatus.ACTIVE, CustomerStatus.INACTIVE),
+            "INACTIVE", List.of(2, 4)),
+        arguments(List.of(CustomerStatus.ACTIVE, CustomerStatus.ACTIVE), "INACTIVE", List.of()),
+        arguments(List.of(CustomerStatus.INACTIVE, CustomerStatus.INACTIVE), "ACTIVE", List.of()),
+        arguments(List.of(), "ACTIVE", List.of()));
+  }
+
+  private List<Customer> insertByStatuses(List<CustomerStatus> statuses) {
+    List<Customer> inserted = new ArrayList<>();
+    for (CustomerStatus status : statuses) {
+      int n = inserted.size() + 1;
+      inserted.add(repository.insert("Customer " + n, "customer" + n + "@example.com", null, status));
+    }
+    return inserted;
+  }
+
+  @ParameterizedTest(name = ROW_NAME)
+  @MethodSource("invalidStatusValueLists")
+  @DisplayName("TC-119: list rejects status values other than exactly one ACTIVE or INACTIVE")
+  void listRejectsStatusValuesOtherThanExactlyOneValid(boolean useK4, List<String> statusValues) {
+    if (useK4) {
+      repository.insert("Nguyen Van An", "an@example.com", null, CustomerStatus.ACTIVE);
+      repository.insert("Tran Thi Binh", "binh@example.com", "0912345678", CustomerStatus.INACTIVE);
+      repository.insert("Le Van Cuong", "cuong@example.com", "0987654321", CustomerStatus.ACTIVE);
+      repository.insert("Pham Thi Dung", "dung@example.com", null, CustomerStatus.INACTIVE);
+    }
+    List<Customer> before = service.list();
+
+    ValidationException error = assertThrows(ValidationException.class, () -> service.list(statusValues));
+
+    assertEquals(Map.of("status", "must be ACTIVE or INACTIVE"), error.errors());
+    assertEquals(before, service.list());
+  }
+
+  private static Stream<Arguments> invalidStatusValueLists() {
+    List<List<String>> values = List.of(
+        List.of("DELETED"),
+        List.of("ALL"),
+        List.of("active"),
+        List.of("Inactive"),
+        List.of(""),
+        List.of("   "),
+        List.of(" ACTIVE"),
+        List.of("INACTIVE "),
+        List.of("ACTIVE,INACTIVE"),
+        List.of("ACTIVE", "INACTIVE"),
+        List.of("INACTIVE", "ACTIVE"),
+        List.of("ACTIVE", "ACTIVE"),
+        List.of("INACTIVE", "INACTIVE"),
+        List.of("ACTIVE", ""),
+        List.of("", "ACTIVE"),
+        List.of("ACTIVE", "ACTIVE", "ACTIVE"));
+    return Stream.of(true, false).flatMap(useK4 -> values.stream().map(v -> arguments(useK4, v)));
   }
 
   @Test

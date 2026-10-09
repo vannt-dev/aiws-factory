@@ -22,8 +22,9 @@ async function request(path, { fetchImpl = fetch, ...init } = {}) {
   return body;
 }
 
-export function listCustomers(options) {
-  return request('/customers', options);
+/** Lists customers; `status` ('ACTIVE' or 'INACTIVE') asks the API for customers in that status only. */
+export function listCustomers({ status, ...options } = {}) {
+  return request(status ? `/customers?status=${encodeURIComponent(status)}` : '/customers', options);
 }
 
 export function createCustomer(customer, options) {
