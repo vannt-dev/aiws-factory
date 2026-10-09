@@ -4,15 +4,21 @@ requirement: requirements/REQ-005-filter-by-status.md
 branch: aiws/REQ-005
 base_branch: demo
 base_commit: 20fdffd099fc5ab11376d722771808f86ec73a95
-phase: analysis
+phase: design
 status: running
 history:
   - phase: new
     result: created
     by: Van Nguyen
     at: 2026-10-09T15:10:10Z
+  - phase: analysis
+    agent: analyst
+    result: ok
+    run: run-0001
+    at: 2026-10-09T15:24:06Z
 tasks: []
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
+run_seq: 1
