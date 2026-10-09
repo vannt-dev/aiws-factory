@@ -1,12 +1,11 @@
 req_id: REQ-005
 title: Lọc danh sách khách hàng theo trạng thái
 requirement: requirements/REQ-005-filter-by-status.md
-branch: aiws/REQ-005
+branch: aiws/REQ-005-knowledge
 base_branch: demo
 base_commit: 20fdffd099fc5ab11376d722771808f86ec73a95
-phase: pr_approval
-status: waiting_human
-reason: open a PR for the branch; after it is merged run `aiws approve REQ-005 pr` (or `aiws reject REQ-005 pr -m "..."`)
+phase: done
+status: done
 history:
   - phase: new
     result: created
@@ -80,6 +79,18 @@ history:
     result: ok
     run: run-0010
     at: 2026-10-09T16:33:23Z
+  - phase: pr_approval
+    result: merged
+    by: Van Nguyen
+    record: pr-01.yaml
+    head: 092eb99
+    merge: merge commit
+    at: 2026-10-09T16:37:23Z
+  - phase: knowledge_update
+    agent: discovery
+    result: ok
+    run: run-0011
+    at: 2026-10-09T16:43:52Z
 tasks:
   - id: T1
     title: be - repository.findAllByStatus
@@ -172,9 +183,10 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 10
+run_seq: 11
 budget_usd: 55
 last_review:
   run: run-0010
   head: 8fe9a5cb9e769b9468bbb458380bf95dc05d4a01
   approval: design-01.yaml
+code_head: 092eb9985ac9c66c7e1bb2f75bd74fbeef2c1a80

@@ -24,6 +24,7 @@ Interface lưu trữ: `source-be/src/main/java/com/example/crm/repository/Custom
 | Method | Hành vi của `InMemoryCustomerRepository` | Câu SQL legacy tương ứng (`source-legacy/customer_save.php`, `source-legacy/customer_list.php`) |
 | --- | --- | --- |
 | `findAll()` | Mọi khách hàng, tăng dần theo `id` | `SELECT ... FROM customers ORDER BY id` |
+| `findAllByStatus(status)` (REQ-005) | Chỉ khách hàng có đúng `status`, tăng dần theo `id`; duyệt tuyến tính như `findAll()` | `SELECT ... FROM customers WHERE status = ? ORDER BY id` (chưa có; `customers.status` chưa có index) |
 | `findById(id)` | `Optional<Customer>` | — |
 | `existsByEmail(email)` | Có khách hàng nào dùng email, không phân biệt hoa thường | — (legacy dựa vào `uq_customers_email`) |
 | `existsByPhoneAndStatus(phone, status)` | Có khách hàng nào có đúng số và đúng trạng thái | `WHERE phone = ? AND status = 1` (legacy luôn kèm `AND id <> ?`, với `id = 0` khi thêm mới) |
@@ -33,7 +34,7 @@ Interface lưu trữ: `source-be/src/main/java/com/example/crm/repository/Custom
 | `update(id, name, email, phone)` | `computeIfPresent`: thay `name`, `email`, `phone`; giữ `id` và `status` đang lưu. Trả `Optional<Customer>` sau khi sửa, hoặc `Optional.empty()` khi không có `id` đó. **Không bao giờ thêm mới** | `UPDATE customers SET full_name = ?, email = ?, phone = ? WHERE id = ?` |
 | `updateStatus(id, status)` (REQ-003) | `computeIfPresent`: thay `status`; giữ `id`, `name`, `email`, `phone` đang lưu (chép từ giá trị `c` trong map lúc ghi, không phải lần đọc trước đó của service). Trả `Optional<Customer>` sau khi đổi, hoặc `Optional.empty()` khi không có `id` đó. **Không bao giờ thêm mới** | `UPDATE customers SET status = ? WHERE id = ?` (chưa có; không có code nào đổi `status` ở legacy) |
 
-Hiện chưa có delete. Thao tác đổi `status` có từ REQ-003 (`CustomerRepository.updateStatus`, gọi qua `CustomerService.updateStatus` và `PUT /api/customers/{id}/status`).
+Hiện chưa có delete. Thao tác đổi `status` có từ REQ-003 (`CustomerRepository.updateStatus`, gọi qua `CustomerService.updateStatus` và `PUT /api/customers/{id}/status`). Truy vấn lọc theo `status` (`findAllByStatus`) có từ REQ-005, gọi qua `CustomerService.list(List<String>)` và `GET /api/customers?status=...` (`aiws/knowledge/api-inventory.md` → Endpoints).
 
 Dữ liệu seed khi chạy `App.main`: 2 khách hàng, đều `phone = null` (`source-be/src/main/java/com/example/crm/App.java`).
 
