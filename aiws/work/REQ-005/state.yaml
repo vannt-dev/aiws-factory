@@ -47,6 +47,12 @@ history:
     run: run-0005
     commit: d33affd
     at: 2026-10-09T16:18:10Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0006
+    commit: d8e24b0
+    at: 2026-10-09T16:20:38Z
 tasks:
   - id: T1
     title: be - repository.findAllByStatus
@@ -75,10 +81,10 @@ tasks:
       - TC-119
     depends_on:
       - T1
-    status: running
-    base: 7d9ad97df3388000237665755a093cfc15e8b56a
+    status: done
     attempts: 1
     test_result: pass
+    commit: d8e24b056a435650d8d6c25df0053f0f51c4c651
   - id: T3
     title: be - GET /api/customers lọc theo tham số query status
     type: feat
