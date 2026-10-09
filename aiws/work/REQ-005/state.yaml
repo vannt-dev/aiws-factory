@@ -99,7 +99,10 @@ tasks:
       - TC-124
     depends_on:
       - T2
-    status: pending
+    status: running
+    base: 6d70279060085d3c1ce20fb642d0fc8d97d10092
+    attempts: 1
+    test_result: pass
   - id: T4
     title: fe - listCustomers nhận status trong options
     type: feat
@@ -136,5 +139,5 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 6
+run_seq: 7
 budget_usd: 55
