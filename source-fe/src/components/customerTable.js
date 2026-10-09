@@ -13,7 +13,7 @@ export function renderCustomerTable(customers) {
   if (!customers.length) return '<p>Chưa có khách hàng.</p>';
   const rows = customers
     .map((c) => {
-      const action = STATUS_ACTIONS[c.status];
+      const action = Object.hasOwn(STATUS_ACTIONS, c.status) ? STATUS_ACTIONS[c.status] : null;
       const statusButton = action
         ? ` <button type="button" data-status-id="${escapeHtml(c.id)}" data-target-status="${escapeHtml(action.target)}">${action.label}</button>`
         : '';
