@@ -36,6 +36,12 @@ history:
     result: ok
     run: run-0004
     at: 2026-10-09T14:46:54Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0005
+    commit: c8e76a1
+    at: 2026-10-09T14:48:33Z
 tasks:
   - id: T1
     title: be - chuyển TC-92, TC-97 sang @MethodSource
@@ -46,10 +52,10 @@ tasks:
       - TC-92
       - TC-97
     depends_on: []
-    status: running
-    base: 16384c6a0566045beb2509139d440d0a7bb7ddf8
+    status: done
     attempts: 1
     test_result: pass
+    commit: c8e76a11d62d64858b03ae542fab621b443867a4
   - id: T2
     title: fe - Object.hasOwn khi tra STATUS_ACTIONS
     type: fix
