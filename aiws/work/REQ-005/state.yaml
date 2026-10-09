@@ -149,10 +149,13 @@ tasks:
       - TC-134
     depends_on:
       - T4
-    status: pending
+    status: running
+    base: 852d193b579bba9e789fdd60a3c0a1d85a71f92f
+    attempts: 1
+    test_result: pass
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 8
+run_seq: 9
 budget_usd: 55

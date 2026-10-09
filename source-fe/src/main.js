@@ -3,16 +3,20 @@ import { renderCustomerEditForm } from './components/customerEditForm.js';
 import { renderCustomerTable } from './components/customerTable.js';
 import { describeStatusError } from './utils/describeStatusError.js';
 import { createDoubleClickGuard } from './utils/createDoubleClickGuard.js';
+import { createCustomerListLoader } from './utils/createCustomerListLoader.js';
 
 const listEl = document.getElementById('customers');
 const editEl = document.getElementById('edit-customer');
 const messageEl = document.getElementById('message');
 const form = document.getElementById('create-form');
+const filterEl = document.getElementById('status-filter');
 const acceptStatusClick = createDoubleClickGuard();
+const loadCustomers = createCustomerListLoader(listCustomers, () => filterEl.value);
 
 async function refresh() {
   try {
-    listEl.innerHTML = renderCustomerTable(await listCustomers());
+    const { current, customers } = await loadCustomers();
+    if (current) listEl.innerHTML = renderCustomerTable(customers);
   } catch {
     listEl.textContent = 'Không tải được danh sách khách hàng.';
   }
@@ -87,4 +91,10 @@ listEl.addEventListener('click', async (event) => {
   }
 });
 
+filterEl.addEventListener('change', () => {
+  messageEl.textContent = '';
+  refresh();
+});
+
+filterEl.value = '';
 refresh();
