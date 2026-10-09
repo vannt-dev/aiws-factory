@@ -4,7 +4,7 @@ requirement: requirements/REQ-005-filter-by-status.md
 branch: aiws/REQ-005
 base_branch: demo
 base_commit: 20fdffd099fc5ab11376d722771808f86ec73a95
-phase: implementation
+phase: review
 status: running
 history:
   - phase: new
@@ -70,6 +70,9 @@ history:
     result: done
     run: run-0009
     commit: 9caa593
+    at: 2026-10-09T16:27:33Z
+  - phase: implementation
+    result: all_tasks_done
     at: 2026-10-09T16:27:33Z
 tasks:
   - id: T1
