@@ -42,6 +42,12 @@ history:
     run: run-0005
     commit: c8e76a1
     at: 2026-10-09T14:48:33Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0006
+    commit: 75cedc3
+    at: 2026-10-09T14:49:24Z
 tasks:
   - id: T1
     title: be - chuyển TC-92, TC-97 sang @MethodSource
@@ -66,10 +72,10 @@ tasks:
       - TC-105
       - TC-114
     depends_on: []
-    status: running
-    base: a5731ac359610d98f65f7d7fe1c779d0dd0b76ea
+    status: done
     attempts: 1
     test_result: pass
+    commit: 75cedc3ab107301622614b15bd8b1c85370049e0
   - id: T3
     title: fe - chống bấm đúp nút đổi trạng thái
     type: fix
