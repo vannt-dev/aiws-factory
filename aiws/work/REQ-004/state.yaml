@@ -16,9 +16,14 @@ history:
     result: ok
     run: run-0001
     at: 2026-10-09T14:16:23Z
+  - phase: design
+    agent: architect
+    result: ok
+    run: run-0002
+    at: 2026-10-09T14:30:19Z
 tasks: []
 feedback: []
 attempts: {}
 last_failure: {}
-step_index: 0
-run_seq: 1
+step_index: 1
+run_seq: 2

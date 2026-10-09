@@ -1,0 +1,14 @@
+# OpenAPI 3 cho MỌI endpoint mới/đổi của REQ-004. Cầu nối FE-BE: BE phải expose đúng, FE phải gọi đúng.
+# REQ-004 KHÔNG đổi API: không endpoint nào mới, không endpoint nào đổi path, method, schema, mã trạng thái hay
+# format lỗi (RFC 9457). Vì vậy `paths: {}`.
+# FE vẫn gọi nguyên PUT /api/customers/{id}/status theo aiws/work/REQ-003/api-contract.yaml; các endpoint còn lại
+# xem aiws/work/REQ-001/api-contract.yaml và aiws/work/REQ-002/api-contract.yaml.
+openapi: 3.0.3
+info:
+  title: REQ-004 API contract
+  version: 1.0.0
+  description: >-
+    CRM customers API (source-be, CustomerHandler). REQ-004 chỉ sửa FE (chống bấm đúp nút đổi trạng thái, không
+    hiện nút cho trạng thái lạ) và code test; không file nào dưới source-be/src/main/ thay đổi, nên contract
+    không có endpoint nào (xem 02-design.md, mục API).
+paths: {}
