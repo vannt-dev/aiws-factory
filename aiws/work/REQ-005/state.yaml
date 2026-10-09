@@ -27,9 +27,15 @@ history:
     result: ok
     run: run-0003
     at: 2026-10-09T16:08:17Z
+  - phase: design_approval
+    result: budget_set
+    by: Van Nguyen
+    budget_usd: 55
+    at: 2026-10-09T16:10:49Z
 tasks: []
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
 run_seq: 3
+budget_usd: 55
