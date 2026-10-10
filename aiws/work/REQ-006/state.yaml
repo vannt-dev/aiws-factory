@@ -4,9 +4,8 @@ requirement: requirements/REQ-006-status-filter-polish.md
 branch: aiws/REQ-006
 base_branch: demo
 base_commit: 5bc90ffebb3c57e9bb26438da30efb31f142434e
-phase: design_approval
-status: waiting_human
-reason: 'design ready for review: 02-design.md, 03-test-spec.md, api-contract.yaml. Then run `aiws approve REQ-006 design` or `aiws reject REQ-006 design -m "..."`'
+phase: planning
+status: running
 history:
   - phase: new
     result: created
@@ -27,6 +26,11 @@ history:
     result: ok
     run: run-0003
     at: 2026-10-10T08:30:54Z
+  - phase: design_approval
+    result: approved
+    by: Van Nguyen
+    record: design-01.yaml
+    at: 2026-10-10T08:32:10Z
 tasks: []
 feedback: []
 attempts: {}
