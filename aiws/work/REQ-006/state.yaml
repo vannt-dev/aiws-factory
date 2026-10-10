@@ -83,7 +83,10 @@ tasks:
     tests:
       - TC-127
     depends_on: []
-    status: pending
+    status: running
+    base: 20c4690544ec5676301c7a712277e0c513a0058a
+    attempts: 1
+    test_result: pass
   - id: T4
     title: fe - câu trạng thái rỗng theo lựa chọn lọc
     type: feat
@@ -131,4 +134,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 6
+run_seq: 7
