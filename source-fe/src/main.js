@@ -14,9 +14,10 @@ const acceptStatusClick = createDoubleClickGuard();
 const loadCustomers = createCustomerListLoader(listCustomers, () => filterEl.value);
 
 async function refresh() {
+  const statusFilter = filterEl.value;
   try {
     const { current, customers } = await loadCustomers();
-    if (current) listEl.innerHTML = renderCustomerTable(customers);
+    if (current) listEl.innerHTML = renderCustomerTable(customers, statusFilter);
   } catch {
     listEl.textContent = 'Không tải được danh sách khách hàng.';
   }

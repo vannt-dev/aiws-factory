@@ -261,3 +261,32 @@ test('TC-75: renderCustomerTable escapes the id inside data-edit-id', () => {
   assert.match(html, /data-edit-id="7&quot;&gt;&lt;b&gt;x&lt;\/b&gt;"/);
   assert.doesNotMatch(html, /<b>x<\/b>/);
 });
+
+test('TC-135: renderCustomerTable shows a no-match sentence for an empty list when a status filter is selected', () => {
+  const statusFilters = ['ACTIVE', 'INACTIVE', 'DELETED'];
+
+  for (const statusFilter of statusFilters) {
+    // Act
+    const html = renderCustomerTable([], statusFilter);
+
+    // Assert
+    assert.equal(html, '<p>Không có khách hàng nào khớp lựa chọn lọc.</p>');
+  }
+});
+
+test('TC-136: renderCustomerTable renders the table unchanged when the list is not empty, regardless of statusFilter', () => {
+  // Arrange
+  const customers = [{ id: 1, name: 'Nguyen Van An', email: 'an@example.com', phone: null, status: 'ACTIVE' }];
+  const withoutFilter = renderCustomerTable(customers);
+  const statusFilters = [undefined, '', 'ACTIVE', 'INACTIVE'];
+
+  for (const statusFilter of statusFilters) {
+    // Act
+    const html = renderCustomerTable(customers, statusFilter);
+
+    // Assert
+    assert.equal(html, withoutFilter);
+    assert.doesNotMatch(html, /Chưa có khách hàng\./);
+    assert.doesNotMatch(html, /Không có khách hàng nào khớp lựa chọn lọc\./);
+  }
+});

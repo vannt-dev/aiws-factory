@@ -104,7 +104,10 @@ tasks:
       - TC-135
       - TC-136
     depends_on: []
-    status: pending
+    status: running
+    base: 2d4efc2a928e22ab87d9be23f4fd951a97c585a5
+    attempts: 1
+    test_result: pass
   - id: T5
     title: fe - chống bấm đúp theo lựa chọn lọc
     type: feat
@@ -140,4 +143,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 7
+run_seq: 8
