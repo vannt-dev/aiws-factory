@@ -12,6 +12,11 @@
 # `source-fe/src/main.js` nên PHẢI nối tiếp (02-design.md -> FE change: "không song song"), qua depends_on;
 # không task nào trong ba task này đổi hành vi của phần `main.js` mà task khác đang chạm, nên không cần hợp
 # nhất thành một task.
+#
+# Re-plan (feedback PR changes_requested, Van Nguyen): T1..T6 giữ nguyên id/allowed_files/tests để orchestrator
+# nhận diện vẫn DONE (engine.js mergePlan so cả hai trường này). Thêm T7 cho riêng finding TC-137/TC-138 của
+# 05-review.md; TC-137, TC-138 vì vậy xuất hiện ở cả T5 (giữ nguyên, không ảnh hưởng tới kết quả test) và T7
+# (task thực sự sửa assertion) — validatePlan không cấm một TC được gán cho nhiều task.
 tasks:
   - id: T1
     type: test
@@ -342,4 +347,36 @@ tasks:
       - source-fe/src/main.js
       - source-fe/index.html
     tests: [TC-143, TC-144]
+    depends_on: [T5]
+
+  - id: T7
+    type: test
+    title: fe - TC-137, TC-138 so trực tiếp thay vì qua giá trị boolean (feedback PR)
+    description: >-
+      Feedback PR changes_requested (Van Nguyen, 2026-10-10): trong
+      `source-fe/test/chooseStatusClickKey.test.js`, bốn assertion của TC-137 và TC-138 so một biểu thức
+      boolean với `true` (`assert.equal(<bieu_thuc>, true)`); khi fail, thông điệp chỉ là `false !== true`,
+      không hiện hai giá trị bị lệch. Đổi thành so trực tiếp bằng `assert.equal`/`assert.notEqual` (cùng độ
+      chặt `===`/`!==` vì `node:assert/strict`), để thông điệp fail hiện đúng hai giá trị.
+      Đổi ĐÚNG bốn dòng, giữ nguyên mọi dòng khác của hai test (tên hiển thị, mảng dữ liệu, vòng lặp,
+      import, TC-139..TC-142 không chạm):
+      - Dòng 19 (TC-137): `assert.equal(key === customerId, true);` ->
+        `assert.equal(key, customerId);`
+      - Dòng 33 (TC-138): `assert.equal(typeof key !== 'string', true);` ->
+        `assert.notEqual(typeof key, 'string');`
+      - Dòng 36 (TC-138): `assert.equal(key === keys[0], true);` -> `assert.equal(key, keys[0]);`
+      - Dòng 39 (TC-138): `assert.equal(keys[0] !== customerId, true);` ->
+        `assert.notEqual(keys[0], customerId);`
+      BẮT BUỘC:
+      - Không đổi tên test, tên hiển thị `test('TC-137: ...')`/`test('TC-138: ...')`, mảng `cases`/
+        `customerIds`/`keys`, vòng lặp, import.
+      - Không đổi TC-139, TC-140, TC-141, TC-142 (giữ `assert.deepEqual(results, [...])`, đã được reviewer
+        chấp nhận ở `05-review.md` -> Ghi nhận không phải finding).
+      - Không sửa file nào khác (không chạm `source-fe/src/utils/chooseStatusClickKey.js`,
+        `source-fe/src/main.js`).
+      Hành vi kiểm không đổi so với test spec (TC-137, TC-138 vẫn so `===`/khác `!==`), chỉ đổi cách viết
+      assertion; `fe_test` vẫn 63 test, đều pass, không test nào thêm hay mất.
+    allowed_files:
+      - source-fe/test/chooseStatusClickKey.test.js
+    tests: [TC-137, TC-138]
     depends_on: [T5]

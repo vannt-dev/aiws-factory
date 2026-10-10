@@ -4,7 +4,7 @@ requirement: requirements/REQ-006-status-filter-polish.md
 branch: aiws/REQ-006
 base_branch: demo
 base_commit: 5bc90ffebb3c57e9bb26438da30efb31f142434e
-phase: planning
+phase: implementation
 status: running
 history:
   - phase: new
@@ -85,6 +85,11 @@ history:
     by: Van Nguyen
     record: pr-01.yaml
     at: 2026-10-10T08:48:35Z
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0012
+    at: 2026-10-10T08:52:54Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
@@ -96,9 +101,8 @@ tasks:
       - TC-118
     depends_on: []
     status: done
-    attempts: 1
-    test_result: pass
     commit: 7205f8cdf106170d6dcaf19fcb9180f770f5da1a
+    test_result: pass
   - id: T2
     title: be - thêm assertion trực tiếp cho field và cho khách hàng vừa đổi (F2, F3)
     type: test
@@ -109,9 +113,8 @@ tasks:
       - TC-122
     depends_on: []
     status: done
-    attempts: 1
-    test_result: pass
     commit: 5605439c3197fc0fbd81afac0f4fcb3c453341df
+    test_result: pass
   - id: T3
     title: fe - đổi tên biến notFound500 thành internalError500 (F4)
     type: test
@@ -121,9 +124,8 @@ tasks:
       - TC-127
     depends_on: []
     status: done
-    attempts: 1
-    test_result: pass
     commit: af962dfa57c5f73edddeb5d3a12e9d12d810916e
+    test_result: pass
   - id: T4
     title: fe - câu trạng thái rỗng theo lựa chọn lọc
     type: feat
@@ -136,9 +138,8 @@ tasks:
       - TC-136
     depends_on: []
     status: done
-    attempts: 1
-    test_result: pass
     commit: 2ebbfe803d6b0d3f4fd88eb718953188aead8b55
+    test_result: pass
   - id: T5
     title: fe - chống bấm đúp theo lựa chọn lọc
     type: feat
@@ -156,9 +157,8 @@ tasks:
     depends_on:
       - T4
     status: done
-    attempts: 1
-    test_result: pass
     commit: 834cd03e5501995e9512e6d18b8570561284bb94
+    test_result: pass
   - id: T6
     title: fe - thông báo sau khi thêm khách hàng không khớp lựa chọn lọc
     type: feat
@@ -173,18 +173,24 @@ tasks:
     depends_on:
       - T5
     status: done
-    attempts: 1
-    test_result: pass
     commit: 875475d06e5455a25ad2e0fb24548ddf0b549c93
-feedback:
-  - phase: planning
-    source: pr changes_requested by Van Nguyen
-    text: "TC-137 va TC-138: so truc tiep bang assert.equal(key, customerId) hoac assert.notEqual, khong so qua gia tri boolean, de khi fail hien hai gia tri bi lech."
-    at: 2026-10-10T08:48:35Z
+    test_result: pass
+  - id: T7
+    title: fe - TC-137, TC-138 so trực tiếp thay vì qua giá trị boolean (feedback PR)
+    type: test
+    allowed_files:
+      - source-fe/test/chooseStatusClickKey.test.js
+    tests:
+      - TC-137
+      - TC-138
+    depends_on:
+      - T5
+    status: pending
+feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 11
+run_seq: 12
 last_review:
   run: run-0011
   head: 336e7663e149497686b73af6bdaed83dd553ff72
