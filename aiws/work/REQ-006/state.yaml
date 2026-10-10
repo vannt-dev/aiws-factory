@@ -130,7 +130,10 @@ tasks:
       - TC-142
     depends_on:
       - T4
-    status: pending
+    status: running
+    base: bfeb48884613de659eeacda61033d0f2f82d642e
+    attempts: 1
+    test_result: pass
   - id: T6
     title: fe - thông báo sau khi thêm khách hàng không khớp lựa chọn lọc
     type: feat
@@ -149,4 +152,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 8
+run_seq: 9
