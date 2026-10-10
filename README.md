@@ -41,6 +41,7 @@ aiws new REQ-001 && aiws run REQ-001
 
 ## Documentation
 
+- [Handbook](aiws/docs/handbook.md) ([Tiếng Việt](aiws/docs/handbook.vi.md)): one requirement step by step, what to read at each gate, what to do when a run stops, cost and time of six real requirements.
 - [Operations guide](aiws/README.md) ([Tiếng Việt](aiws/README.vi.md)): lifecycle, gates, enforcement, configuration, CI.
 - [Specification V1](aiws/docs/spec-v1.md): the original design (Vietnamese).
 - [AGENTS.md](AGENTS.md): rules every AI agent must follow.
