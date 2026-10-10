@@ -185,12 +185,15 @@ tasks:
       - TC-138
     depends_on:
       - T5
-    status: pending
+    status: running
+    base: f96d7c64636215ffba7b6c9646fafde81a65d24a
+    attempts: 1
+    test_result: pass
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 12
+run_seq: 13
 last_review:
   run: run-0011
   head: 336e7663e149497686b73af6bdaed83dd553ff72

@@ -16,7 +16,7 @@ test('TC-137: chooseStatusClickKey returns the given customerId unchanged when n
 
   for (const [statusFilter, customerId] of cases) {
     const key = chooseStatusClickKey(statusFilter, customerId);
-    assert.equal(key === customerId, true);
+    assert.equal(key, customerId);
   }
 });
 
@@ -30,13 +30,13 @@ test('TC-138: chooseStatusClickKey returns one shared non-string key for every c
   ];
 
   for (const key of keys) {
-    assert.equal(typeof key !== 'string', true);
+    assert.notEqual(typeof key, 'string');
   }
   for (const key of keys) {
-    assert.equal(key === keys[0], true);
+    assert.equal(key, keys[0]);
   }
   for (const customerId of customerIds) {
-    assert.equal(keys[0] !== customerId, true);
+    assert.notEqual(keys[0], customerId);
   }
 });
 
