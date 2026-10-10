@@ -163,6 +163,55 @@
 
   footer { border-top: 1px solid var(--border); padding: 32px 0 calc(40px + env(safe-area-inset-bottom)); color: var(--muted); font-size: 14px; }
   footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; justify-content: space-between; }
+  /* In short */
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .feature .num { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 600 13px var(--mono); }
+  .example { margin-top: 18px; padding: 18px 22px; font-size: 15px; }
+  .example b { display: block; margin-bottom: 8px; }
+  .example ul { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px 36px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .facts { margin: 22px 0 0; color: var(--muted); font-size: 15px; }
+  .facts b { color: var(--text); }
+  .glossary { margin-top: 22px; padding: 20px 22px; }
+  .glossary h3 { margin: 0 0 10px; font-size: 16px; }
+  .glossary ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px 24px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); color: var(--muted); font-size: 14px; }
+  .glossary b { color: var(--text); }
+
+  /* Replay of a real run */
+  .replay { margin-top: 44px; }
+  .replay h3 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.01em; }
+  .replay .sub { margin-bottom: 20px; }
+  .replay-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .replay-grid { grid-template-columns: 1fr; } }
+  .term pre.rp-log { max-height: 400px; overflow: auto; font-size: 13px; }
+  .rp-log .ln { display: block; min-height: 1.75em; }
+  .rp-log .you { color: #5eead4; }
+  .rp-log .busy { color: #fff; }
+  .rp-log .busy::after { content: " \258D"; animation: rp-blink 1s steps(2, start) infinite; }
+  @keyframes rp-blink { to { visibility: hidden; } }
+  .replay.armed .rp-log .ln:not(.on) { display: none; }
+  .replay.armed .rp-log { min-height: 400px; }
+  .rp-hint { display: none; color: #7c8aa8; font-family: var(--font); }
+  .replay.armed.idle .rp-hint { display: block; }
+  @media (max-width: 900px) { .term pre.rp-log { max-height: 300px; } .replay.armed .rp-log { min-height: 300px; } }
+  .rp-side { padding: 20px 22px; display: grid; gap: 14px; }
+  .rp-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .rp-controls button, .rp-gate button { font: 600 14px var(--font); border-radius: 9px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+  .rp-controls button:hover { border-color: var(--accent); }
+  .rp-controls .primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .rp-now { font-size: 13px; color: var(--muted); }
+  .rp-now b { display: block; font-size: 18px; color: var(--text); }
+  .rp-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
+  .rp-meters div { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+  .rp-meters dt { font-size: 12px; color: var(--muted); }
+  .rp-meters dd { margin: 2px 0 0; font-weight: 700; font-size: 19px; font-variant-numeric: tabular-nums; }
+  .rp-gate { background: var(--gate-soft); border: 1px solid color-mix(in srgb, var(--gate) 45%, transparent); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  .rp-gate p { margin: 0 0 10px; }
+  .rp-gate button { background: var(--gate); border-color: var(--gate); color: var(--bg); }
+  .rp-note { font-size: 13px; color: var(--muted); margin: 0; }
+  .step.now { box-shadow: 0 0 0 2px var(--accent); }
+  .step.past { border-color: color-mix(in srgb, var(--ok) 60%, transparent); }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { .rp-log .busy::after { animation: none; } }
 </style>
 </head>
 <body>
@@ -204,6 +253,55 @@
   </div>
 </header>
 
+<section id="how">
+  <div class="wrap">
+    <p class="kicker" data-i18n="in.k">In short</p>
+    <h2 data-i18n="in.h2">You write a requirement and approve twice. The AI does the rest, within limits.</h2>
+    <p class="sub" data-i18n="in.sub">There is no chat to supervise. The work moves through fixed phases, and every result is a file in your repository that you can read, review and revert.</p>
+    <div class="grid g3">
+      <div class="card feature">
+        <span class="num">1</span>
+        <h3 data-i18n="in.1.h">You write a requirement</h3>
+        <p data-i18n="in.1">A short Markdown file in plain language. There is no template to learn.</p>
+      </div>
+      <div class="card feature">
+        <span class="num">2</span>
+        <h3 data-i18n="in.2.h">The AI works phase by phase</h3>
+        <p data-i18n="in.2">It turns the requirement into acceptance criteria, a design and a test specification, then writes the code in small tasks, each with its unit tests, and reviews the result. In each phase it may change only the files of that phase; any other change is reverted.</p>
+      </div>
+      <div class="card feature">
+        <span class="num">3</span>
+        <h3 data-i18n="in.3.h">You decide, twice</h3>
+        <p data-i18n="in.3">First you read the design and the test specification and approve them, or send them back with a note. Later you review and merge the pull request. The AI cannot run these two commands.</p>
+      </div>
+      <div class="card feature">
+        <span class="num">4</span>
+        <h3 data-i18n="in.4.h">You get a pull request you can check</h3>
+        <p data-i18n="in.4">Code with passing unit tests, a matrix that links every acceptance criterion to its tests, task and commit, and a record of every AI run: its prompt, cost and changed files.</p>
+      </div>
+    </div>
+    <div class="card example">
+      <b data-i18n="in.ex.t">A requirement from the demo, shortened: REQ-003</b>
+      <ul>
+        <li data-i18n="in.ex.1">Staff can switch an active customer to inactive, and back.</li>
+        <li data-i18n="in.ex.2">Deactivating changes nothing else about the customer.</li>
+        <li data-i18n="in.ex.3">A customer cannot be reactivated while another active customer uses the same phone number.</li>
+      </ul>
+    </div>
+    <p class="facts" data-i18n="in.num">On the demo workspace, six real requirements each took <b>3 to 7 tasks</b>, <b>60 to 90 minutes</b> of AI time and <b>25 to 41 USD</b> at API list prices.</p>
+    <div class="card glossary">
+      <h3 data-i18n="gl.t">Words used on this page</h3>
+      <ul>
+        <li data-i18n="gl.ac"><b>AC</b>, acceptance criterion: one statement of what must be true when the work is done, written so that it can be tested.</li>
+        <li data-i18n="gl.tc"><b>TC</b>, test case: one check of an acceptance criterion, with its data and expected result.</li>
+        <li data-i18n="gl.gate"><b>Gate</b>: a point where the workflow stops until a person approves.</li>
+        <li data-i18n="gl.scope"><b>Write scope</b>: the files a phase may change. A check after every run (diff-scope) reverts anything else.</li>
+        <li data-i18n="gl.headless"><b>Headless</b>: the AI runs from the command line with a fixed prompt and limited tools, with no chat window.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 <section id="workflow">
   <div class="wrap">
     <p class="kicker" data-i18n="nav.workflow">Workflow</p>
@@ -224,6 +322,33 @@
       <span><i style="background:var(--surface);border:1px solid var(--border)"></i><span data-i18n="lg.ai">Done by AI</span></span>
       <span><i style="background:var(--gate-soft);border:1px solid var(--gate)"></i><span data-i18n="lg.gate">Human gate</span></span>
       <span><i style="border:1px dashed var(--accent)"></i><span data-i18n="lg.loop">Repeats per task, retry ≤ 3, then <code>blocked</code></span></span>
+    </div>
+    <div class="replay" id="replay">
+      <h3 data-i18n="rp.h3">Replay of a real run</h3>
+      <p class="sub" data-i18n="rp.sub">REQ-003 on the demo workspace: 69 minutes of AI time, replayed in about one minute. The lines are the real output of the orchestrator, and the steps above light up as it goes.</p>
+      <div class="rp-controls">
+        <button type="button" class="primary" id="rp-play" data-i18n="rp.play" hidden>Play</button>
+        <button type="button" id="rp-pause" data-i18n="rp.pause" hidden>Pause</button>
+        <button type="button" id="rp-restart" data-i18n="rp.restart" hidden>Restart</button>
+      </div>
+      <div class="replay-grid">
+        <div class="term">
+          <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+<pre class="rp-log" id="rp-log" tabindex="0"><span class="rp-hint" data-i18n="rp.hint">Press Play to watch the run.</span><span class="ln you">$ aiws new REQ-003</span><span class="ln">REQ-003 created on branch aiws/REQ-003 (base demo @ 7a881fa). Next: aiws run REQ-003</span><span class="ln you">$ aiws run REQ-003</span><span class="ln run" data-step="1" data-min="7.19" data-usd="3.1602">[REQ-003] analysis / analyst (attempt 1/3)</span><span class="ln">  ok -&gt; design</span><span class="ln run" data-step="2" data-min="10.17" data-usd="4.2818">[REQ-003] design / architect (attempt 1/3)</span><span class="ln">  ok -&gt; design</span><span class="ln run" data-step="2" data-min="12.75" data-usd="5.0334">[REQ-003] design / test-designer (attempt 1/3)</span><span class="ln">  ok -&gt; design_approval (waiting_human)</span><span class="ln"></span><span class="ln">REQ-003: phase=design_approval status=waiting_human</span><span class="ln">  design ready for review: 02-design.md, 03-test-spec.md, api-contract.yaml. Then run `aiws approve REQ-003 design` or `aiws reject REQ-003 design -m "..."`</span><span class="ln you gate" data-step="3" data-gate="design">$ aiws approve REQ-003 design</span><span class="ln you">$ aiws run REQ-003</span><span class="ln run" data-step="4" data-min="5.37" data-usd="3.1005">[REQ-003] planning / planner (attempt 1/3)</span><span class="ln">  ok -&gt; implementation</span><span class="ln run" data-step="5" data-min="1.4" data-usd="0.7562" data-task="1">[REQ-003] implementation / T1 (attempt 1/3)</span><span class="ln">  T1 done (e1ba048)</span><span class="ln run" data-step="5" data-min="2.94" data-usd="0.9346" data-task="1">[REQ-003] implementation / T2 (attempt 1/3)</span><span class="ln">  T2 done (4806b5d)</span><span class="ln run" data-step="5" data-min="3.85" data-usd="1.1262" data-task="1">[REQ-003] implementation / T3 (attempt 1/3)</span><span class="ln">  T3 done (b16ba82)</span><span class="ln run" data-step="5" data-min="0.94" data-usd="0.5846" data-task="1">[REQ-003] implementation / T4 (attempt 1/3)</span><span class="ln">  T4 done (4529e7c)</span><span class="ln run" data-step="5" data-min="1.49" data-usd="0.6396" data-task="1">[REQ-003] implementation / T5 (attempt 1/3)</span><span class="ln">  T5 done (e3e496e)</span><span class="ln run" data-step="5" data-min="2.03" data-usd="1.2712" data-task="1">[REQ-003] implementation / T6 (attempt 1/3)</span><span class="ln">  T6 done (03dfd36)</span><span class="ln run" data-step="6" data-min="14.64" data-usd="4.2806">[REQ-003] review / reviewer (attempt 1/2)</span><span class="ln">  ok -&gt; pr_approval (waiting_human)</span><span class="ln"></span><span class="ln">REQ-003: phase=pr_approval status=waiting_human</span><span class="ln">  open a PR for the branch; after it is merged run `aiws approve REQ-003 pr` (or `aiws reject REQ-003 pr -m "..."`)</span><span class="ln you gate" data-step="7" data-gate="pr">$ aiws approve REQ-003 pr</span><span class="ln you">$ aiws run REQ-003</span><span class="ln run" data-step="8" data-min="6.5" data-usd="2.0516">[REQ-003] knowledge_update / discovery (attempt 1/2)</span><span class="ln">  ok -&gt; done (done)</span><span class="ln"></span><span class="ln">REQ-003: phase=done status=done</span></pre>
+        </div>
+        <div class="card rp-side">
+          <div class="rp-now"><span data-i18n="rp.now">Current step</span><b id="rp-step" hidden></b><b id="rp-idle" data-i18n="rp.idle" hidden>Not started</b><b id="rp-done" data-i18n="rp.done">Done</b></div>
+          <dl class="rp-meters">
+            <div><dt data-i18n="rp.m.time">AI time</dt><dd><span id="rp-min">69</span> min</dd></div>
+            <div><dt data-i18n="rp.m.cost">Cost, API list price</dt><dd><span id="rp-usd">27.22</span> USD</dd></div>
+            <div><dt data-i18n="rp.m.tasks">Tasks done</dt><dd><span id="rp-tasks">6</span> / 6</dd></div>
+            <div><dt data-i18n="rp.m.gates">Human approvals</dt><dd><span id="rp-gates">2</span> / 2</dd></div>
+          </dl>
+          <div class="rp-gate" id="rp-gate-design" hidden><p data-i18n="rp.g1">Your turn: you read the design and the test specification, then approve.</p><button type="button" data-i18n="rp.g1.b">Approve the design</button></div>
+          <div class="rp-gate" id="rp-gate-pr" hidden><p data-i18n="rp.g2">Your turn: you review and merge the pull request, then confirm.</p><button type="button" data-i18n="rp.g2.b">The PR is merged, continue</button></div>
+          <p class="rp-note" data-i18n="rp.note">A recording, not a live system: this page is static. Models in this run: Opus for analysis, design, planning and review, Sonnet for the developer and the knowledge update.</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -330,12 +455,12 @@
       <p class="sub" style="margin-bottom:24px" data-i18n="tr.sub">Only consistent ids, commit trailers and evidence files in the repository. <code>aiws trace</code> builds the matrix; an AC without a test or a test without a commit blocks the review phase.</p>
       <div class="term">
         <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-<pre><span class="c"># git log -1</span>
-feat(REQ-001): T1 BE - setNickname
+<pre><span class="c"># git log -1 e1ba048</span>
+feat(REQ-003): T1 be - thêm thao tác ghi updateStatus chỉ đổi status vào repository
 
-REQ-ID: REQ-001
+REQ-ID: REQ-003
 Task: T1
-Tests: TC-1, TC-2
+Tests: TC-82, TC-83
 AIWS-Run: run-0005</pre>
       </div>
     </div>
@@ -343,11 +468,11 @@ AIWS-Run: run-0005</pre>
       <table>
         <thead><tr><th>AC</th><th>Test case</th><th>Task</th><th>Commit</th><th data-i18n="tr.result">Result</th></tr></thead>
         <tbody>
-          <tr><td>AC-1</td><td class="mono">TC-1</td><td class="mono">T1</td><td class="mono">882be59</td><td class="pass">pass</td></tr>
-          <tr><td>AC-2</td><td class="mono">TC-2</td><td class="mono">T1</td><td class="mono">882be59</td><td class="pass">pass</td></tr>
-          <tr><td>AC-3</td><td class="mono">TC-3, TC-4, TC-9</td><td class="mono">T1</td><td class="mono">882be59</td><td class="pass">pass</td></tr>
-          <tr><td>AC-8</td><td class="mono">TC-14</td><td class="mono">T2</td><td class="mono">9019a59</td><td class="pass">pass</td></tr>
-          <tr><td>AC-9</td><td class="mono">TC-15…17</td><td class="mono">T2</td><td class="mono">9019a59</td><td class="pass">pass</td></tr>
+          <tr><td>AC-1</td><td class="mono">TC-82</td><td class="mono">T1</td><td class="mono">e1ba048</td><td class="pass">pass</td></tr>
+          <tr><td>AC-1</td><td class="mono">TC-84</td><td class="mono">T2</td><td class="mono">4806b5d</td><td class="pass">pass</td></tr>
+          <tr><td>AC-1</td><td class="mono">TC-91</td><td class="mono">T3</td><td class="mono">b16ba82</td><td class="pass">pass</td></tr>
+          <tr><td>AC-2</td><td class="mono">TC-85</td><td class="mono">T2</td><td class="mono">4806b5d</td><td class="pass">pass</td></tr>
+          <tr><td>AC-2</td><td class="mono">TC-92</td><td class="mono">T3</td><td class="mono">b16ba82</td><td class="pass">pass</td></tr>
         </tbody>
       </table>
     </div>
@@ -504,6 +629,46 @@ AIWS-Run: run-0005</pre>
       'gs.1': '<b>Lệnh của người</b> (<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>) từ chối chạy trong phiên AI.',
       'gs.2': '<b>Chạy song song</b> nhiều REQ ở phase analysis/design qua <code>aiws new --worktree</code>.',
       'gs.3': '<b>Không tốn token khi test</b>: adapter <code>scripted</code> chạy toàn bộ quy trình tất định.',
+      'in.k': 'Tóm tắt',
+      'in.h2': 'Bạn viết requirement và duyệt hai lần. Phần còn lại AI làm, trong giới hạn.',
+      'in.sub': 'Không có cuộc chat nào phải ngồi canh. Công việc đi qua các phase cố định, và mọi kết quả đều là file trong repo để bạn đọc, review và revert.',
+      'in.1.h': 'Bạn viết requirement',
+      'in.1': 'Một file Markdown ngắn, viết bằng lời thường. Không có mẫu nào phải học.',
+      'in.ex.t': 'Một requirement từ demo, đã rút gọn: REQ-003',
+      'in.ex.1': 'Nhân viên chuyển được một khách hàng đang hoạt động sang ngừng hoạt động, và ngược lại.',
+      'in.ex.2': 'Ngừng hoạt động không làm đổi thông tin nào khác của khách hàng.',
+      'in.ex.3': 'Không kích hoạt lại được khách hàng khi số điện thoại của họ đang được một khách hàng đang hoạt động khác dùng.',
+      'in.2.h': 'AI làm việc theo từng phase',
+      'in.2': 'AI biến requirement thành acceptance criteria, bản design và test spec, rồi viết code theo từng task nhỏ kèm unit test, và review kết quả. Ở mỗi phase, AI chỉ được sửa các file của phase đó; mọi thay đổi khác đều bị revert.',
+      'in.3.h': 'Bạn quyết định, hai lần',
+      'in.3': 'Lần đầu, bạn đọc design và test spec rồi duyệt, hoặc trả lại kèm ghi chú. Lần sau, bạn review và merge pull request. AI không chạy được hai lệnh này.',
+      'in.4.h': 'Bạn nhận một pull request kiểm tra được',
+      'in.4': 'Code có unit test chạy qua, một ma trận nối từng acceptance criterion với test, task và commit của nó, và bản ghi của mọi lần AI chạy: prompt, chi phí và các file đã đổi.',
+      'in.num': 'Trên workspace demo, sáu requirement thật mỗi cái cần <b>3 đến 7 task</b>, <b>60 đến 90 phút</b> AI chạy và <b>25 đến 41 USD</b> theo bảng giá API.',
+      'gl.t': 'Các từ dùng trên trang này',
+      'gl.ac': '<b>AC</b>, acceptance criterion: một câu nói rõ điều gì phải đúng khi làm xong, viết sao cho kiểm tra được.',
+      'gl.tc': '<b>TC</b>, test case: một phép kiểm cho một acceptance criterion, có dữ liệu và kết quả mong đợi.',
+      'gl.gate': '<b>Gate</b>: điểm mà quy trình dừng lại cho tới khi có người duyệt.',
+      'gl.scope': '<b>Write scope</b>: các file mà một phase được sửa. Sau mỗi lần chạy, một bước kiểm tra (diff-scope) revert mọi thay đổi khác.',
+      'gl.headless': '<b>Headless</b>: AI chạy từ dòng lệnh với prompt cố định và bộ công cụ giới hạn, không có cửa sổ chat.',
+      'rp.h3': 'Xem lại một lần chạy thật',
+      'rp.sub': 'REQ-003 trên workspace demo: 69 phút AI chạy, phát lại trong khoảng một phút. Các dòng là output thật của orchestrator, và các bước ở trên sáng lên theo tiến trình.',
+      'rp.hint': 'Bấm Phát để xem lần chạy.',
+      'rp.play': 'Phát',
+      'rp.pause': 'Tạm dừng',
+      'rp.restart': 'Phát lại từ đầu',
+      'rp.now': 'Bước hiện tại',
+      'rp.idle': 'Chưa bắt đầu',
+      'rp.done': 'Xong',
+      'rp.m.time': 'Thời gian AI chạy',
+      'rp.m.cost': 'Chi phí, theo giá API',
+      'rp.m.tasks': 'Task đã xong',
+      'rp.m.gates': 'Lần người duyệt',
+      'rp.g1': 'Đến lượt bạn: bạn đọc design và test spec, rồi duyệt.',
+      'rp.g1.b': 'Duyệt design',
+      'rp.g2': 'Đến lượt bạn: bạn review và merge pull request, rồi xác nhận.',
+      'rp.g2.b': 'PR đã merge, chạy tiếp',
+      'rp.note': 'Đây là bản ghi, không phải hệ thống đang chạy: trang này là trang tĩnh. Model trong lần chạy này: Opus cho analysis, design, planning và review; Sonnet cho developer và bước cập nhật knowledge.',
       'copy': 'Sao chép', 'copied': 'Đã sao chép', 'copyFail': 'Không sao chép được', 'ft.spec': 'Đặc tả V1'
     },
     ja: {
@@ -562,6 +727,46 @@ AIWS-Run: run-0005</pre>
       'gs.1': '<b>人専用コマンド</b>（<code>approve</code>、<code>reject</code>、<code>answer</code>、<code>resume</code>）は、AI セッション内では実行を拒否します。',
       'gs.2': '<b>並行作業</b>：<code>aiws new --worktree</code> で、複数の要件の分析・設計を同時に進められます。',
       'gs.3': '<b>トークン不要のテスト</b>：<code>scripted</code> アダプターがワークフロー全体を決定的に実行します。',
+      'in.k': '概要',
+      'in.h2': '要件を書き、2 回承認する。残りは AI が、決められた範囲の中で行います。',
+      'in.sub': '見張っていなければならないチャットはありません。作業は決まったフェーズを順に進み、すべての成果物はリポジトリ内のファイルとして残るので、読んで、レビューして、元に戻せます。',
+      'in.1.h': '要件を書く',
+      'in.1': '普通の言葉で書いた短い Markdown ファイルです。覚えるべきテンプレートはありません。',
+      'in.ex.t': 'デモの要件より（要約）：REQ-003',
+      'in.ex.1': '担当者は、有効な顧客を無効に、また無効な顧客を有効に切り替えられる。',
+      'in.ex.2': '無効化しても、顧客のほかの情報は変わらない。',
+      'in.ex.3': '同じ電話番号を別の有効な顧客が使っている間は、その顧客を再有効化できない。',
+      'in.2.h': 'AI がフェーズごとに作業する',
+      'in.2': 'AI は要件を受け入れ基準、設計、テスト仕様に落とし込み、小さなタスクごとにユニットテスト付きでコードを書き、結果をレビューします。各フェーズで変更できるのはそのフェーズのファイルだけで、それ以外の変更は取り消されます。',
+      'in.3.h': '人が 2 回判断する',
+      'in.3': '1 回目は、設計とテスト仕様を読んで承認するか、コメントを付けて差し戻します。2 回目は、プルリクエストをレビューしてマージします。この 2 つのコマンドを AI は実行できません。',
+      'in.4.h': '確認できるプルリクエストが届く',
+      'in.4': 'ユニットテストに合格したコード、各受け入れ基準をテスト・タスク・コミットに結び付けるマトリクス、そして AI の実行ごとの記録（プロンプト、コスト、変更ファイル）が得られます。',
+      'in.num': 'デモワークスペースでは、6 件の実要件はそれぞれ <b>3〜7 タスク</b>、AI の実行時間 <b>60〜90 分</b>、API の定価で <b>25〜41 USD</b> でした。',
+      'gl.t': 'このページで使う用語',
+      'gl.ac': '<b>AC</b>（受け入れ基準）：作業完了時に成り立っているべきことを、テストできる形で書いた 1 文。',
+      'gl.tc': '<b>TC</b>（テストケース）：1 つの受け入れ基準を確かめる検証。データと期待結果を含みます。',
+      'gl.gate': '<b>ゲート</b>：人が承認するまでワークフローが止まる地点。',
+      'gl.scope': '<b>書き込み範囲</b>：フェーズが変更してよいファイル。実行のたびにチェック（diff-scope）が行われ、それ以外の変更は取り消されます。',
+      'gl.headless': '<b>ヘッドレス</b>：AI をチャット画面なしで、固定のプロンプトと限られたツールだけでコマンドラインから実行すること。',
+      'rp.h3': '実際の実行のリプレイ',
+      'rp.sub': 'デモワークスペースの REQ-003：AI の実行時間 69 分を約 1 分で再生します。表示される行はオーケストレーターの実際の出力で、進行に合わせて上のステップが点灯します。',
+      'rp.hint': '「再生」を押すと実行の様子を見られます。',
+      'rp.play': '再生',
+      'rp.pause': '一時停止',
+      'rp.restart': '最初から再生',
+      'rp.now': '現在のステップ',
+      'rp.idle': '未開始',
+      'rp.done': '完了',
+      'rp.m.time': 'AI の実行時間',
+      'rp.m.cost': 'コスト（API 定価）',
+      'rp.m.tasks': '完了したタスク',
+      'rp.m.gates': '人による承認',
+      'rp.g1': 'あなたの番です：設計とテスト仕様を読んで、承認します。',
+      'rp.g1.b': '設計を承認する',
+      'rp.g2': 'あなたの番です：プルリクエストをレビューしてマージし、確定します。',
+      'rp.g2.b': 'PR をマージした。続行',
+      'rp.note': 'これは記録であり、稼働中のシステムではありません（このページは静的です）。この実行で使ったモデル：分析・設計・計画・レビューは Opus、開発とナレッジ更新は Sonnet。',
       'copy': 'コピー', 'copied': 'コピーしました', 'copyFail': 'コピーできませんでした', 'ft.spec': '仕様 V1'
     },
     zh: {
@@ -620,6 +825,46 @@ AIWS-Run: run-0005</pre>
       'gs.1': '<b>仅限人工的命令</b>（<code>approve</code>、<code>reject</code>、<code>answer</code>、<code>resume</code>）在 AI 会话中会拒绝执行。',
       'gs.2': '<b>并行工作</b>：通过 <code>aiws new --worktree</code>，可同时对多个需求进行分析和设计。',
       'gs.3': '<b>测试不消耗 token</b>：<code>scripted</code> 适配器以确定性方式运行整个工作流。',
+      'in.k': '概览',
+      'in.h2': '你写需求并审批两次，其余工作由 AI 在限定范围内完成。',
+      'in.sub': '不需要盯着聊天窗口。工作按固定阶段推进，每个结果都是仓库中的文件，可以阅读、评审和回退。',
+      'in.1.h': '你编写需求',
+      'in.1': '一份用平实语言写成的简短 Markdown 文件，无需学习任何模板。',
+      'in.ex.t': '演示中的一个需求（已精简）：REQ-003',
+      'in.ex.1': '员工可以把活跃客户切换为停用，也可以切换回来。',
+      'in.ex.2': '停用不会改变客户的其他任何信息。',
+      'in.ex.3': '如果另一位活跃客户正在使用同一电话号码，则不能重新启用该客户。',
+      'in.2.h': 'AI 按阶段工作',
+      'in.2': 'AI 把需求转化为验收标准、设计和测试规格，然后按小任务编写代码并附带单元测试，最后评审结果。在每个阶段，它只能修改该阶段的文件，其他任何改动都会被回退。',
+      'in.3.h': '你做两次决定',
+      'in.3': '第一次，你阅读设计和测试规格后批准，或附上意见退回。第二次，你评审并合并拉取请求。这两条命令 AI 无法执行。',
+      'in.4.h': '你得到一个可核查的拉取请求',
+      'in.4': '包含通过单元测试的代码、把每条验收标准与其测试、任务和提交关联起来的矩阵，以及每次 AI 运行的记录：提示词、成本和改动的文件。',
+      'in.num': '在演示工作区中，六个真实需求各自用了 <b>3 到 7 个任务</b>、<b>60 到 90 分钟</b>的 AI 运行时间，按 API 标价计为 <b>25 到 41 美元</b>。',
+      'gl.t': '本页用到的术语',
+      'gl.ac': '<b>AC</b>（验收标准）：一句说明工作完成时必须成立的内容，写法上可以被测试。',
+      'gl.tc': '<b>TC</b>（测试用例）：对一条验收标准的一次检查，包含数据和预期结果。',
+      'gl.gate': '<b>关卡</b>：工作流在此停下，直到有人批准。',
+      'gl.scope': '<b>写入范围</b>：一个阶段可以修改的文件。每次运行后都有一项检查（diff-scope）回退其他任何改动。',
+      'gl.headless': '<b>无头模式</b>：AI 从命令行运行，使用固定的提示词和受限的工具，没有聊天窗口。',
+      'rp.h3': '回放一次真实运行',
+      'rp.sub': '演示工作区中的 REQ-003：69 分钟的 AI 运行时间，在大约一分钟内回放。显示的各行是编排器的真实输出，上方的步骤会随进度点亮。',
+      'rp.hint': '点击“播放”观看这次运行。',
+      'rp.play': '播放',
+      'rp.pause': '暂停',
+      'rp.restart': '重新播放',
+      'rp.now': '当前步骤',
+      'rp.idle': '尚未开始',
+      'rp.done': '完成',
+      'rp.m.time': 'AI 运行时间',
+      'rp.m.cost': '成本（API 标价）',
+      'rp.m.tasks': '已完成任务',
+      'rp.m.gates': '人工审批',
+      'rp.g1': '轮到你了：你阅读设计和测试规格，然后批准。',
+      'rp.g1.b': '批准设计',
+      'rp.g2': '轮到你了：你评审并合并拉取请求，然后确认。',
+      'rp.g2.b': 'PR 已合并，继续',
+      'rp.note': '这是一段录制，而不是正在运行的系统：本页是静态页面。本次运行使用的模型：分析、设计、规划和评审用 Opus，开发和知识库更新用 Sonnet。',
       'copy': '复制', 'copied': '已复制', 'copyFail': '复制失败', 'ft.spec': '规格 V1'
     },
     ko: {
@@ -678,6 +923,46 @@ AIWS-Run: run-0005</pre>
       'gs.1': '<b>사람 전용 명령</b>(<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>)은 AI 세션 안에서는 실행을 거부합니다.',
       'gs.2': '<b>병렬 작업</b>: <code>aiws new --worktree</code>로 여러 요구사항의 분석·설계를 동시에 진행할 수 있습니다.',
       'gs.3': '<b>토큰 없는 테스트</b>: <code>scripted</code> 어댑터가 전체 워크플로를 결정적으로 실행합니다.',
+      'in.k': '한눈에 보기',
+      'in.h2': '요구사항을 쓰고 두 번 승인합니다. 나머지는 AI가 정해진 범위 안에서 합니다.',
+      'in.sub': '지켜보고 있어야 하는 채팅은 없습니다. 작업은 정해진 단계를 따라 진행되고, 모든 결과는 저장소의 파일로 남아 읽고, 리뷰하고, 되돌릴 수 있습니다.',
+      'in.1.h': '요구사항을 씁니다',
+      'in.1': '평이한 말로 쓴 짧은 Markdown 파일입니다. 배워야 할 템플릿은 없습니다.',
+      'in.ex.t': '데모의 요구사항에서 발췌(요약): REQ-003',
+      'in.ex.1': '담당자는 활성 고객을 비활성으로, 다시 활성으로 전환할 수 있다.',
+      'in.ex.2': '비활성화해도 고객의 다른 정보는 바뀌지 않는다.',
+      'in.ex.3': '같은 전화번호를 다른 활성 고객이 쓰고 있으면 그 고객을 다시 활성화할 수 없다.',
+      'in.2.h': 'AI가 단계별로 작업합니다',
+      'in.2': 'AI는 요구사항을 인수 기준, 설계, 테스트 명세로 바꾸고, 작은 태스크 단위로 단위 테스트와 함께 코드를 작성한 뒤 결과를 리뷰합니다. 각 단계에서는 그 단계의 파일만 수정할 수 있으며, 그 밖의 변경은 되돌려집니다.',
+      'in.3.h': '사람이 두 번 결정합니다',
+      'in.3': '첫 번째로, 설계와 테스트 명세를 읽고 승인하거나 의견을 달아 돌려보냅니다. 두 번째로, 풀 리퀘스트를 리뷰하고 병합합니다. 이 두 명령은 AI가 실행할 수 없습니다.',
+      'in.4.h': '확인할 수 있는 풀 리퀘스트를 받습니다',
+      'in.4': '단위 테스트를 통과한 코드, 각 인수 기준을 테스트·태스크·커밋과 연결하는 매트릭스, 그리고 모든 AI 실행의 기록(프롬프트, 비용, 변경된 파일)을 받습니다.',
+      'in.num': '데모 워크스페이스에서 실제 요구사항 6건은 각각 <b>태스크 3~7개</b>, AI 실행 시간 <b>60~90분</b>, API 정가 기준 <b>25~41 USD</b>가 들었습니다.',
+      'gl.t': '이 페이지에서 쓰는 용어',
+      'gl.ac': '<b>AC</b>(인수 기준): 작업이 끝났을 때 참이어야 하는 내용을 테스트할 수 있게 쓴 한 문장.',
+      'gl.tc': '<b>TC</b>(테스트 케이스): 인수 기준 하나를 확인하는 검사로, 데이터와 기대 결과를 포함합니다.',
+      'gl.gate': '<b>게이트</b>: 사람이 승인할 때까지 워크플로가 멈추는 지점.',
+      'gl.scope': '<b>쓰기 범위</b>: 한 단계가 수정할 수 있는 파일. 실행이 끝날 때마다 검사(diff-scope)가 그 밖의 변경을 되돌립니다.',
+      'gl.headless': '<b>헤드리스</b>: AI를 채팅 창 없이, 고정된 프롬프트와 제한된 도구만으로 명령줄에서 실행하는 방식.',
+      'rp.h3': '실제 실행 다시 보기',
+      'rp.sub': '데모 워크스페이스의 REQ-003: AI 실행 시간 69분을 약 1분으로 재생합니다. 표시되는 줄은 오케스트레이터의 실제 출력이며, 진행에 따라 위의 단계가 켜집니다.',
+      'rp.hint': '재생을 누르면 실행 과정을 볼 수 있습니다.',
+      'rp.play': '재생',
+      'rp.pause': '일시 중지',
+      'rp.restart': '처음부터 재생',
+      'rp.now': '현재 단계',
+      'rp.idle': '시작 전',
+      'rp.done': '완료',
+      'rp.m.time': 'AI 실행 시간',
+      'rp.m.cost': '비용(API 정가)',
+      'rp.m.tasks': '완료한 태스크',
+      'rp.m.gates': '사람의 승인',
+      'rp.g1': '당신 차례입니다: 설계와 테스트 명세를 읽고 승인합니다.',
+      'rp.g1.b': '설계 승인',
+      'rp.g2': '당신 차례입니다: 풀 리퀘스트를 리뷰하고 병합한 뒤 확인합니다.',
+      'rp.g2.b': 'PR 병합 완료, 계속',
+      'rp.note': '이것은 기록이며 실행 중인 시스템이 아닙니다(이 페이지는 정적입니다). 이번 실행에 쓴 모델: 분석, 설계, 계획, 리뷰는 Opus, 개발과 지식 베이스 업데이트는 Sonnet.',
       'copy': '복사', 'copied': '복사됨', 'copyFail': '복사 실패', 'ft.spec': '사양 V1'
     }
   };
@@ -730,6 +1015,105 @@ AIWS-Run: run-0005</pre>
       function () { btn.textContent = t('copyFail', lang) || 'Copy failed'; }
     ).finally(function () { setTimeout(reset, 1800); });
   });
+})();
+</script>
+<script>
+(function () {
+  // Replays the log of a real run. Without JavaScript, or with reduced motion, the full log and the final
+  // numbers stay exactly as they are in the markup.
+  var box = document.getElementById('replay');
+  if (!box) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var el = function (id) { return document.getElementById(id); };
+  var log = el('rp-log'), play = el('rp-play'), pause = el('rp-pause'), restart = el('rp-restart');
+  var stepEl = el('rp-step'), idleEl = el('rp-idle'), doneEl = el('rp-done');
+  var gates = { design: el('rp-gate-design'), pr: el('rp-gate-pr') };
+  var steps = Array.prototype.slice.call(document.querySelectorAll('#workflow .pipeline .step'));
+  var seq = Array.prototype.slice.call(log.querySelectorAll('.ln')).map(function (ln) {
+    var d = ln.dataset;
+    var kind = ln.classList.contains('gate') ? 'gate' : ln.classList.contains('run') ? 'run' : ln.classList.contains('you') ? 'type' : 'line';
+    return { el: ln, kind: kind, text: ln.textContent, step: d.step ? Number(d.step) : null, min: Number(d.min || 0), usd: Number(d.usd || 0), task: d.task === '1', gate: d.gate || null };
+  });
+  var TICK = 50, MS_PER_MIN = 650, MS_PER_CHAR = 35;
+  var i, t, playing, waiting, timer, tot;
+
+  function show(n) { n.classList.add('on'); log.scrollTop = log.scrollHeight; }
+  function meters() {
+    el('rp-min').textContent = Math.round(tot.min);
+    el('rp-usd').textContent = tot.usd.toFixed(2);
+    el('rp-tasks').textContent = tot.tasks;
+    el('rp-gates').textContent = tot.gates;
+  }
+  function state(name) { idleEl.hidden = name !== 'idle'; stepEl.hidden = name !== 'run'; doneEl.hidden = name !== 'done'; }
+  function mark(step) {
+    steps.forEach(function (s, n) {
+      s.classList.toggle('now', n === step);
+      s.classList.toggle('past', n > 0 && n < step);
+    });
+    if (steps[step]) stepEl.textContent = steps[step].querySelector('b').textContent;
+    state('run');
+  }
+  function buttons() {
+    var finished = i >= seq.length;
+    play.hidden = playing || finished || (waiting && waiting !== 'approved');
+    pause.hidden = !playing;
+    restart.hidden = !playing && !finished && i === 0 && t <= 0;
+  }
+  function stop() { playing = false; clearInterval(timer); buttons(); }
+  function start() { if (playing) return; playing = true; box.classList.remove('idle'); timer = setInterval(tick, TICK); buttons(); }
+  function next(delay) { i += 1; t = -(delay || 0); }
+  function reset() {
+    clearInterval(timer);
+    playing = false; waiting = null; i = 0; t = 0;
+    tot = { min: 0, usd: 0, tasks: 0, gates: 0 };
+    seq.forEach(function (a) { a.base = undefined; a.el.classList.remove('on', 'busy'); a.el.textContent = a.text; });
+    box.classList.add('armed', 'idle');
+    gates.design.hidden = true; gates.pr.hidden = true;
+    steps.forEach(function (s) { s.classList.remove('now', 'past'); });
+    log.scrollTop = 0;
+    state('idle'); meters(); buttons();
+  }
+  function finish() {
+    stop();
+    steps.forEach(function (s, n) { s.classList.remove('now'); s.classList.toggle('past', n > 0); });
+    state('done'); buttons();
+  }
+  function tick() {
+    var a = seq[i];
+    if (!a) { finish(); return; }
+    t += TICK;
+    if (t <= 0) return;
+    if (a.kind === 'line') { show(a.el); next(120); return; }
+    if (a.kind === 'gate' && waiting !== 'approved') {
+      // a human gate: the replay waits for the visitor, as the real workflow waits for a person
+      waiting = a.gate; mark(a.step); gates[a.gate].hidden = false; stop();
+      if (gates[a.gate].scrollIntoView) gates[a.gate].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      return;
+    }
+    if (a.kind === 'type' || a.kind === 'gate') {
+      var n = Math.min(a.text.length, Math.floor(t / MS_PER_CHAR));
+      a.el.textContent = a.text.slice(0, n); show(a.el);
+      if (n >= a.text.length) { if (a.kind === 'gate') waiting = null; next(350); }
+      return;
+    }
+    // one agent run: the counters move for a time proportional to its real duration
+    if (a.base === undefined) { a.base = { min: tot.min, usd: tot.usd }; show(a.el); a.el.classList.add('busy'); mark(a.step); }
+    var p = Math.min(1, t / Math.max(900, a.min * MS_PER_MIN));
+    tot.min = a.base.min + p * a.min; tot.usd = a.base.usd + p * a.usd; meters();
+    if (p >= 1) { a.el.classList.remove('busy'); if (a.task) tot.tasks += 1; meters(); next(150); }
+  }
+  Object.keys(gates).forEach(function (g) {
+    gates[g].querySelector('button').addEventListener('click', function () {
+      if (waiting !== g) return;
+      gates[g].hidden = true; tot.gates += 1; meters();
+      waiting = 'approved'; t = 0; seq[i].el.textContent = '';
+      start();
+    });
+  });
+  play.addEventListener('click', start);
+  pause.addEventListener('click', stop);
+  restart.addEventListener('click', function () { reset(); start(); });
+  reset();
 })();
 </script>
 </body>
