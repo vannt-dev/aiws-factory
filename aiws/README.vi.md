@@ -13,7 +13,7 @@ discover (1 lần) ─► analysis ─► design + test spec ─► [NGƯỜI du
 - **Orchestrator** (`aiws` CLI trong `aiws/adapters/cli`) nói *khi nào được làm*: giữ `state.yaml`, chạy phase, kiểm contract, diff-scope, commit.
 - **Adapter** nói *làm bằng AI nào*: V1 là `claude` (Claude Code headless). `scripted` là adapter tất định để test/demo, không tốn token.
 
-Đặc tả gốc: [docs/spec-v1.md](docs/spec-v1.md). Quy tắc cho AI: [../AGENTS.md](../AGENTS.md).
+Mới dùng AIWS? [Sổ tay](docs/handbook.vi.md) dẫn bạn đi hết một requirement, từ lúc viết ra tới lúc pull request được merge; tài liệu này là phần tra cứu. Đặc tả gốc: [docs/spec-v1.md](docs/spec-v1.md). Quy tắc cho AI: [../AGENTS.md](../AGENTS.md).
 
 ---
 
@@ -157,7 +157,7 @@ Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
 
 `aiws status REQ-001` hiển thị số lần AI chạy, tổng thời gian và chi phí cộng dồn của requirement, chia theo phase. `cost_usd` trong evidence là **giá quy đổi theo bảng giá API** mà Claude Code báo. Nếu Claude Code đăng nhập bằng gói Claude (Pro/Max) thì con số này chỉ trừ vào hạn mức của gói. Nếu dùng API key hoặc Console thì đó là tiền thật. Bạn gõ `/status` trong Claude Code để biết mình đang dùng loại nào.
 
-Hai lần chạy thật để tham khảo. Với Sonnet, một REQ nhỏ có 2 task hết khoảng 1,3 USD quy đổi cho 8 lần chạy. Với Opus trên workspace demo, một REQ có 22 acceptance criteria và 5 task hết khoảng 27,6 USD cho 10 lần chạy, cộng 2,4 USD cho discovery. `npm test` dùng adapter `scripted` nên không tốn token.
+Các lần chạy thật để tham khảo. Với Sonnet, một REQ nhỏ có 2 task hết khoảng 1,3 USD quy đổi cho 8 lần chạy. Trên workspace demo, sáu REQ có 3 đến 7 task, mỗi REQ hết 25 đến 41 USD quy đổi và 60 đến 90 phút AI chạy, cộng 2,4 USD cho discovery; [sổ tay](docs/handbook.vi.md#8-chi-phí-và-thời-gian) liệt kê từng REQ kèm model đã dùng. `npm test` dùng adapter `scripted` nên không tốn token.
 
 Có hai cách kiểm soát chi phí:
 
@@ -187,7 +187,7 @@ Có hai cách kiểm soát chi phí:
 cd aiws/adapters/cli
 npm ci
 npm run check                    # ESLint + kiểm Prettier + toàn bộ test
-npm test                         # 22 test: e2e, guard, diff-scope, retry, gate, lock, init/sync, đa ngôn ngữ (~4 phút)
+npm test                         # 39 test: e2e, guard, diff-scope, retry, gate, lock, init/sync, đa ngôn ngữ (~6 phút)
 AIWS_KEEP_TMP=1 npm test         # giữ lại workspace tạm để soi
 ```
 

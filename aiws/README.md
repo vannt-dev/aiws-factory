@@ -13,7 +13,7 @@ discover (once) ─► analysis ─► design + test spec ─► [HUMAN approves
 - **Orchestrator** (the `aiws` CLI in `aiws/adapters/cli`) decides *when* something may run: it owns `state.yaml`, runs phases, validates contracts, enforces diff-scope and commits.
 - **Adapter** decides *which AI* does the work. V1 ships `claude` (headless Claude Code) and `scripted`, a deterministic adapter for tests and demos that costs no tokens.
 
-Original specification: [docs/spec-v1.md](docs/spec-v1.md). Rules for AI agents: [../AGENTS.md](../AGENTS.md).
+New to AIWS? The [handbook](docs/handbook.md) walks through one requirement, from writing it to the merged pull request; this guide is the reference. Original specification: [docs/spec-v1.md](docs/spec-v1.md). Rules for AI agents: [../AGENTS.md](../AGENTS.md).
 
 ---
 
@@ -157,7 +157,7 @@ To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 
 `aiws status REQ-001` shows the number of AI runs, their total time and the cumulative cost of the requirement, broken down by phase. `cost_usd` in the evidence is the **API list-price equivalent** reported by Claude Code. With a Claude subscription (Pro/Max) it only counts against your plan's usage limits; with an API key or Console account it is real spend. Run `/status` in Claude Code to see which applies.
 
-Two real runs for reference. With Sonnet, a small requirement with 2 tasks cost about USD 1.30 equivalent over 8 runs. With Opus on the demo workspace, a requirement with 22 acceptance criteria and 5 tasks cost about USD 27.60 over 10 runs, plus USD 2.40 for discovery. `npm test` uses the `scripted` adapter and costs nothing.
+Real runs for reference. With Sonnet, a small requirement with 2 tasks cost about USD 1.30 equivalent over 8 runs. On the demo workspace, six requirements with 3 to 7 tasks each cost USD 25 to 41 equivalent and 60 to 90 minutes of AI time each, plus USD 2.40 for discovery; the [handbook](docs/handbook.md#8-cost-and-time) lists them with the models each one used. `npm test` uses the `scripted` adapter and costs nothing.
 
 Two controls keep cost in hand:
 
@@ -187,7 +187,7 @@ Two controls keep cost in hand:
 cd aiws/adapters/cli
 npm ci
 npm run check                    # ESLint + Prettier check + all tests
-npm test                         # 22 tests: e2e, guard, diff-scope, retry, gates, lock, init/sync, languages (~4 min)
+npm test                         # 39 tests: e2e, guard, diff-scope, retry, gates, lock, init/sync, languages (~6 min)
 AIWS_KEEP_TMP=1 npm test         # keep the temporary workspaces for inspection
 ```
 

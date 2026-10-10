@@ -41,6 +41,7 @@ aiws new REQ-001 && aiws run REQ-001
 
 ## Tài liệu
 
+- [Sổ tay](aiws/docs/handbook.vi.md) ([English](aiws/docs/handbook.md)): một requirement theo từng bước, đọc gì ở mỗi gate, làm gì khi lần chạy dừng, chi phí và thời gian của sáu requirement thật.
 - [Hướng dẫn vận hành](aiws/README.vi.md) ([English](aiws/README.md)): vòng đời, gate, cơ chế bảo vệ, cấu hình, CI.
 - [Đặc tả V1](aiws/docs/spec-v1.md): thiết kế gốc.
 - [AGENTS.md](AGENTS.md): quy tắc mọi AI agent phải tuân theo.

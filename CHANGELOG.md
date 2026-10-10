@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A handbook in `aiws/docs/`, `handbook.md` (English) and `handbook.vi.md`
+  (Vietnamese): one requirement from writing it to the merged pull request,
+  what to read at each human gate, what to do for each kind of stop, and the
+  cost, time and model setup of six real requirements on the demo workspace.
+  `aiws init` copies it into a new project with the rest of `aiws/docs/`.
+
+### Changed
+
+- The operations guide gives the cost range of the six demo requirements
+  instead of one early run, and the current number of tests.
+
 ## [0.3.0] - 2026-10-07
 
 Cost control and unattended runs, driven by the second real requirement run
