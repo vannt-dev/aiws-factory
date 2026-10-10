@@ -18,6 +18,7 @@ claude:
   # Chọn model riêng cho từng agent (ưu tiên hơn model_hint). Ví dụ giảm chi phí implementation:
   agent_models:
     developer: sonnet
+    test-designer: sonnet
   # Chọn model riêng cho một phase (ưu tiên hơn agent_models), áp dụng cho mọi agent của phase đó khi chạy
   # `aiws run`. Ví dụ: agent discovery chạy model rẻ hơn khi cập nhật knowledge, nhưng `aiws discover` vẫn giữ nguyên:
   phase_models:
