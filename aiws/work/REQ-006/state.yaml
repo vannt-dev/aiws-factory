@@ -1,12 +1,11 @@
 req_id: REQ-006
 title: Hoàn thiện bộ lọc trạng thái
 requirement: requirements/REQ-006-status-filter-polish.md
-branch: aiws/REQ-006
+branch: aiws/REQ-006-knowledge
 base_branch: demo
 base_commit: 5bc90ffebb3c57e9bb26438da30efb31f142434e
-phase: pr_approval
-status: waiting_human
-reason: open a PR for the branch; after it is merged run `aiws approve REQ-006 pr` (or `aiws reject REQ-006 pr -m "..."`)
+phase: done
+status: done
 history:
   - phase: new
     result: created
@@ -105,6 +104,18 @@ history:
     result: ok
     run: run-0014
     at: 2026-10-10T08:55:31Z
+  - phase: pr_approval
+    result: merged
+    by: Van Nguyen
+    record: pr-02.yaml
+    head: 6b11a04
+    merge: merge commit
+    at: 2026-10-10T08:59:25Z
+  - phase: knowledge_update
+    agent: discovery
+    result: ok
+    run: run-0015
+    at: 2026-10-10T09:05:14Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
@@ -208,8 +219,9 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 14
+run_seq: 15
 last_review:
   run: run-0014
   head: 74a6cad0f74e71f2dd07f0f8f0fcaf5422ec121b
   approval: design-01.yaml
+code_head: 6b11a04609db6542ed00c6dd6e62f02773800c1b
