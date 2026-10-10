@@ -153,9 +153,12 @@ tasks:
       - TC-144
     depends_on:
       - T5
-    status: pending
+    status: running
+    base: 9c20b664ae3c7e406c10cbb4dcf183c4f5a61e96
+    attempts: 1
+    test_result: pass
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 9
+run_seq: 10
