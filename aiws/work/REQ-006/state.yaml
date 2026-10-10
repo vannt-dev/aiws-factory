@@ -4,8 +4,9 @@ requirement: requirements/REQ-006-status-filter-polish.md
 branch: aiws/REQ-006
 base_branch: demo
 base_commit: 5bc90ffebb3c57e9bb26438da30efb31f142434e
-phase: review
-status: running
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-006 pr` (or `aiws reject REQ-006 pr -m "..."`)
 history:
   - phase: new
     result: created
@@ -75,6 +76,11 @@ history:
   - phase: implementation
     result: all_tasks_done
     at: 2026-10-10T08:42:23Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0011
+    at: 2026-10-10T08:45:51Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
@@ -170,4 +176,8 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 10
+run_seq: 11
+last_review:
+  run: run-0011
+  head: 336e7663e149497686b73af6bdaed83dd553ff72
+  approval: design-01.yaml
