@@ -36,6 +36,12 @@ history:
     result: ok
     run: run-0004
     at: 2026-10-10T08:35:35Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0005
+    commit: 7205f8c
+    at: 2026-10-10T08:36:54Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
@@ -46,10 +52,10 @@ tasks:
       - TC-117
       - TC-118
     depends_on: []
-    status: running
-    base: cdb0bce281a510c5a17e8a5f3e214963dc211ec0
+    status: done
     attempts: 1
     test_result: pass
+    commit: 7205f8cdf106170d6dcaf19fcb9180f770f5da1a
   - id: T2
     title: be - thêm assertion trực tiếp cho field và cho khách hàng vừa đổi (F2, F3)
     type: test
