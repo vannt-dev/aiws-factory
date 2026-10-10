@@ -1,0 +1,21 @@
+# OpenAPI 3 cho MỌI endpoint mới/đổi của REQ-006. Cầu nối FE-BE: BE phải expose đúng, FE phải gọi đúng.
+# REQ-006 KHÔNG đổi API: không endpoint nào mới, không endpoint nào đổi path, method, tham số, schema, mã trạng
+# thái hay format lỗi (RFC 9457). Vì vậy `paths: {}`.
+# FE vẫn gọi nguyên năm endpoint hiện có theo các contract đã duyệt:
+#   - GET /api/customers (kèm tham số query tuỳ chọn `status`): aiws/work/REQ-005/api-contract.yaml
+#   - POST /api/customers, GET /api/customers/{id}: aiws/work/REQ-001/api-contract.yaml
+#   - PUT /api/customers/{id}: aiws/work/REQ-002/api-contract.yaml
+#   - PUT /api/customers/{id}/status: aiws/work/REQ-003/api-contract.yaml
+# Điểm duy nhất FE dùng thêm là một thông tin ĐÃ CÓ trong contract: field `status` của `Customer` trong response
+# 201 của POST /api/customers (aiws/work/REQ-001/api-contract.yaml, operationId createCustomer). Trước REQ-006
+# source-fe/src/main.js bỏ body này đi; từ REQ-006 nó dùng `status` để quyết định có hiện thông báo đã thêm hay
+# không (02-design.md D5).
+openapi: 3.0.3
+info:
+  title: REQ-006 API contract
+  version: 1.0.0
+  description: >-
+    CRM customers API (source-be, CustomerHandler). REQ-006 chỉ sửa FE (câu trạng thái rỗng khi đang lọc, chống
+    bấm đúp khi đang lọc, thông báo sau khi thêm) và code test của REQ-005; không file nào dưới
+    source-be/src/main/ thay đổi, nên contract không có endpoint nào (xem 02-design.md, mục API).
+paths: {}

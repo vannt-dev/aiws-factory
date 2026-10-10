@@ -1,0 +1,382 @@
+# REQ-006 — Plan. Mỗi task nhỏ: <= 10 file, có test riêng. Mọi TC trong 03-test-spec.md thuộc đúng 1 task.
+# allowed_files: đường dẫn chính xác (hoặc glob hẹp) trong các thư mục source_paths, gồm cả file test,
+#   đặt đúng cấu trúc hiện có của dự án (không tạo cấu trúc mới, không đổi tên/di chuyển file).
+# type: loại commit theo Conventional Commits (feat | fix | refactor | perf | test | docs | build | chore...).
+#
+# Chia theo nhóm của 02-design.md (BE change -> BE-1/BE-2, FE change -> FE-1/FE-2/FE-3/FE-4) và bảng
+# "Phân bổ TC theo file và nhóm task" của 03-test-spec.md. Sau mỗi task orchestrator chạy toàn bộ `be_test`
+# hoặc `fe_test` của side bị chạm, nên mọi trạng thái trung gian phải biên dịch và pass cả test cũ.
+#
+# Không đổi API, không DB (api-contract.yaml: paths: {}); không có ràng buộc "BE trước FE" (02-design.md ->
+# Migration). BE-1, BE-2, FE-1 độc lập với nhau và với mọi task khác. FE-2, FE-3, FE-4 cùng sửa
+# `source-fe/src/main.js` nên PHẢI nối tiếp (02-design.md -> FE change: "không song song"), qua depends_on;
+# không task nào trong ba task này đổi hành vi của phần `main.js` mà task khác đang chạm, nên không cần hợp
+# nhất thành một task.
+#
+# Re-plan (feedback PR changes_requested, Van Nguyen): T1..T6 giữ nguyên id/allowed_files/tests để orchestrator
+# nhận diện vẫn DONE (engine.js mergePlan so cả hai trường này). Thêm T7 cho riêng finding TC-137/TC-138 của
+# 05-review.md; TC-137, TC-138 vì vậy xuất hiện ở cả T5 (giữ nguyên, không ảnh hưởng tới kết quả test) và T7
+# (task thực sự sửa assertion) — validatePlan không cấm một TC được gán cho nhiều task.
+tasks:
+  - id: T1
+    type: test
+    title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
+    description: >-
+      Nhóm BE-1 (design D7, F1 của aiws/work/REQ-005/05-review.md). Chỉ sửa helper `insertByStatuses` trong
+      `source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java` (dòng 817-824): thay dữ liệu
+      giả `"Customer " + n` / `"customer" + n + "@example.com"` / `phone = null` bằng khách hàng thứ i của
+      bảng bốn khách hàng chuẩn (`aiws/work/REQ-005/03-test-spec.md` -> Dữ liệu chung):
+      1. Nguyen Van An, an@example.com, không số
+      2. Tran Thi Binh, binh@example.com, 0912345678
+      3. Le Van Cuong, cuong@example.com, 0987654321
+      4. Pham Thi Dung, dung@example.com, không số
+      Hình dạng gợi ý (02-design.md D7):
+      ```
+      private static final String[][] STANDARD_CUSTOMERS = {
+        {"Nguyen Van An", "an@example.com", null},
+        {"Tran Thi Binh", "binh@example.com", "0912345678"},
+        {"Le Van Cuong", "cuong@example.com", "0987654321"},
+        {"Pham Thi Dung", "dung@example.com", null}
+      };
+
+      private List<Customer> insertByStatuses(List<CustomerStatus> statuses) {
+        List<Customer> inserted = new ArrayList<>();
+        for (CustomerStatus status : statuses) {
+          String[] customer = STANDARD_CUSTOMERS[inserted.size()];
+          inserted.add(repository.insert(customer[0], customer[1], customer[2], status));
+        }
+        return inserted;
+      }
+      ```
+      BẮT BUỘC:
+      - Khách hàng thứ i mang tên/email/số của dòng i trong bảng trên và `status` thứ i của tham số nhận
+        vào; chữ ký và kiểu trả về của `insertByStatuses` giữ nguyên.
+      - Thân TC-117 (dòng 771-781), provider `statusListsForNoFilter` (dòng 783-788), thân TC-118
+        (dòng 790-802), provider `statusListsWithOneFilterValue` (dòng 804-815), `@DisplayName`, tên
+        method: KHÔNG đổi một ký tự. List mong đợi của hai test được dựng từ các `Customer` do
+        `insertByStatuses` trả về nên không assertion nào phải sửa.
+      - TC-119 (dòng 826-842) KHÔNG sửa: nó tự dựng kho K4 tại chỗ bằng dữ liệu chuẩn, không gọi
+        `insertByStatuses`.
+      - Sau khi sửa, hai chuỗi `"Customer "` và `"customer" + n` KHÔNG còn ở đâu trong file (phần (a) của
+        AC-5 cho F1, reviewer đọc diff; không kiểm được bằng chạy test).
+      - Không thêm dependency; không sửa file nào khác (không chạm `source-be/src/main/`).
+      Sau khi sửa: trên kho K4 (`[ACTIVE, INACTIVE, ACTIVE, INACTIVE]`), kết quả lọc `INACTIVE` của TC-118 có
+      phần tử `id` 2 mang `phone = "0912345678"` (không còn `null`), được so cả bản ghi qua
+      `assertEquals(expected, result)` đang có — chứng minh helper mang đúng số điện thoại qua `insert`.
+      Số lần chạy không đổi: TC-117 chạy 3 lần, TC-118 chạy 5 lần, `CustomerServiceTest` 173, toàn bộ BE 399,
+      đều pass (`be_test`).
+    allowed_files:
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+    tests: [TC-117, TC-118]
+    depends_on: []
+
+  - id: T2
+    type: test
+    title: be - thêm assertion trực tiếp cho field và cho khách hàng vừa đổi (F2, F3)
+    description: >-
+      Nhóm BE-2 (design D8, F2 và F3 của aiws/work/REQ-005/05-review.md). Chỉ THÊM assertion vào hai test có
+      sẵn trong `source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java`; không xoá, không sửa
+      assertion đang có.
+      F2, TC-120 (vòng lặp dòng 738-745): ngay sau dòng so `id` (dòng 741), trên CHÍNH `body.get(i)` đang
+      kiểm (không qua bản chụp `all`):
+      ```
+      assertEquals(5, body.get(i).size());
+      assertTrue(body.get(i).has("phone"));
+      if (id == 1 || id == 4) {
+        assertTrue(body.get(i).get("phone").isNull());
+      }
+      ```
+      F3, TC-122: thêm vào CẢ HAI nhánh `if (id == changedId)` (dòng 815-816 với `activeBody`, dòng 825-826
+      với `inactiveBody`), sau assertion `status` đang có:
+      ```
+      for (String field : List.of("name", "email", "phone")) {
+        assertEquals(all.get((int) id - 1).get(field), activeBody.get(i).get(field));
+      }
+      ```
+      (nhánh thứ hai dùng `inactiveBody` thay cho `activeBody`).
+      BẮT BUỘC:
+      - F2 khẳng định trên response đang kiểm, dùng `JsonNode.size()`, `has(...)`, `isNull()`; KHÔNG dùng
+        `asText()` (với JSON `null` nó cho chuỗi `"null"`, không phân biệt được field thiếu hay chuỗi thật).
+      - F3 so `JsonNode` với `JsonNode` cho từng field, không qua `asText()`; `phone` của khách hàng 1 là
+        JSON `null` và phải bằng đúng nút `null` trong `all`.
+      - Mọi assertion đang có giữ nguyên, kể cả dòng so `id` và hai dòng kiểm `status`. Hai provider
+        (`statusFilterPathsAndIds` 15 dòng, `statusChangeScenarios` 2 dòng), `@DisplayName`, tên method,
+        chữ ký, helper `insertStandardFour` (dòng 716-722): KHÔNG đổi.
+      - Không thêm import (`assertTrue`, `assertEquals`, `List`, `JsonNode` đã có ở dòng 3-5, 10, 18).
+      - KHÔNG thêm kỳ vọng giá trị số điện thoại cụ thể của `id` 2 và 3 (ngoài phạm vi F2 đã duyệt).
+      - Không sửa file nào khác (không chạm `source-be/src/main/`).
+      Số lần chạy không đổi: TC-120 chạy 15 lần, TC-122 chạy 2 lần, `CustomerHandlerTest` 107, toàn bộ BE
+      399, đều pass (`be_test`).
+    allowed_files:
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests: [TC-120, TC-122]
+    depends_on: []
+
+  - id: T3
+    type: test
+    title: fe - đổi tên biến notFound500 thành internalError500 (F4)
+    description: >-
+      Nhóm FE-1 (design D9, F4 của aiws/work/REQ-005/05-review.md). Trong
+      `source-fe/test/customerApi.test.js`, đổi tên định danh `notFound500` thành `internalError500` ở đúng
+      ba chỗ của TC-127: dòng khai báo (276) và hai dòng dùng (291, 292).
+      BẮT BUỘC:
+      - Chỉ đổi định danh. Nội dung object Problem (`type: 'about:blank'`, `title: 'Internal Server Error'`,
+        `status: 500`, `detail: 'Unexpected error'`), ba dòng dữ liệu và thứ tự của chúng, tên hiển thị
+        `test('TC-127: ...')`, mọi assertion, và mọi test khác của file: KHÔNG đổi một ký tự.
+      - Sau khi sửa, chuỗi `notFound500` KHÔNG còn ở đâu trong file.
+      - Test vẫn là MỘT test (không tách thêm); `fe_test` không đổi tổng số test vì thay đổi này.
+      - Không sửa file nào khác.
+      Test cũ của file (TC-42, TC-43, TC-70..TC-73, TC-101, TC-102, TC-125, TC-126 và 3 test không mã TC)
+      KHÔNG sửa và phải pass nguyên vẹn.
+    allowed_files:
+      - source-fe/test/customerApi.test.js
+    tests: [TC-127]
+    depends_on: []
+
+  - id: T4
+    type: feat
+    title: fe - câu trạng thái rỗng theo lựa chọn lọc
+    description: >-
+      Nhóm FE-2 (design D1, D2). AC-1: khi danh sách rỗng, câu hiển thị tuỳ theo lựa chọn lọc của đúng lần
+      tải được vẽ.
+      `source-fe/src/components/customerTable.js`: đổi chữ ký thành
+      `export function renderCustomerTable(customers, statusFilter = '')`, thêm hai hằng cạnh `NO_PHONE`:
+      ```
+      const EMPTY_MESSAGE = 'Chưa có khách hàng.';
+      const NO_MATCH_MESSAGE = 'Không có khách hàng nào khớp lựa chọn lọc.';
+      ```
+      và đổi dòng rỗng (dòng 13) thành
+      `if (!customers.length) return \`<p>${statusFilter ? NO_MATCH_MESSAGE : EMPTY_MESSAGE}</p>\`;`.
+      BẮT BUỘC:
+      - `renderCustomerTable([])` (một tham số) vẫn trả đúng `<p>Chưa có khách hàng.</p>`; test không mã TC
+        `renderCustomerTable shows an empty state` (dòng 25-27) KHÔNG sửa và phải pass.
+      - `statusFilter` chỉ dùng để chọn câu, KHÔNG chèn vào HTML (hai câu là hằng, không escape).
+      - Câu "không khớp" áp cho MỌI giá trị truthy của `statusFilter` (không chỉ `ACTIVE`/`INACTIVE`), kể cả
+        khi kho hoàn toàn rỗng.
+      - Dòng dựng bảng (dòng 14-28) KHÔNG đổi một ký tự; TC-36..TC-41, TC-74, TC-75, TC-103..TC-105, TC-114
+        KHÔNG sửa và phải pass.
+      - `statusFilter` không ảnh hưởng gì khi `customers` không rỗng: kết quả giống từng ký tự với lời gọi
+        không truyền `statusFilter`.
+      `source-fe/src/main.js`, trong `refresh()` (dòng 16-23): thêm `const statusFilter = filterEl.value;`
+      làm dòng đầu tiên của hàm, TRƯỚC `try`, và trao giá trị này cho `renderCustomerTable`:
+      ```
+      async function refresh() {
+        const statusFilter = filterEl.value;
+        try {
+          const { current, customers } = await loadCustomers();
+          if (current) listEl.innerHTML = renderCustomerTable(customers, statusFilter);
+        } catch {
+          listEl.textContent = 'Không tải được danh sách khách hàng.';
+        }
+      }
+      ```
+      BẮT BUỘC:
+      - Dòng đọc `filterEl.value` nằm TRONG `refresh()`, trước `await loadCustomers()`, không có `await` nào
+        ở giữa; KHÔNG đưa biến này lên mức module (nới có chủ ý, đúng một biến cục bộ, của lệnh cấm
+        "không gán filterEl.value vào một biến" ở `aiws/work/REQ-005/02-design.md` D9 — xem D2, R12).
+      - `getStatus` của loader vẫn là `() => filterEl.value`; `src/utils/createCustomerListLoader.js` và
+        TC-128..TC-134 KHÔNG đổi.
+      - `if (current)`, nhánh `catch` và câu lỗi giữ nguyên; `refresh()` vẫn không xoá `#message`.
+      - Không đổi gì khác trong `main.js` ở task này (import, listener nút đổi trạng thái, submit form thêm
+        là việc của T5, T6).
+      Test: thêm vào `source-fe/test/customerTable.test.js`, thành khối liền nhau:
+      TC-135 (3 dòng dữ liệu `statusFilter`: `'ACTIVE'`, `'INACTIVE'`, `'DELETED'`): `renderCustomerTable([],
+      statusFilter)` đúng bằng (`assert.equal`) `'<p>Không có khách hàng nào khớp lựa chọn lọc.</p>'` ở cả
+      ba dòng.
+      TC-136 (4 dòng dữ liệu `statusFilter`: không truyền, `''`, `'ACTIVE'`, `'INACTIVE'`, trên cùng một
+      khách hàng `{ id: 1, name: 'Nguyen Van An', email: 'an@example.com', phone: null, status: 'ACTIVE' }`):
+      `renderCustomerTable(customers, statusFilter)` đúng bằng từng ký tự (`assert.equal`) với
+      `renderCustomerTable(customers)` (không truyền `statusFilter`) ở mọi dòng; không chuỗi nào chứa
+      `'Chưa có khách hàng.'` hay `'Không có khách hàng nào khớp lựa chọn lọc.'`.
+      Mảng dữ liệu, lặp bằng `for...of` trong một `test(...)`, không `describe`.
+    allowed_files:
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/customerTable.test.js
+      - source-fe/src/main.js
+    tests: [TC-135, TC-136]
+    depends_on: []
+
+  - id: T5
+    type: feat
+    title: fe - chống bấm đúp theo lựa chọn lọc
+    description: >-
+      Nhóm FE-3 (design D3, D4), phụ thuộc T4 (cùng sửa `source-fe/src/main.js`, phải nối tiếp — xem đầu
+      file). AC-2, AC-3: khi đang lọc, mọi nút đổi trạng thái dùng chung một key của guard; khi xem "Tất cả",
+      key vẫn là `id` khách hàng (REQ-004, không đổi).
+      Tạo `source-fe/src/utils/chooseStatusClickKey.js` (không import gì):
+      ```
+      const ANY_CUSTOMER = Symbol('any customer');
+
+      /** Chooses the double-click guard key of a status button: one key shared by all customers while a
+       * status filter is selected, the customer id otherwise. */
+      export function chooseStatusClickKey(statusFilter, customerId) {
+        return statusFilter ? ANY_CUSTOMER : customerId;
+      }
+      ```
+      BẮT BUỘC:
+      - Key chung KHÔNG phải chuỗi (một `Symbol` ở mức module của file), để chắc không trùng `customerId`
+        nào (`button.dataset.statusId` luôn là chuỗi, có thể là chuỗi bất kỳ).
+      - Cùng MỘT key cho mọi khách hàng và cho cả hai lựa chọn lọc (`ACTIVE`, `INACTIVE`).
+      - Khi `statusFilter` falsy (`''`, `undefined`, `null`), trả CHÍNH `customerId` nhận vào, không đổi
+        kiểu, không thêm tiền tố.
+      - Hàm thuần: không import, không state, không DOM, không đồng hồ. Thứ tự tham số
+        `(statusFilter, customerId)`, tên file, tên export là cố định.
+      `source-fe/src/main.js`: thêm `import { chooseStatusClickKey } from
+      './utils/chooseStatusClickKey.js';` ở đầu file; trong listener `click` của nút đổi trạng thái (dòng
+      81-92), đổi đúng dòng hỏi guard thành:
+      `if (!acceptStatusClick(chooseStatusClickKey(filterEl.value, button.dataset.statusId),
+      event.timeStamp)) return;`.
+      BẮT BUỘC:
+      - `filterEl.value` được đọc TRONG listener, ở TỪNG lần bấm; không dùng lại giá trị của lần bấm trước
+        hay của `refresh()`.
+      - Dòng hỏi guard vẫn đứng TRƯỚC dòng xoá `#message` (REQ-004 D4 không đổi): lần bấm bị bỏ qua không
+        đổi gì trên màn hình.
+      - `updateCustomerStatus` vẫn nhận `button.dataset.statusId` và `button.dataset.targetStatus`; key của
+        guard không đi vào yêu cầu gửi lên BE.
+      - Vẫn một guard `acceptStatusClick` tạo một lần ở mức module (dòng 13); `src/utils/
+        createDoubleClickGuard.js` và TC-108..TC-113 KHÔNG đổi.
+      - Không đổi gì khác trong `main.js` ở task này (vùng xoá `#message` chung sáu chỗ, submit form thêm là
+        việc của T6).
+      Test: tạo `source-fe/test/chooseStatusClickKey.test.js`, import `chooseStatusClickKey` từ
+      `../src/utils/chooseStatusClickKey.js` và `createDoubleClickGuard` (thật, không giả) từ
+      `../src/utils/createDoubleClickGuard.js`.
+      TC-137 (7 dòng `(statusFilter, customerId)`: `('', '7')`, `(undefined, '7')`, `(null, '7')`,
+      `('', '')`, `('', 'constructor')`, `('', '__proto__')`, `('', '7"><b>x</b>')`): kết quả `===
+      customerId` của đúng dòng đó (so `===`, không chỉ `==`).
+      TC-138 (4 dòng `(statusFilter, customerId)`: `('ACTIVE', '1')`, `('ACTIVE', '2')`, `('INACTIVE', '2')`,
+      `('INACTIVE', '')`): `typeof kết_quả !== 'string'` đúng cho cả bốn dòng; bốn kết quả bằng nhau (`===`)
+      từng cặp; kết quả chung khác (`!==`) mọi `customerId` đã dùng (`'1'`, `'2'`, `''`).
+      TC-139..TC-142: mỗi dòng dữ liệu tạo MỘT guard mới (`const accept = createDoubleClickGuard();`); mỗi
+      lần bấm gọi `accept(chooseStatusClickKey(statusFilter, customerId), at)`; so từng kết quả theo đúng
+      thứ tự bằng `assert.equal(..., true)` / `assert.equal(..., false)`.
+      TC-139 (5 chuỗi lần bấm, biên bản bấm đúp khi đang lọc, mỗi chuỗi → `true`, `false`):
+      `('ACTIVE','1',1000)`,`('ACTIVE','2',1000)`; `('ACTIVE','1',1000)`,`('ACTIVE','2',1001)`;
+      `('ACTIVE','1',1000)`,`('ACTIVE','2',1499)`; `('ACTIVE','1',1000)`,`('ACTIVE','1',1300)`;
+      `('INACTIVE','2',1000)`,`('INACTIVE','4',1499)`.
+      TC-140 (3 chuỗi, biên 500 ms, mốc neo vào lần bấm ĐƯỢC XỬ LÝ):
+      `('ACTIVE','1',1000)` → `true`;
+      `('ACTIVE','1',1000)`,`('ACTIVE','3',1500)` → `true`,`true`;
+      `('ACTIVE','1',1000)`,`('ACTIVE','3',1300)`,`('ACTIVE','3',1500)` → `true`,`false`,`true`.
+      TC-141 (1 chuỗi, "Tất cả" vẫn theo từng khách hàng):
+      `('','1',1000)`,`('','2',1001)`,`('','1',1002)` → `true`,`true`,`false`.
+      TC-142 (3 chuỗi, ngoài tiền đề của AC-2/AC-3, Q3/D4):
+      `('ACTIVE','1',1000)`,`('','1',1300)` → `true`,`true`;
+      `('','1',1000)`,`('ACTIVE','2',1300)` → `true`,`true`;
+      `('ACTIVE','1',1000)`,`('INACTIVE','2',1300)` → `true`,`false`.
+      Mỗi dòng dữ liệu lặp bằng `for...of` trong một `test(...)` theo nhóm trên; không `describe`.
+    allowed_files:
+      - source-fe/src/utils/chooseStatusClickKey.js
+      - source-fe/test/chooseStatusClickKey.test.js
+      - source-fe/src/main.js
+    tests: [TC-137, TC-138, TC-139, TC-140, TC-141, TC-142]
+    depends_on: [T4]
+
+  - id: T6
+    type: feat
+    title: fe - thông báo sau khi thêm khách hàng không khớp lựa chọn lọc
+    description: >-
+      Nhóm FE-4 (design D5, D6), phụ thuộc T5 (cùng sửa `source-fe/src/main.js`, phải nối tiếp — xem đầu
+      file). AC-4: sau khi thêm thành công, hiện "Đã thêm khách hàng." khi và chỉ khi đang lọc và khách hàng
+      mới không khớp lựa chọn đang chọn.
+      Tạo `source-fe/src/utils/describeCreateNotice.js` (không import gì):
+      ```
+      const CREATED_MESSAGE = 'Đã thêm khách hàng.';
+
+      /** Chooses the notice shown after a customer was created: the "added" sentence when the selected
+       * status filter hides the new customer, an empty string otherwise. */
+      export function describeCreateNotice(created, statusFilter) {
+        return statusFilter && created?.status !== statusFilter ? CREATED_MESSAGE : '';
+      }
+      ```
+      BẮT BUỘC:
+      - Dùng `created?.status` (không ném `TypeError` khi `created` là `null`/`undefined`).
+      - So khớp CHÍNH XÁC (`!==`), không trim, không đổi hoa thường, không danh sách trạng thái viết cứng.
+      - Khi `statusFilter` falsy ("Tất cả"): luôn `''`. Khi `statusFilter` truthy và `created?.status` khác
+        nó HOẶC không đọc được: `CREATED_MESSAGE`. Khi `statusFilter` truthy và bằng đúng `created?.status`:
+        `''`.
+      - Trả chuỗi text thuần (`''` khi không có thông báo, không phải `null`).
+      - Hàm thuần: không import, không state, không DOM. Thứ tự tham số `(created, statusFilter)`, tên
+        file, tên export là cố định.
+      `source-fe/index.html`: thêm phần tử ngay SAU `<p id="message" class="error" role="alert"></p>`
+      (dòng 26): `<p id="notice" class="notice" role="status"></p>`; thêm luật CSS sau dòng 14:
+      `.notice { color: #166534; }`. Không đổi gì khác trong file.
+      `source-fe/src/main.js`:
+      - Thêm import `describeCreateNotice` cạnh import `chooseStatusClickKey`.
+      - Thêm `const noticeEl = document.getElementById('notice');` cạnh `messageEl`.
+      - Thêm hàm cục bộ cạnh `refresh()`:
+        ```
+        function clearMessages() {
+          messageEl.textContent = '';
+          noticeEl.textContent = '';
+        }
+        ```
+      - Đổi ĐÚNG SÁU chỗ `messageEl.textContent = '';` hiện có (dòng 27, 44, 56, 78, 85, 95 — submit form
+        thêm, bấm "Sửa", submit form sửa, bấm "Huỷ", bấm nút đổi trạng thái [SAU dòng hỏi guard của T5,
+        không đổi vị trí], đổi lựa chọn lọc) thành `clearMessages();`. KHÔNG thêm, KHÔNG bớt chỗ nào.
+      - Trong submit của `#create-form`, giữ kết quả của `createCustomer` vào biến `created`, rồi sau
+        `form.reset()` và TRƯỚC `await refresh()`, thêm:
+        `noticeEl.textContent = describeCreateNotice(created, filterEl.value);`
+        ```
+        const created = await createCustomer({ name: data.name, email: data.email, phone: data.phone });
+        form.reset();
+        noticeEl.textContent = describeCreateNotice(created, filterEl.value);
+        await refresh();
+        ```
+      BẮT BUỘC:
+      - Dòng gán `noticeEl.textContent` đứng sau `form.reset()` và TRƯỚC `await refresh()`; giữa lần đọc
+        `filterEl.value` của nó và lời gọi `refresh()` không có `await`.
+      - KHÔNG gán `#notice` trong `catch` của submit form thêm; nhánh `catch` giữ nguyên từng ký tự.
+      - `refresh()` (T4) không đụng `#notice`.
+      - `#notice` là phần tử tĩnh, nằm ngoài `#create-form`, `#edit-customer`, `#customers`; `#message`
+        không đổi. Gán bằng `textContent`.
+      - Không đổi gì khác trong `main.js` ở task này.
+      Test: tạo `source-fe/test/describeCreateNotice.test.js`, import `describeCreateNotice` từ
+      `../src/utils/describeCreateNotice.js`.
+      TC-143 (5 dòng `(created, statusFilter)` → `''`):
+      `({id:5,...,status:'ACTIVE'}, '')`; `({id:5,...,status:'INACTIVE'}, undefined)`; `(null, null)`;
+      `({id:5,...,status:'ACTIVE'}, 'ACTIVE')`; `({id:5,...,phone:'0912345678',status:'INACTIVE'},
+      'INACTIVE')`.
+      TC-144 (5 dòng `(created, statusFilter)` → `'Đã thêm khách hàng.'`):
+      `({id:5,...,status:'ACTIVE'}, 'INACTIVE')`; `({id:5,...,phone:'0912345678',status:'INACTIVE'},
+      'ACTIVE')`; `(null, 'ACTIVE')`; `(undefined, 'INACTIVE')`; `({id:5,name:'E',email:'e@example.com',
+      phone:null}, 'ACTIVE')` (object không có field `status`).
+      Mỗi dòng dữ liệu lặp bằng `for...of` trong một `test(...)`; so bằng `assert.equal`; không `describe`.
+    allowed_files:
+      - source-fe/src/utils/describeCreateNotice.js
+      - source-fe/test/describeCreateNotice.test.js
+      - source-fe/src/main.js
+      - source-fe/index.html
+    tests: [TC-143, TC-144]
+    depends_on: [T5]
+
+  - id: T7
+    type: test
+    title: fe - TC-137, TC-138 so trực tiếp thay vì qua giá trị boolean (feedback PR)
+    description: >-
+      Feedback PR changes_requested (Van Nguyen, 2026-10-10): trong
+      `source-fe/test/chooseStatusClickKey.test.js`, bốn assertion của TC-137 và TC-138 so một biểu thức
+      boolean với `true` (`assert.equal(<bieu_thuc>, true)`); khi fail, thông điệp chỉ là `false !== true`,
+      không hiện hai giá trị bị lệch. Đổi thành so trực tiếp bằng `assert.equal`/`assert.notEqual` (cùng độ
+      chặt `===`/`!==` vì `node:assert/strict`), để thông điệp fail hiện đúng hai giá trị.
+      Đổi ĐÚNG bốn dòng, giữ nguyên mọi dòng khác của hai test (tên hiển thị, mảng dữ liệu, vòng lặp,
+      import, TC-139..TC-142 không chạm):
+      - Dòng 19 (TC-137): `assert.equal(key === customerId, true);` ->
+        `assert.equal(key, customerId);`
+      - Dòng 33 (TC-138): `assert.equal(typeof key !== 'string', true);` ->
+        `assert.notEqual(typeof key, 'string');`
+      - Dòng 36 (TC-138): `assert.equal(key === keys[0], true);` -> `assert.equal(key, keys[0]);`
+      - Dòng 39 (TC-138): `assert.equal(keys[0] !== customerId, true);` ->
+        `assert.notEqual(keys[0], customerId);`
+      BẮT BUỘC:
+      - Không đổi tên test, tên hiển thị `test('TC-137: ...')`/`test('TC-138: ...')`, mảng `cases`/
+        `customerIds`/`keys`, vòng lặp, import.
+      - Không đổi TC-139, TC-140, TC-141, TC-142 (giữ `assert.deepEqual(results, [...])`, đã được reviewer
+        chấp nhận ở `05-review.md` -> Ghi nhận không phải finding).
+      - Không sửa file nào khác (không chạm `source-fe/src/utils/chooseStatusClickKey.js`,
+        `source-fe/src/main.js`).
+      Hành vi kiểm không đổi so với test spec (TC-137, TC-138 vẫn so `===`/khác `!==`), chỉ đổi cách viết
+      assertion; `fe_test` vẫn 63 test, đều pass, không test nào thêm hay mất.
+    allowed_files:
+      - source-fe/test/chooseStatusClickKey.test.js
+    tests: [TC-137, TC-138]
+    depends_on: [T5]

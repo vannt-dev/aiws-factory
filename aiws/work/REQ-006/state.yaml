@@ -1,0 +1,215 @@
+req_id: REQ-006
+title: Hoàn thiện bộ lọc trạng thái
+requirement: requirements/REQ-006-status-filter-polish.md
+branch: aiws/REQ-006
+base_branch: demo
+base_commit: 5bc90ffebb3c57e9bb26438da30efb31f142434e
+phase: pr_approval
+status: waiting_human
+reason: open a PR for the branch; after it is merged run `aiws approve REQ-006 pr` (or `aiws reject REQ-006 pr -m "..."`)
+history:
+  - phase: new
+    result: created
+    by: Van Nguyen
+    at: 2026-10-10T07:54:26Z
+  - phase: analysis
+    agent: analyst
+    result: ok
+    run: run-0001
+    at: 2026-10-10T08:06:25Z
+  - phase: design
+    agent: architect
+    result: ok
+    run: run-0002
+    at: 2026-10-10T08:21:52Z
+  - phase: design
+    agent: test-designer
+    result: ok
+    run: run-0003
+    at: 2026-10-10T08:30:54Z
+  - phase: design_approval
+    result: approved
+    by: Van Nguyen
+    record: design-01.yaml
+    at: 2026-10-10T08:32:10Z
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0004
+    at: 2026-10-10T08:35:35Z
+  - phase: implementation
+    task: T1
+    result: done
+    run: run-0005
+    commit: 7205f8c
+    at: 2026-10-10T08:36:54Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0006
+    commit: "5605439"
+    at: 2026-10-10T08:38:10Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0007
+    commit: af962df
+    at: 2026-10-10T08:38:50Z
+  - phase: implementation
+    task: T4
+    result: done
+    run: run-0008
+    commit: 2ebbfe8
+    at: 2026-10-10T08:39:45Z
+  - phase: implementation
+    task: T5
+    result: done
+    run: run-0009
+    commit: 834cd03
+    at: 2026-10-10T08:41:02Z
+  - phase: implementation
+    task: T6
+    result: done
+    run: run-0010
+    commit: 875475d
+    at: 2026-10-10T08:42:22Z
+  - phase: implementation
+    result: all_tasks_done
+    at: 2026-10-10T08:42:23Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0011
+    at: 2026-10-10T08:45:51Z
+  - phase: pr_approval
+    result: changes_requested
+    by: Van Nguyen
+    record: pr-01.yaml
+    at: 2026-10-10T08:48:35Z
+  - phase: planning
+    agent: planner
+    result: ok
+    run: run-0012
+    at: 2026-10-10T08:52:54Z
+  - phase: implementation
+    task: T7
+    result: done
+    run: run-0013
+    commit: b2a2a93
+    at: 2026-10-10T08:53:54Z
+  - phase: implementation
+    result: all_tasks_done
+    at: 2026-10-10T08:53:55Z
+  - phase: review
+    agent: reviewer
+    result: ok
+    run: run-0014
+    at: 2026-10-10T08:55:31Z
+tasks:
+  - id: T1
+    title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
+    type: test
+    allowed_files:
+      - source-be/src/test/java/com/example/crm/service/CustomerServiceTest.java
+    tests:
+      - TC-117
+      - TC-118
+    depends_on: []
+    status: done
+    commit: 7205f8cdf106170d6dcaf19fcb9180f770f5da1a
+    test_result: pass
+  - id: T2
+    title: be - thêm assertion trực tiếp cho field và cho khách hàng vừa đổi (F2, F3)
+    type: test
+    allowed_files:
+      - source-be/src/test/java/com/example/crm/api/CustomerHandlerTest.java
+    tests:
+      - TC-120
+      - TC-122
+    depends_on: []
+    status: done
+    commit: 5605439c3197fc0fbd81afac0f4fcb3c453341df
+    test_result: pass
+  - id: T3
+    title: fe - đổi tên biến notFound500 thành internalError500 (F4)
+    type: test
+    allowed_files:
+      - source-fe/test/customerApi.test.js
+    tests:
+      - TC-127
+    depends_on: []
+    status: done
+    commit: af962dfa57c5f73edddeb5d3a12e9d12d810916e
+    test_result: pass
+  - id: T4
+    title: fe - câu trạng thái rỗng theo lựa chọn lọc
+    type: feat
+    allowed_files:
+      - source-fe/src/components/customerTable.js
+      - source-fe/test/customerTable.test.js
+      - source-fe/src/main.js
+    tests:
+      - TC-135
+      - TC-136
+    depends_on: []
+    status: done
+    commit: 2ebbfe803d6b0d3f4fd88eb718953188aead8b55
+    test_result: pass
+  - id: T5
+    title: fe - chống bấm đúp theo lựa chọn lọc
+    type: feat
+    allowed_files:
+      - source-fe/src/utils/chooseStatusClickKey.js
+      - source-fe/test/chooseStatusClickKey.test.js
+      - source-fe/src/main.js
+    tests:
+      - TC-137
+      - TC-138
+      - TC-139
+      - TC-140
+      - TC-141
+      - TC-142
+    depends_on:
+      - T4
+    status: done
+    commit: 834cd03e5501995e9512e6d18b8570561284bb94
+    test_result: pass
+  - id: T6
+    title: fe - thông báo sau khi thêm khách hàng không khớp lựa chọn lọc
+    type: feat
+    allowed_files:
+      - source-fe/src/utils/describeCreateNotice.js
+      - source-fe/test/describeCreateNotice.test.js
+      - source-fe/src/main.js
+      - source-fe/index.html
+    tests:
+      - TC-143
+      - TC-144
+    depends_on:
+      - T5
+    status: done
+    commit: 875475d06e5455a25ad2e0fb24548ddf0b549c93
+    test_result: pass
+  - id: T7
+    title: fe - TC-137, TC-138 so trực tiếp thay vì qua giá trị boolean (feedback PR)
+    type: test
+    allowed_files:
+      - source-fe/test/chooseStatusClickKey.test.js
+    tests:
+      - TC-137
+      - TC-138
+    depends_on:
+      - T5
+    status: done
+    attempts: 1
+    test_result: pass
+    commit: b2a2a93bcd7dd63902940765c78f5e6b83ce1801
+feedback: []
+attempts: {}
+last_failure: {}
+step_index: 0
+run_seq: 14
+last_review:
+  run: run-0014
+  head: 74a6cad0f74e71f2dd07f0f8f0fcaf5422ec121b
+  approval: design-01.yaml

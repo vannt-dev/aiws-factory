@@ -4,19 +4,28 @@ import { renderCustomerTable } from './components/customerTable.js';
 import { describeStatusError } from './utils/describeStatusError.js';
 import { createDoubleClickGuard } from './utils/createDoubleClickGuard.js';
 import { createCustomerListLoader } from './utils/createCustomerListLoader.js';
+import { chooseStatusClickKey } from './utils/chooseStatusClickKey.js';
+import { describeCreateNotice } from './utils/describeCreateNotice.js';
 
 const listEl = document.getElementById('customers');
 const editEl = document.getElementById('edit-customer');
 const messageEl = document.getElementById('message');
+const noticeEl = document.getElementById('notice');
 const form = document.getElementById('create-form');
 const filterEl = document.getElementById('status-filter');
 const acceptStatusClick = createDoubleClickGuard();
 const loadCustomers = createCustomerListLoader(listCustomers, () => filterEl.value);
 
+function clearMessages() {
+  messageEl.textContent = '';
+  noticeEl.textContent = '';
+}
+
 async function refresh() {
+  const statusFilter = filterEl.value;
   try {
     const { current, customers } = await loadCustomers();
-    if (current) listEl.innerHTML = renderCustomerTable(customers);
+    if (current) listEl.innerHTML = renderCustomerTable(customers, statusFilter);
   } catch {
     listEl.textContent = 'Không tải được danh sách khách hàng.';
   }
@@ -24,11 +33,12 @@ async function refresh() {
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
-  messageEl.textContent = '';
+  clearMessages();
   const data = Object.fromEntries(new FormData(form));
   try {
-    await createCustomer({ name: data.name, email: data.email, phone: data.phone });
+    const created = await createCustomer({ name: data.name, email: data.email, phone: data.phone });
     form.reset();
+    noticeEl.textContent = describeCreateNotice(created, filterEl.value);
     await refresh();
   } catch (error) {
     messageEl.textContent =
@@ -41,7 +51,7 @@ form.addEventListener('submit', async (event) => {
 listEl.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-edit-id]');
   if (!button) return;
-  messageEl.textContent = '';
+  clearMessages();
   try {
     const customer = await getCustomer(button.dataset.editId);
     editEl.innerHTML = renderCustomerEditForm(customer);
@@ -53,7 +63,7 @@ listEl.addEventListener('click', async (event) => {
 
 editEl.addEventListener('submit', async (event) => {
   event.preventDefault();
-  messageEl.textContent = '';
+  clearMessages();
   const editForm = event.target;
   const id = editForm.dataset.id;
   const data = Object.fromEntries(new FormData(editForm));
@@ -75,14 +85,14 @@ editEl.addEventListener('submit', async (event) => {
 editEl.addEventListener('click', (event) => {
   if (!event.target.closest('button[data-cancel-edit]')) return;
   editEl.innerHTML = '';
-  messageEl.textContent = '';
+  clearMessages();
 });
 
 listEl.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-status-id]');
   if (!button) return;
-  if (!acceptStatusClick(button.dataset.statusId, event.timeStamp)) return;
-  messageEl.textContent = '';
+  if (!acceptStatusClick(chooseStatusClickKey(filterEl.value, button.dataset.statusId), event.timeStamp)) return;
+  clearMessages();
   try {
     await updateCustomerStatus(button.dataset.statusId, button.dataset.targetStatus);
     await refresh();
@@ -92,7 +102,7 @@ listEl.addEventListener('click', async (event) => {
 });
 
 filterEl.addEventListener('change', () => {
-  messageEl.textContent = '';
+  clearMessages();
   refresh();
 });
 

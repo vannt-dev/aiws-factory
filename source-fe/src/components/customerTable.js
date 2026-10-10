@@ -7,10 +7,12 @@ const STATUS_ACTIONS = {
   INACTIVE: { target: 'ACTIVE', label: 'Kích hoạt lại' },
 };
 const NO_PHONE = '—';
+const EMPTY_MESSAGE = 'Chưa có khách hàng.';
+const NO_MATCH_MESSAGE = 'Không có khách hàng nào khớp lựa chọn lọc.';
 
-/** Renders the customer list as an HTML table string. */
-export function renderCustomerTable(customers) {
-  if (!customers.length) return '<p>Chưa có khách hàng.</p>';
+/** Renders the customer list as an HTML table string; an empty list becomes a sentence that depends on whether a status filter is selected. */
+export function renderCustomerTable(customers, statusFilter = '') {
+  if (!customers.length) return `<p>${statusFilter ? NO_MATCH_MESSAGE : EMPTY_MESSAGE}</p>`;
   const rows = customers
     .map((c) => {
       const action = Object.hasOwn(STATUS_ACTIONS, c.status) ? STATUS_ACTIONS[c.status] : null;

@@ -1,0 +1,5 @@
+gate: pr
+decision: changes_requested
+by: Van Nguyen
+at: 2026-10-10T08:48:35Z
+notes: "TC-137 va TC-138: so truc tiep bang assert.equal(key, customerId) hoac assert.notEqual, khong so qua gia tri boolean, de khi fail hien hai gia tri bi lech."

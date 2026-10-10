@@ -1,0 +1,36 @@
+{
+  "run_id": "run-0011",
+  "req": "REQ-006",
+  "phase": "review",
+  "agent": "reviewer",
+  "task": null,
+  "attempt": 1,
+  "adapter": "claude",
+  "command": "claude \"-p\" \"--output-format\" \"json\" \"--permission-mode\" \"dontAsk\" \"--allowedTools\" \"Read,Grep,Glob,Write\" \"--model\" \"claude-fable-5-1\"",
+  "allowed_tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write"
+  ],
+  "prompt_file": "run-0011.prompt.md",
+  "prompt_sha256": "d2511885f0b03208fe3f3c936395a9d1722ada3bb04a3bb9766a140ee5e9a5cc",
+  "started_at": "2026-10-10T08:42:23Z",
+  "duration_ms": 207773,
+  "exit_code": 0,
+  "report": {
+    "is_error": false,
+    "result": "Review complete. One file written: `aiws/work/REQ-006/05-review.md`.\n\n**Verdict: ready for PR.** No critical or major findings, one minor.\n\n**What I checked**\n- All 11 changed files against the base commit, plus the pure-function sources and the `createDoubleClickGuard` / `customerApi` modules the design relies on.\n- Every decision D1 through D10 against the actual code, including the six `clearMessages()` call sites, the guard-before-clear ordering, and the no-await windows in `refresh()` and the create handler.\n- The five modified REQ-005 tests for part (a) of AC-5 and AC-6: the fake `\"Customer n\"` strings and `notFound500` are gone from their files, TC-119 is untouched, and only lines were added to TC-120 and TC-122.\n- Test evidence per task. BE stays at 399 runs with 173 and 107 for the two touched classes. FE went from 53 to 63, all passing.\n- Nothing under `source-be/src/main/` changed, and no file was renamed, moved, or reformatted outside the diff.\n\n**The one finding**\n- Minor, in the new `chooseStatusClickKey` tests: identity checks are written as `assert.equal(a === b, true)`, so a failure prints only `false !== true` instead of the two values. Behaviour under test is correct, so this is a note for the PR reviewer, not a blocker.\n\n**What the PR reviewer still has to do**\n- The fourteen manual steps in the design's FE section were not run here. Steps 1 and 2 reproduce the original double-click bug and are still marked as unconfirmed, and steps 9 through 13 cover the new success notice.\n\nThe orchestrator can advance from here. I ran no git commands that change history and wrote nothing outside the review file.",
+    "num_turns": 26,
+    "cost_usd": 3.38028825,
+    "session_id": "d59a73a6-a907-4f53-8bbb-7e0f2a4434c7",
+    "model": null
+  },
+  "stderr_tail": null,
+  "files_changed": [
+    "aiws/work/REQ-006/05-review.md"
+  ],
+  "scope_violations_reverted": [],
+  "validation": [],
+  "outcome": "ok"
+}

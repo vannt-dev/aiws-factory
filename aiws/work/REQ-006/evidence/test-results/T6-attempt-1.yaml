@@ -1,0 +1,110 @@
+req: REQ-006
+task: T6
+attempt: 1
+run: run-0010
+at: 2026-10-10T08:42:22Z
+tests:
+  - TC-143
+  - TC-144
+result: pass
+suites:
+  - side: fe
+    command: npm test --prefix source-fe
+    exit_code: 0
+    duration_ms: 968
+    output_tail: |-
+      ...other length verbatim and HTML-escaped
+      ok 47 - TC-40: renderCustomerTable shows a phone of any other length verbatim and HTML-escaped
+        ---
+        duration_ms: 0.4146
+        ...
+      # Subtest: TC-41: renderCustomerTable formats the raw phone before escaping it
+      ok 48 - TC-41: renderCustomerTable formats the raw phone before escaping it
+        ---
+        duration_ms: 0.9197
+        ...
+      # Subtest: TC-74: renderCustomerTable adds an action column with one edit button carrying the id per row
+      ok 49 - TC-74: renderCustomerTable adds an action column with one edit button carrying the id per row
+        ---
+        duration_ms: 1.2427
+        ...
+      # Subtest: TC-103: renderCustomerTable adds a status action button carrying id and target status per row
+      ok 50 - TC-103: renderCustomerTable adds a status action button carrying id and target status per row
+        ---
+        duration_ms: 2.4426
+        ...
+      # Subtest: TC-104: renderCustomerTable escapes the id inside data-status-id
+      ok 51 - TC-104: renderCustomerTable escapes the id inside data-status-id
+        ---
+        duration_ms: 0.6405
+        ...
+      # Subtest: TC-105: renderCustomerTable does not show a status action button for status outside ACTIVE and INACTIVE
+      ok 52 - TC-105: renderCustomerTable does not show a status action button for status outside ACTIVE and INACTIVE
+        ---
+        duration_ms: 0.4794
+        ...
+      # Subtest: TC-114: renderCustomerTable does not show a status action button for a status named like a built-in object property
+      ok 53 - TC-114: renderCustomerTable does not show a status action button for a status named like a built-in object property
+        ---
+        duration_ms: 0.4985
+        ...
+      # Subtest: TC-75: renderCustomerTable escapes the id inside data-edit-id
+      ok 54 - TC-75: renderCustomerTable escapes the id inside data-edit-id
+        ---
+        duration_ms: 0.2537
+        ...
+      # Subtest: TC-135: renderCustomerTable shows a no-match sentence for an empty list when a status filter is selected
+      ok 55 - TC-135: renderCustomerTable shows a no-match sentence for an empty list when a status filter is selected
+        ---
+        duration_ms: 0.3016
+        ...
+      # Subtest: TC-136: renderCustomerTable renders the table unchanged when the list is not empty, regardless of statusFilter
+      ok 56 - TC-136: renderCustomerTable renders the table unchanged when the list is not empty, regardless of statusFilter
+        ---
+        duration_ms: 0.4307
+        ...
+      # Subtest: TC-143: describeCreateNotice returns an empty string when there is no status filter or the created customer matches it
+      ok 57 - TC-143: describeCreateNotice returns an empty string when there is no status filter or the created customer matches it
+        ---
+        duration_ms: 3.8895
+        ...
+      # Subtest: TC-144: describeCreateNotice returns the added-customer notice when a status filter hides the created customer or its status cannot be read
+      ok 58 - TC-144: describeCreateNotice returns the added-customer notice when a status filter hides the created customer or its status cannot be read
+        ---
+        duration_ms: 0.6057
+        ...
+      # Subtest: TC-106: describeStatusError returns the duplicate-phone message when the error has fieldErrors.phone
+      ok 59 - TC-106: describeStatusError returns the duplicate-phone message when the error has fieldErrors.phone
+        ---
+        duration_ms: 1.9107
+        ...
+      # Subtest: TC-107: describeStatusError returns the generic message for every other error
+      ok 60 - TC-107: describeStatusError returns the generic message for every other error
+        ---
+        duration_ms: 0.3883
+        ...
+      # Subtest: TC-33: formatPhone formats a 10-character string as 4-3-3
+      ok 61 - TC-33: formatPhone formats a 10-character string as 4-3-3
+        ---
+        duration_ms: 1.8176
+        ...
+      # Subtest: TC-34: formatPhone formats an 11-character string as 3-4-4
+      ok 62 - TC-34: formatPhone formats an 11-character string as 3-4-4
+        ---
+        duration_ms: 0.1994
+        ...
+      # Subtest: TC-35: formatPhone returns a string of any other length unchanged
+      ok 63 - TC-35: formatPhone returns a string of any other length unchanged
+        ---
+        duration_ms: 0.2535
+        ...
+      1..63
+      # tests 63
+      # suites 0
+      # pass 63
+      # fail 0
+      # cancelled 0
+      # skipped 0
+      # todo 0
+      # duration_ms 337.8545
+problems: []

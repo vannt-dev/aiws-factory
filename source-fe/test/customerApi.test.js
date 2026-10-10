@@ -273,7 +273,7 @@ test('TC-126: listCustomers returns the array sent by the API without filtering 
 });
 
 test('TC-127: listCustomers throws ApiError with the status and field errors of the API', async () => {
-  const notFound500 = { type: 'about:blank', title: 'Internal Server Error', status: 500, detail: 'Unexpected error' };
+  const internalError500 = { type: 'about:blank', title: 'Internal Server Error', status: 500, detail: 'Unexpected error' };
   const rows = [
     {
       options: { status: 'DELETED' },
@@ -288,8 +288,8 @@ test('TC-127: listCustomers throws ApiError with the status and field errors of 
       url: '/api/customers?status=DELETED',
       fieldErrors: { status: 'must be ACTIVE or INACTIVE' },
     },
-    { options: { status: 'ACTIVE' }, status: 500, problem: notFound500, url: '/api/customers?status=ACTIVE', fieldErrors: {} },
-    { options: {}, status: 500, problem: notFound500, url: '/api/customers', fieldErrors: {} },
+    { options: { status: 'ACTIVE' }, status: 500, problem: internalError500, url: '/api/customers?status=ACTIVE', fieldErrors: {} },
+    { options: {}, status: 500, problem: internalError500, url: '/api/customers', fieldErrors: {} },
   ];
 
   for (const row of rows) {
