@@ -738,6 +738,11 @@ class CustomerHandlerTest {
     for (int i = 0; i < expectedIds.size(); i++) {
       long id = expectedIds.get(i);
       assertEquals(id, body.get(i).get("id").asLong());
+      assertEquals(5, body.get(i).size());
+      assertTrue(body.get(i).has("phone"));
+      if (id == 1 || id == 4) {
+        assertTrue(body.get(i).get("phone").isNull());
+      }
       assertEquals(all.get((int) id - 1), body.get(i));
       if (expectedFilterStatus != null) {
         assertEquals(expectedFilterStatus, body.get(i).get("status").asText());
@@ -814,6 +819,9 @@ class CustomerHandlerTest {
       assertEquals(id, activeBody.get(i).get("id").asLong());
       if (id == changedId) {
         assertEquals("ACTIVE", activeBody.get(i).get("status").asText());
+        for (String field : List.of("name", "email", "phone")) {
+          assertEquals(all.get((int) id - 1).get(field), activeBody.get(i).get(field));
+        }
       } else {
         assertEquals(all.get((int) id - 1), activeBody.get(i));
       }
@@ -824,6 +832,9 @@ class CustomerHandlerTest {
       assertEquals(id, inactiveBody.get(i).get("id").asLong());
       if (id == changedId) {
         assertEquals("INACTIVE", inactiveBody.get(i).get("status").asText());
+        for (String field : List.of("name", "email", "phone")) {
+          assertEquals(all.get((int) id - 1).get(field), inactiveBody.get(i).get(field));
+        }
       } else {
         assertEquals(all.get((int) id - 1), inactiveBody.get(i));
       }

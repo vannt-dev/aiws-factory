@@ -65,7 +65,10 @@ tasks:
       - TC-120
       - TC-122
     depends_on: []
-    status: pending
+    status: running
+    base: 855fd048e4595b856cf3f5c72deaf5580fbd15ab
+    attempts: 1
+    test_result: pass
   - id: T3
     title: fe - đổi tên biến notFound500 thành internalError500 (F4)
     type: test
@@ -122,4 +125,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 5
+run_seq: 6
