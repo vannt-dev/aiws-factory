@@ -66,6 +66,12 @@ history:
     run: run-0009
     commit: 834cd03
     at: 2026-10-10T08:41:02Z
+  - phase: implementation
+    task: T6
+    result: done
+    run: run-0010
+    commit: 875475d
+    at: 2026-10-10T08:42:22Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
@@ -153,10 +159,10 @@ tasks:
       - TC-144
     depends_on:
       - T5
-    status: running
-    base: 9c20b664ae3c7e406c10cbb4dcf183c4f5a61e96
+    status: done
     attempts: 1
     test_result: pass
+    commit: 875475d06e5455a25ad2e0fb24548ddf0b549c93
 feedback: []
 attempts: {}
 last_failure: {}
