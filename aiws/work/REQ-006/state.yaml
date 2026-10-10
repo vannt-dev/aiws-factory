@@ -4,9 +4,8 @@ requirement: requirements/REQ-006-status-filter-polish.md
 branch: aiws/REQ-006
 base_branch: demo
 base_commit: 5bc90ffebb3c57e9bb26438da30efb31f142434e
-phase: pr_approval
-status: waiting_human
-reason: open a PR for the branch; after it is merged run `aiws approve REQ-006 pr` (or `aiws reject REQ-006 pr -m "..."`)
+phase: planning
+status: running
 history:
   - phase: new
     result: created
@@ -81,6 +80,11 @@ history:
     result: ok
     run: run-0011
     at: 2026-10-10T08:45:51Z
+  - phase: pr_approval
+    result: changes_requested
+    by: Van Nguyen
+    record: pr-01.yaml
+    at: 2026-10-10T08:48:35Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
@@ -172,7 +176,11 @@ tasks:
     attempts: 1
     test_result: pass
     commit: 875475d06e5455a25ad2e0fb24548ddf0b549c93
-feedback: []
+feedback:
+  - phase: planning
+    source: pr changes_requested by Van Nguyen
+    text: "TC-137 va TC-138: so truc tiep bang assert.equal(key, customerId) hoac assert.notEqual, khong so qua gia tri boolean, de khi fail hien hai gia tri bi lech."
+    at: 2026-10-10T08:48:35Z
 attempts: {}
 last_failure: {}
 step_index: 0
