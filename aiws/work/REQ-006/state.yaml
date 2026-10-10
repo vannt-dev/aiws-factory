@@ -48,6 +48,12 @@ history:
     run: run-0006
     commit: "5605439"
     at: 2026-10-10T08:38:10Z
+  - phase: implementation
+    task: T3
+    result: done
+    run: run-0007
+    commit: af962df
+    at: 2026-10-10T08:38:50Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
@@ -83,10 +89,10 @@ tasks:
     tests:
       - TC-127
     depends_on: []
-    status: running
-    base: 20c4690544ec5676301c7a712277e0c513a0058a
+    status: done
     attempts: 1
     test_result: pass
+    commit: af962dfa57c5f73edddeb5d3a12e9d12d810916e
   - id: T4
     title: fe - câu trạng thái rỗng theo lựa chọn lọc
     type: feat
