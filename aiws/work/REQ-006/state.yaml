@@ -4,15 +4,21 @@ requirement: requirements/REQ-006-status-filter-polish.md
 branch: aiws/REQ-006
 base_branch: demo
 base_commit: 5bc90ffebb3c57e9bb26438da30efb31f142434e
-phase: analysis
+phase: design
 status: running
 history:
   - phase: new
     result: created
     by: Van Nguyen
     at: 2026-10-10T07:54:26Z
+  - phase: analysis
+    agent: analyst
+    result: ok
+    run: run-0001
+    at: 2026-10-10T08:06:25Z
 tasks: []
 feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
+run_seq: 1
