@@ -46,7 +46,10 @@ tasks:
       - TC-117
       - TC-118
     depends_on: []
-    status: pending
+    status: running
+    base: cdb0bce281a510c5a17e8a5f3e214963dc211ec0
+    attempts: 1
+    test_result: pass
   - id: T2
     title: be - thêm assertion trực tiếp cho field và cho khách hàng vừa đổi (F2, F3)
     type: test
@@ -113,4 +116,4 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 4
+run_seq: 5

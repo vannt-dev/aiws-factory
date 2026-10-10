@@ -814,11 +814,19 @@ class CustomerServiceTest {
         arguments(List.of(), "ACTIVE", List.of()));
   }
 
+  // Name, email and phone of the four standard customers of the REQ-005 test spec, in id order.
+  private static final String[][] STANDARD_CUSTOMERS = {
+    {"Nguyen Van An", "an@example.com", null},
+    {"Tran Thi Binh", "binh@example.com", "0912345678"},
+    {"Le Van Cuong", "cuong@example.com", "0987654321"},
+    {"Pham Thi Dung", "dung@example.com", null}
+  };
+
   private List<Customer> insertByStatuses(List<CustomerStatus> statuses) {
     List<Customer> inserted = new ArrayList<>();
     for (CustomerStatus status : statuses) {
-      int n = inserted.size() + 1;
-      inserted.add(repository.insert("Customer " + n, "customer" + n + "@example.com", null, status));
+      String[] customer = STANDARD_CUSTOMERS[inserted.size()];
+      inserted.add(repository.insert(customer[0], customer[1], customer[2], status));
     }
     return inserted;
   }
