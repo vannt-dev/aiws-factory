@@ -4,7 +4,7 @@ requirement: requirements/REQ-006-status-filter-polish.md
 branch: aiws/REQ-006
 base_branch: demo
 base_commit: 5bc90ffebb3c57e9bb26438da30efb31f142434e
-phase: implementation
+phase: review
 status: running
 history:
   - phase: new
@@ -96,6 +96,9 @@ history:
     run: run-0013
     commit: b2a2a93
     at: 2026-10-10T08:53:54Z
+  - phase: implementation
+    result: all_tasks_done
+    at: 2026-10-10T08:53:55Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
