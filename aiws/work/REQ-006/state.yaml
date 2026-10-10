@@ -60,6 +60,12 @@ history:
     run: run-0008
     commit: 2ebbfe8
     at: 2026-10-10T08:39:45Z
+  - phase: implementation
+    task: T5
+    result: done
+    run: run-0009
+    commit: 834cd03
+    at: 2026-10-10T08:41:02Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
@@ -130,10 +136,10 @@ tasks:
       - TC-142
     depends_on:
       - T4
-    status: running
-    base: bfeb48884613de659eeacda61033d0f2f82d642e
+    status: done
     attempts: 1
     test_result: pass
+    commit: 834cd03e5501995e9512e6d18b8570561284bb94
   - id: T6
     title: fe - thông báo sau khi thêm khách hàng không khớp lựa chọn lọc
     type: feat
