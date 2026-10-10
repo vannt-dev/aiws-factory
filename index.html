@@ -247,6 +247,7 @@
     <p class="lead" data-i18n="hero.lead">AIWS (AI Software Factory) drives AI agents through explicit phases: analysis, design with a test specification, small task-by-task implementation with unit tests, then review. Every step is limited to its write scope, every output lives in git, and people approve the decisions that matter.</p>
     <div class="cta">
       <a class="btn primary" href="#start" data-i18n="cta.start">Quick start</a>
+      <a class="btn handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md" data-i18n="cta.handbook">Handbook</a>
       <a class="btn" href="https://github.com/vannt-dev/aiws-factory" data-i18n="cta.github">Source on GitHub</a>
       <a class="btn guide" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.md" data-i18n="cta.guide">Operations guide</a>
     </div>
@@ -534,6 +535,7 @@ AIWS-Run: run-0005</pre>
         <li data-i18n="gs.1"><b>Human-only commands</b> (<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>) refuse to run inside an AI session.</li>
         <li data-i18n="gs.2"><b>Parallel work</b>: several requirements can run analysis and design at once with <code>aiws new --worktree</code>.</li>
         <li data-i18n="gs.3"><b>Token-free tests</b>: the <code>scripted</code> adapter runs the whole workflow deterministically.</li>
+        <li data-i18n="gs.4"><b>Your first requirement</b>: the <a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md">handbook</a> goes through it step by step, from writing it to the merged pull request.</li>
       </ul>
     </div>
     <div class="term">
@@ -562,6 +564,7 @@ AIWS-Run: run-0005</pre>
     <span>AIWS — AI Software Factory · v0.3.0 · <a href="https://github.com/vannt-dev/aiws-factory/blob/main/LICENSE">MIT License</a></span>
     <span>
       <a href="https://github.com/vannt-dev/aiws-factory">GitHub</a> ·
+      <a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md" data-i18n="cta.handbook">Handbook</a> ·
       <a class="guide" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.md" data-i18n="cta.guide">Operations guide</a> ·
       <a href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/spec-v1.md" data-i18n="ft.spec">Spec V1</a> ·
       <a href="https://github.com/vannt-dev/aiws-factory/blob/main/CHANGELOG.md">Changelog</a>
@@ -578,7 +581,7 @@ AIWS-Run: run-0005</pre>
       'hero.v2': 'Codex / Gemini ở V2',
       'hero.h1': 'Từ requirement tới <span class="grad">code đã test</span>, có kiểm soát.',
       'hero.lead': 'AIWS (AI Software Factory) điều phối AI đi qua các phase rõ ràng: phân tích, thiết kế kèm test spec, code từng task nhỏ kèm unit test, rồi review. Mỗi bước bị giới hạn phạm vi ghi, mọi output nằm trong git, và con người duyệt ở những điểm quan trọng.',
-      'cta.start': 'Bắt đầu nhanh', 'cta.github': 'Mã nguồn trên GitHub', 'cta.guide': 'Hướng dẫn vận hành',
+      'cta.start': 'Bắt đầu nhanh', 'cta.github': 'Mã nguồn trên GitHub', 'cta.guide': 'Hướng dẫn vận hành', 'cta.handbook': 'Sổ tay',
       'wf.h2': 'Một requirement, chín bước, hai lần người duyệt',
       'wf.sub': 'Orchestrator tất định quyết định phase nào được chạy; AI không tự chuyển trạng thái. Người chỉ can thiệp ở hai gate: duyệt design và merge PR.',
       's0': 'Lập bản đồ hệ thống từ source và legacy', 's1': 'Acceptance criteria dạng Given/When/Then', 's2': 'Quyết định, OpenAPI, test case từ AC',
@@ -629,6 +632,7 @@ AIWS-Run: run-0005</pre>
       'gs.1': '<b>Lệnh của người</b> (<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>) từ chối chạy trong phiên AI.',
       'gs.2': '<b>Chạy song song</b> nhiều REQ ở phase analysis/design qua <code>aiws new --worktree</code>.',
       'gs.3': '<b>Không tốn token khi test</b>: adapter <code>scripted</code> chạy toàn bộ quy trình tất định.',
+      'gs.4': '<b>Requirement đầu tiên</b>: <a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.vi.md">sổ tay</a> dẫn bạn đi từng bước, từ lúc viết requirement tới lúc pull request được merge.',
       'in.k': 'Tóm tắt',
       'in.h2': 'Bạn viết requirement và duyệt hai lần. Phần còn lại AI làm, trong giới hạn.',
       'in.sub': 'Không có cuộc chat nào phải ngồi canh. Công việc đi qua các phase cố định, và mọi kết quả đều là file trong repo để bạn đọc, review và revert.',
@@ -676,7 +680,7 @@ AIWS-Run: run-0005</pre>
       'hero.v2': 'Codex / Gemini は V2 で対応',
       'hero.h1': '要件から<span class="grad">テスト済みのコード</span>へ、確実な管理のもとで。',
       'hero.lead': 'AIWS（AI Software Factory）は、AI エージェントを明確なフェーズに沿って動かします。分析、テスト仕様を含む設計、ユニットテスト付きの小さなタスク単位の実装、そしてレビュー。各ステップは書き込み範囲が制限され、すべての成果物は git に残り、重要な判断は人が承認します。',
-      'cta.start': 'クイックスタート', 'cta.github': 'GitHub のソースコード', 'cta.guide': '運用ガイド',
+      'cta.start': 'クイックスタート', 'cta.github': 'GitHub のソースコード', 'cta.guide': '運用ガイド', 'cta.handbook': 'ハンドブック',
       'wf.h2': '1 つの要件、9 つのステップ、2 つの承認ゲート',
       'wf.sub': '決定的なオーケストレーターが、どのフェーズを実行できるかを判断します。AI が自ら状態を変えることはありません。人が関与するのは、設計の承認と PR のマージという 2 つのゲートだけです。',
       's0': 'ソースとレガシーコードからシステムを把握', 's1': 'Given/When/Then 形式の受け入れ基準', 's2': '設計判断、OpenAPI、AC から導くテストケース',
@@ -727,6 +731,7 @@ AIWS-Run: run-0005</pre>
       'gs.1': '<b>人専用コマンド</b>（<code>approve</code>、<code>reject</code>、<code>answer</code>、<code>resume</code>）は、AI セッション内では実行を拒否します。',
       'gs.2': '<b>並行作業</b>：<code>aiws new --worktree</code> で、複数の要件の分析・設計を同時に進められます。',
       'gs.3': '<b>トークン不要のテスト</b>：<code>scripted</code> アダプターがワークフロー全体を決定的に実行します。',
+      'gs.4': '<b>最初の要件</b>：<a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md">ハンドブック</a>（英語）が、要件を書くところからプルリクエストのマージまでを順を追って説明します。',
       'in.k': '概要',
       'in.h2': '要件を書き、2 回承認する。残りは AI が、決められた範囲の中で行います。',
       'in.sub': '見張っていなければならないチャットはありません。作業は決まったフェーズを順に進み、すべての成果物はリポジトリ内のファイルとして残るので、読んで、レビューして、元に戻せます。',
@@ -774,7 +779,7 @@ AIWS-Run: run-0005</pre>
       'hero.v2': 'V2 将支持 Codex / Gemini',
       'hero.h1': '从需求到<span class="grad">经过测试的代码</span>，全程可控。',
       'hero.lead': 'AIWS（AI Software Factory）让 AI 智能体按明确的阶段工作：分析、附带测试规格的设计、按小任务逐个实现并编写单元测试，最后评审。每一步都限定写入范围，所有产出都保存在 git 中，关键决策由人来审批。',
-      'cta.start': '快速开始', 'cta.github': 'GitHub 源代码', 'cta.guide': '操作指南',
+      'cta.start': '快速开始', 'cta.github': 'GitHub 源代码', 'cta.guide': '操作指南', 'cta.handbook': '手册',
       'wf.h2': '一个需求，九个步骤，两道人工关卡',
       'wf.sub': '由确定性的编排器决定哪个阶段可以运行，AI 不会自行改变状态。人只需在两道关卡介入：审批设计和合并 PR。',
       's0': '从源代码和遗留系统绘制系统地图', 's1': '以 Given/When/Then 编写验收标准', 's2': '设计决策、OpenAPI、源自验收标准的测试用例',
@@ -825,6 +830,7 @@ AIWS-Run: run-0005</pre>
       'gs.1': '<b>仅限人工的命令</b>（<code>approve</code>、<code>reject</code>、<code>answer</code>、<code>resume</code>）在 AI 会话中会拒绝执行。',
       'gs.2': '<b>并行工作</b>：通过 <code>aiws new --worktree</code>，可同时对多个需求进行分析和设计。',
       'gs.3': '<b>测试不消耗 token</b>：<code>scripted</code> 适配器以确定性方式运行整个工作流。',
+      'gs.4': '<b>第一个需求</b>：<a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md">手册</a>（英文）从编写需求到合并拉取请求，一步一步带你完成。',
       'in.k': '概览',
       'in.h2': '你写需求并审批两次，其余工作由 AI 在限定范围内完成。',
       'in.sub': '不需要盯着聊天窗口。工作按固定阶段推进，每个结果都是仓库中的文件，可以阅读、评审和回退。',
@@ -872,7 +878,7 @@ AIWS-Run: run-0005</pre>
       'hero.v2': 'Codex / Gemini는 V2에서 지원',
       'hero.h1': '요구사항에서 <span class="grad">테스트된 코드</span>까지, 통제된 방식으로.',
       'hero.lead': 'AIWS(AI Software Factory)는 AI 에이전트를 명확한 단계에 따라 움직입니다. 분석, 테스트 명세를 포함한 설계, 단위 테스트를 동반한 작은 태스크 단위 구현, 그리고 리뷰. 각 단계는 쓰기 범위가 제한되고, 모든 산출물은 git에 남으며, 중요한 결정은 사람이 승인합니다.',
-      'cta.start': '빠른 시작', 'cta.github': 'GitHub 소스 코드', 'cta.guide': '운영 가이드',
+      'cta.start': '빠른 시작', 'cta.github': 'GitHub 소스 코드', 'cta.guide': '운영 가이드', 'cta.handbook': '핸드북',
       'wf.h2': '하나의 요구사항, 9단계, 2개의 사람 승인 게이트',
       'wf.sub': '결정적(deterministic) 오케스트레이터가 어떤 단계를 실행할지 결정하며, AI가 스스로 상태를 바꾸지 않습니다. 사람은 설계 승인과 PR 병합, 두 게이트에서만 개입합니다.',
       's0': '소스와 레거시 코드로 시스템 지도 작성', 's1': 'Given/When/Then 형식의 인수 기준', 's2': '설계 결정, OpenAPI, AC에서 도출한 테스트 케이스',
@@ -923,6 +929,7 @@ AIWS-Run: run-0005</pre>
       'gs.1': '<b>사람 전용 명령</b>(<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>)은 AI 세션 안에서는 실행을 거부합니다.',
       'gs.2': '<b>병렬 작업</b>: <code>aiws new --worktree</code>로 여러 요구사항의 분석·설계를 동시에 진행할 수 있습니다.',
       'gs.3': '<b>토큰 없는 테스트</b>: <code>scripted</code> 어댑터가 전체 워크플로를 결정적으로 실행합니다.',
+      'gs.4': '<b>첫 번째 요구사항</b>: <a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md">핸드북</a>(영문)이 요구사항 작성부터 풀 리퀘스트 병합까지 단계별로 안내합니다.',
       'in.k': '한눈에 보기',
       'in.h2': '요구사항을 쓰고 두 번 승인합니다. 나머지는 AI가 정해진 범위 안에서 합니다.',
       'in.sub': '지켜보고 있어야 하는 채팅은 없습니다. 작업은 정해진 단계를 따라 진행되고, 모든 결과는 저장소의 파일로 남아 읽고, 리뷰하고, 되돌릴 수 있습니다.',
@@ -971,6 +978,10 @@ AIWS-Run: run-0005</pre>
     en: 'https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.md',
     vi: 'https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.vi.md'
   };
+  var HANDBOOK = {
+    en: 'https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md',
+    vi: 'https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.vi.md'
+  };
   var root = document.documentElement;
   var select = document.getElementById('lang');
   var nodes = Array.prototype.slice.call(document.querySelectorAll('[data-i18n]'));
@@ -991,6 +1002,7 @@ AIWS-Run: run-0005</pre>
     root.setAttribute('data-lang', lang);
     select.value = lang;
     document.querySelectorAll('a.guide').forEach(function (a) { a.href = GUIDE[lang] || GUIDE.en; });
+    document.querySelectorAll('a.handbook').forEach(function (a) { a.href = HANDBOOK[lang] || HANDBOOK.en; });
     try { localStorage.setItem('aiws-lang', lang); } catch (e) { /* storage unavailable */ }
   }
 
