@@ -42,6 +42,12 @@ history:
     run: run-0005
     commit: 7205f8c
     at: 2026-10-10T08:36:54Z
+  - phase: implementation
+    task: T2
+    result: done
+    run: run-0006
+    commit: "5605439"
+    at: 2026-10-10T08:38:10Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
@@ -65,10 +71,10 @@ tasks:
       - TC-120
       - TC-122
     depends_on: []
-    status: running
-    base: 855fd048e4595b856cf3f5c72deaf5580fbd15ab
+    status: done
     attempts: 1
     test_result: pass
+    commit: 5605439c3197fc0fbd81afac0f4fcb3c453341df
   - id: T3
     title: fe - đổi tên biến notFound500 thành internalError500 (F4)
     type: test
