@@ -4,8 +4,8 @@ requirement: requirements/REQ-006-status-filter-polish.md
 branch: aiws/REQ-006-knowledge
 base_branch: demo
 base_commit: 5bc90ffebb3c57e9bb26438da30efb31f142434e
-phase: knowledge_update
-status: running
+phase: done
+status: done
 history:
   - phase: new
     result: created
@@ -111,6 +111,11 @@ history:
     head: 6b11a04
     merge: merge commit
     at: 2026-10-10T08:59:25Z
+  - phase: knowledge_update
+    agent: discovery
+    result: ok
+    run: run-0015
+    at: 2026-10-10T09:05:14Z
 tasks:
   - id: T1
     title: be - insertByStatuses dùng dữ liệu chuẩn (F1)
@@ -214,7 +219,7 @@ feedback: []
 attempts: {}
 last_failure: {}
 step_index: 0
-run_seq: 14
+run_seq: 15
 last_review:
   run: run-0014
   head: 74a6cad0f74e71f2dd07f0f8f0fcaf5422ec121b
