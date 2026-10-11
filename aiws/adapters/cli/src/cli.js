@@ -49,6 +49,7 @@ Checks (for CI and debugging)
   aiws check diff-scope --req R [--phase P] [--task T] [--base REV]
   aiws check commit-trailer --req R [--range A..B]
   aiws check approvals --req R
+  aiws check api-contract --req R      lint api-contract.yaml and compare it with the backend's OpenAPI document
   aiws check build                     run every <side>_build and <side>_test command of policies.yaml
   aiws guard [--bash]                  Claude Code PreToolUse hook (reads tool JSON on stdin)
 `;
@@ -158,7 +159,8 @@ export async function main(argv) {
       else if (a1 === 'commit-trailer') C.checkCommitTrailers(flags);
       else if (a1 === 'approvals') C.checkApprovals(flags);
       else if (a1 === 'build') C.checkBuild();
-      else throw new AiwsError(`Unknown check '${a1}'. Use diff-scope | commit-trailer | approvals | build`);
+      else if (a1 === 'api-contract') C.checkApiContractCmd(flags);
+      else throw new AiwsError(`Unknown check '${a1}'. Use diff-scope | commit-trailer | approvals | build | api-contract`);
       return process.exitCode ?? 0;
     case 'guard': {
       let ws;

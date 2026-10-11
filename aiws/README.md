@@ -210,6 +210,6 @@ The sample project used by the tests lives in `test/fixtures/sample`; the simula
 
 - [ ] Put real code into `source-fe/`, `source-be/`, `source-legacy/`; run `aiws detect --write` to fill `commands` in `policies.yaml` (currently empty).
 - [ ] Finalise `fe-conventions` / `be-conventions` (currently skeletons marked `[CẦN XÁC NHẬN]`).
-- [ ] API contract tooling (spec §13): add `commands.api_contract_be` / `api_contract_fe`; the review phase runs them and treats failures as critical findings.
+- [x] API contract tooling (spec §13), the part that needs no stack-specific tool: the contract is linted when written, and the review phase's builtin `api_contract` check compares it with the OpenAPI document the backend keeps in its source (`aiws check api-contract --req R` does the same). Still open: generating the backend document from code on stacks that do not commit one (`commands.api_contract_be` / `api_contract_fe` stay as optional hooks for that).
 - [ ] Trial DB migrations (spec §13, option A or B).
 - [x] Codex adapter and cross-model review (`runtime.yaml → phases.review.adapter: codex`), for phases without a shell. Still open: a Gemini adapter, and a Codex run of the implementation phase (needs a way to limit its shell to the project commands).

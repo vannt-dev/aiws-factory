@@ -59,6 +59,7 @@ phases:
     contract: contracts/review.yaml
     require_trace: true            # AC -> TC -> task -> commit phải đủ trước khi review
     checks:                        # lỗi ở đây = finding critical
+      - {builtin: api_contract}    # mọi path/method của api-contract.yaml phải có trong OpenAPI của BE (nếu BE có)
       - {command: api_contract_be, optional: true}
       - {command: api_contract_fe, optional: true}
     on_critical: planning          # planner thêm task sửa lỗi
