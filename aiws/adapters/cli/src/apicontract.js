@@ -99,7 +99,7 @@ export function findSpecs(dir, { maxDepth = 4 } = {}) {
       }
       if (!/\.(ya?ml|json)$/i.test(e.name)) continue;
       const file = path.join(d, e.name);
-      let size = 0;
+      let size;
       try {
         size = fs.statSync(file).size;
       } catch {
