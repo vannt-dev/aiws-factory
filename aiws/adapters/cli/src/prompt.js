@@ -25,6 +25,7 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
       `- Work directory: ${ws.workRel(req)}/`,
       `- Knowledge base: aiws/knowledge/`,
       `- This run is non-interactive. Nobody will answer questions during the run; follow the rules below for questions.`,
+      LANGUAGE_LINE[ws.language],
     ].join('\n')
   );
 
@@ -63,7 +64,8 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
   if (outs.length) {
     const lines = ['## Required outputs'];
     for (const o of outs) {
-      lines.push(`- ${fill(o.path, vars)}${o.required_headings ? ` (required headings: ${o.required_headings.join(' | ')})` : ''}`);
+      const headings = ws.headingsOf(o);
+      lines.push(`- ${fill(o.path, vars)}${headings ? ` (required headings: ${headings.join(' | ')})` : ''}`);
     }
     for (const o of outs) {
       const tpl = o.template ? ws.template(o.template) : null;
@@ -132,6 +134,12 @@ function shellCommands(ws, phase, contract, task) {
   }
   return out;
 }
+
+// The documents come out in the workspace language whatever language the prompt and the skills are in.
+const LANGUAGE_LINE = {
+  vi: '- Language: write every document, finding and report in Vietnamese (tiếng Việt), with the headings exactly as the template gives them.',
+  en: '- Language: write every document, finding and report in English, with the headings exactly as the template gives them.',
+};
 
 function truncate(s, n) {
   return s.length > n ? s.slice(0, n) + `\n...[truncated ${s.length - n} chars]` : s;

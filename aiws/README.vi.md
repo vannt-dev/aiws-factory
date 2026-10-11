@@ -125,13 +125,13 @@ Diff-scope là đảm bảo thật; hook chỉ giúp chặn sớm. Diff-scope **
 
 | File | Nội dung |
 | --- | --- |
-| `config/workflow.yaml` | Phase, thứ tự, gate, retry, route khi fail/critical. Không có lệnh "skip phase": muốn bỏ thì sửa file này qua review. |
+| `config/workflow.yaml` | Phase, thứ tự, gate, retry, route khi fail/critical. `language: vi|en` chọn ngôn ngữ của mọi tài liệu agent viết. Không có lệnh "skip phase": muốn bỏ thì sửa file này qua review. |
 | `config/policies.yaml` | `protected_paths`, `maintainer_editable`, `read_deny`, `phase_write_scope`, `commands`, `bash_denylist`, `limits`, `approvals.require_signed`. |
 | `config/runtime.yaml` | Adapter theo phase, map `model_hint` sang model (`opus`/`sonnet`), timeout, `guard_command`, `wait` (nhịp chạy lại của `--wait`), `notify` (lệnh hoặc webhook báo khi run dừng: tới gate, bị chặn, 80% ngân sách, tạm dừng vì hạn mức). |
 | `config/contracts/*.yaml` | Mỗi phase: agent, skills, tools, reads, outputs (heading bắt buộc, template), rules, checks, `max_attempts`. |
 | `agents/*.md` | Vai trò: frontmatter `id`, `description`, `tools`, `skills`, `model_hint` và thân là prompt. `{req}` và `{task}` được thay tự động. |
 | `skills/*/SKILL.md` | Kiến thức dùng chung, được chép sang `.claude/skills` và nhúng vào prompt headless. |
-| `templates/` | Mẫu output, heading và định dạng ID mà validator kiểm tra. |
+| `templates/` | Mẫu output, heading và định dạng ID mà validator kiểm tra. `templates/en/` là bộ tiếng Anh, dùng khi `language: en`. |
 
 Rule validator có sẵn: `ac_numbered`, `no_blocking_questions`, `every_ac_has_tc`, `plan_valid`, `review_no_open_critical`, cùng `format: openapi|yaml` cho output.
 

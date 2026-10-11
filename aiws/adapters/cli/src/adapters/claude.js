@@ -102,12 +102,18 @@ export function sync(ws) {
       ...(model ? [`model: ${model}`] : []),
       '---',
     ];
+    const en = ws.language === 'en';
+    const skillFiles = skills.map((s) => `.claude/skills/${s}/SKILL.md`).join(', ');
     const skillNote = skills.length
-      ? `\n\n# Skills\nTrước khi làm, đọc các skill: ${skills.map((s) => `.claude/skills/${s}/SKILL.md`).join(', ')}.`
+      ? en
+        ? `\n\n# Skills\nBefore you start, read the skills: ${skillFiles}.`
+        : `\n\n# Skills\nTrước khi làm, đọc các skill: ${skillFiles}.`
       : '';
-    const scopeNote =
-      '\n\n# Enforcement\nMọi thay đổi file bị kiểm tra bởi hook `aiws guard` và `aiws check diff-scope`. ' +
-      'Ghi ngoài phạm vi của phase sẽ bị chặn hoặc bị revert.';
+    const scopeNote = en
+      ? '\n\n# Enforcement\nEvery file change is checked by the `aiws guard` hook and `aiws check diff-scope`. ' +
+        'A write outside the scope of the phase is blocked or reverted.\n\n# Language\nWrite every document, finding and report in English.'
+      : '\n\n# Enforcement\nMọi thay đổi file bị kiểm tra bởi hook `aiws guard` và `aiws check diff-scope`. ' +
+        'Ghi ngoài phạm vi của phase sẽ bị chặn hoặc bị revert.';
     writeText(path.join(agentsDir, `${id}.md`), `${fm.join('\n')}\n${GENERATED_NOTE}\n\n${a.body.trim()}${skillNote}${scopeNote}\n`);
     written.push(`.claude/agents/${id}.md`);
   }

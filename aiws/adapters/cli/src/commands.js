@@ -448,7 +448,8 @@ export async function answer(req, opts = {}) {
   const def = ws.phaseDef(st.phase);
   if (def.type === 'human_gate' && def.gate === 'question') {
     const q = ws.abs(ws.workRel(req, 'questions.md'));
-    fs.appendFileSync(q, `\n\n## Trả lời (${by}, ${nowIso()})\n\n${opts.message}\n`);
+    const heading = ws.language === 'en' ? 'Answer' : 'Trả lời';
+    fs.appendFileSync(q, `\n\n## ${heading} (${by}, ${nowIso()})\n\n${opts.message}\n`);
     addFeedback(st, def.on_answer, `answer by ${by}`, opts.message);
     addHistory(st, { phase: def.id, result: 'answered', by });
     enterPhase(ws, st, def.on_answer);

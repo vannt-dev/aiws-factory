@@ -19,7 +19,7 @@ The examples and numbers come from six real requirements run on the demo workspa
 
 You run two approval commands for each requirement. The AI cannot run them: they refuse to start inside an AI session.
 
-**A note on language.** The agent prompts and the document templates of the kit are written in Vietnamese, so the analysis, design, test specification and review come out in Vietnamese, with headings such as `Quyết định cần duyệt` ("decisions to approve"). The orchestrator checks those headings. To work in another language, translate `aiws/agents/`, `aiws/templates/` and `aiws/skills/` together with the `required_headings` in `aiws/config/contracts/`. This has not been tried on the demo.
+**A note on language.** `workflow.yaml → language` chooses the language of the documents: `vi` (the default) or `en`. With `en` the analysis, design, test specification, review and knowledge base come out in English, from the templates in `aiws/templates/en/` and the English headings of the contracts (`required_headings_en`), and `aiws answer` writes its answer under `## Answer`. The agent prompts and the skills of the kit are written in Vietnamese either way; the models read them fine, and every prompt says which language to write in. The handbook quotes the Vietnamese headings, such as `Quyết định cần duyệt` ("Decisions to approve").
 
 ## 1. Before the first requirement
 

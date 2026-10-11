@@ -10,15 +10,18 @@ outputs:
   - path: aiws/knowledge/system-map.md
     template: knowledge/system-map.md
     required_headings: [Tổng quan, Thành phần, Luồng chính, Phụ thuộc ngoài]
+    required_headings_en: [Overview, Components, Main flows, External dependencies]
   - path: aiws/knowledge/api-inventory.md
     template: knowledge/api-inventory.md
     required_headings: [Endpoints]
   - path: aiws/knowledge/db-schema.md
     template: knowledge/db-schema.md
     required_headings: [Bảng]
+    required_headings_en: [Tables]
   - path: aiws/knowledge/glossary.md
     template: knowledge/glossary.md
     required_headings: [Thuật ngữ]
+    required_headings_en: [Terms]
   - path: aiws/knowledge/conventions.md
     template: knowledge/conventions.md
     required_headings: [Frontend, Backend, Test]

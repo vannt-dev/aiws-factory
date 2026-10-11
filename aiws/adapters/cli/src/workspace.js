@@ -8,6 +8,7 @@ import { AiwsError, readYaml, parseFrontMatter, readText } from './util.js';
 export const PKG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const KIT_DIR = path.resolve(PKG_ROOT, '..', '..');
 export const BIN_PATH = path.join(PKG_ROOT, 'bin', 'aiws.js');
+export const LANGUAGES = ['vi', 'en'];
 
 /** Walks up from `start` to the directory that holds aiws/config/workflow.yaml. */
 export function findRoot(start = process.cwd()) {
@@ -88,9 +89,23 @@ export class Workspace {
     return { name, file, text: readText(file) };
   }
 
+  /** The language the documents come out in: `workflow.yaml -> language` (vi or en), Vietnamese by default. */
+  get language() {
+    const l = String(this.workflow.language ?? 'vi').toLowerCase();
+    return LANGUAGES.includes(l) ? l : 'vi';
+  }
+
+  /** A template in the workspace language: aiws/templates/<lang>/<name> when it exists, else aiws/templates/<name>. */
   template(name) {
+    const own = path.join(this.aiwsDir, 'templates', this.language, name);
+    if (this.language !== 'vi' && fs.existsSync(own)) return readText(own);
     const file = path.join(this.aiwsDir, 'templates', name);
     return fs.existsSync(file) ? readText(file) : null;
+  }
+
+  /** The required headings of a contract output in the workspace language: `required_headings_<lang>`, else `required_headings`. */
+  headingsOf(output) {
+    return output[`required_headings_${this.language}`] ?? output.required_headings ?? null;
   }
 
   listAgents() {

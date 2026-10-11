@@ -24,8 +24,9 @@ export function validateOutputs(ws, contract, { req, task } = {}) {
       errors.push({ kind: 'invalid', message: `Missing required output ${rel}` });
       continue;
     }
-    if (out.required_headings) {
-      const missing = P.missingHeadings(text, out.required_headings);
+    const headings = ws.headingsOf(out);
+    if (headings) {
+      const missing = P.missingHeadings(text, headings);
       if (missing.length) errors.push({ kind: 'invalid', message: `${rel} is missing headings: ${missing.join(', ')}` });
     }
     if (out.format === 'yaml' || out.format === 'openapi') {
