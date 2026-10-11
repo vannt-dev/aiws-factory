@@ -16,9 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   package, so `aiws init` from an installed package creates a whole
   workspace; `aiws init` records the release in `aiws/config/kit-version`
   and `aiws run` / `aiws status` say so when the CLI and the kit of a
-  workspace are different releases. A `Publish to npm` workflow (run by
-  hand, dry run by default, trusted publishing with provenance) is in place
-  for the day the package goes up.
+  workspace are different releases. The `Publish to npm` workflow publishes
+  on every `v*` tag through npm trusted publishing, with provenance; run by
+  hand it is a dry run.
 
 ## [0.4.0] - 2026-10-11
 

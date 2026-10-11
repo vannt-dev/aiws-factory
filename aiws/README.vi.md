@@ -205,7 +205,7 @@ AIWS_KEEP_TMP=1 npm test         # giữ lại workspace tạm để soi
 
 ### Đóng gói cho npm
 
-`npm pack` trong `aiws/adapters/cli` gom bộ kit (`aiws/config`, `agents`, `skills`, `templates`, `docs` và `AGENTS.md`) vào `kit/` của gói (`tool/bundle-kit.mjs`, chạy ở `prepack`; `postpack` xoá đi), nên `aiws init` từ gói đã cài tạo được trọn workspace. `aiws init` ghi phiên bản vào `aiws/config/kit-version`; `aiws run` / `aiws status` cảnh báo khi CLI và kit của workspace khác phiên bản. Gói chưa có trên npm. Lần publish đầu do người chạy `npm publish` trong thư mục đó; sau đó bật trusted publishing trên npmjs.com cho repo này và workflow `Publish to npm` (`.github/workflows/publish.yml`, chạy tay, mặc định dry run), rồi workflow có thể publish theo tag `v*` kèm provenance.
+`npm pack` trong `aiws/adapters/cli` gom bộ kit (`aiws/config`, `agents`, `skills`, `templates`, `docs` và `AGENTS.md`) vào `kit/` của gói (`tool/bundle-kit.mjs`, chạy ở `prepack`; `postpack` xoá đi), nên `aiws init` từ gói đã cài tạo được trọn workspace. `aiws init` ghi phiên bản vào `aiws/config/kit-version`; `aiws run` / `aiws status` cảnh báo khi CLI và kit của workspace khác phiên bản. Workflow `Publish to npm` (`.github/workflows/publish.yml`) publish ở mỗi tag `v*` qua npm trusted publishing (npmjs.com tin repo này và file workflow đó; không có token trong repo), kèm provenance; tag phải bằng phiên bản trong package.json. Chạy tay thì là dry run. Vậy một bản phát hành là: nâng phiên bản, cập nhật changelog, commit, tag `vX.Y.Z`, đẩy tag.
 ```
 
 CI (GitHub Actions) là pipeline nhiều bước; bước sau chỉ chạy khi bước trước đạt:

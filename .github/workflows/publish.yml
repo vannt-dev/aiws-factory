@@ -1,12 +1,12 @@
 name: Publish to npm
 
 # Publishes aiws/adapters/cli to npm as `aiws-factory` (the command stays `aiws`; npm refuses the name
-# `aiws` as too similar to existing packages) with provenance, through npm trusted publishing (no token
-# in the repository). Started by hand for now: the first publish has to be made by a person
-# (`npm publish` in aiws/adapters/cli) before npm lets a trusted publisher be set up for it
-# (npmjs.com -> the package -> Settings -> Trusted publishing: this repository, this workflow).
-# Once that is done, the trigger can become `push: tags: ['v*']`.
+# `aiws` as too similar to existing packages) with provenance, through npm trusted publishing: npmjs.com
+# trusts this repository and this workflow file, so no token lives in the repository. Runs on every
+# release tag (`v*`, which must equal the package version) and by hand as a dry run.
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       dry_run:
@@ -32,6 +32,8 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
           cache-dependency-path: aiws/adapters/cli/package-lock.json
+      # trusted publishing needs npm 11.5.1 or newer; Node 22 ships an older npm
+      - run: npm install -g npm@11
       - run: npm ci
       - run: npm run check
       - name: The tag, if any, must be the package version
@@ -45,5 +47,5 @@ jobs:
           # postpack removes kit/ from the tree again, so the tarball listing is what is checked
           node -e "const p=require('./pack.json')[0];console.log(p.filename, p.size, 'bytes,', p.entryCount, 'files');for(const f of p.files)console.log(' ', f.path);if(!p.files.some(f=>f.path==='kit/config/workflow.yaml'))process.exit(1)"
       - name: Publish
-        if: ${{ !inputs.dry_run }}
+        if: ${{ github.event_name == 'push' || !inputs.dry_run }}
         run: npm publish --provenance --access public
