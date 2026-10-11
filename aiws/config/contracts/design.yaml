@@ -12,6 +12,7 @@ outputs:
   - path: aiws/work/{req}/02-design.md
     template: 02-design.md
     required_headings: [Tổng quan, Quyết định chính, API, DB change, FE change, Migration, Rủi ro, Quyết định cần duyệt]
+    required_headings_en: [Overview, Key decisions, API, DB change, FE change, Migration, Risks, Decisions to approve]
   - path: aiws/work/{req}/api-contract.yaml
     template: api-contract.yaml
     format: openapi

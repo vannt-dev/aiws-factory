@@ -19,7 +19,7 @@ Ví dụ và số liệu lấy từ sáu requirement thật đã chạy trên wo
 
 Mỗi requirement bạn chạy hai lệnh duyệt. AI không chạy được hai lệnh này: chúng từ chối khởi động trong phiên AI.
 
-**Lưu ý về ngôn ngữ.** Prompt của các agent và các template tài liệu trong bộ kit viết bằng tiếng Việt, nên analysis, design, test spec và review cũng ra tiếng Việt, với các heading như `Quyết định cần duyệt`. Orchestrator kiểm tra các heading đó. Muốn làm việc bằng ngôn ngữ khác, hãy dịch `aiws/agents/`, `aiws/templates/` và `aiws/skills/` cùng với `required_headings` trong `aiws/config/contracts/`. Việc này chưa được thử trên demo.
+**Lưu ý về ngôn ngữ.** `workflow.yaml → language` chọn ngôn ngữ của tài liệu: `vi` (mặc định) hoặc `en`. Với `en`, analysis, design, test spec, review và knowledge ra tiếng Anh, theo template trong `aiws/templates/en/` và heading tiếng Anh của contracts (`required_headings_en`); `aiws answer` ghi câu trả lời dưới `## Answer`. Prompt của agent và skill trong kit vẫn viết bằng tiếng Việt; model đọc được bình thường, và mọi prompt đều nói rõ phải viết bằng ngôn ngữ nào. Handbook này trích heading tiếng Việt, ví dụ `Quyết định cần duyệt`.
 
 ## 1. Trước requirement đầu tiên
 

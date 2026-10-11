@@ -9,6 +9,7 @@ outputs:
   - path: aiws/work/{req}/01-analysis.md
     template: 01-analysis.md
     required_headings: [Mục tiêu, Acceptance criteria, Impact, Reuse, Câu hỏi mở]
+    required_headings_en: [Goal, Acceptance criteria, Impact, Reuse, Open questions]
 rules:
   - ac_numbered            # AC-1..n đúng thứ tự
   - no_blocking_questions  # còn [blocking] -> dừng chờ `aiws answer`

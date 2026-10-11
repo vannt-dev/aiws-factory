@@ -1,0 +1,25 @@
+# OpenAPI 3 for EVERY new or changed endpoint of {req}. The bridge between FE and BE: the BE must expose it, the FE must call it.
+# When the requirement changes no API: keep `paths: {}`.
+openapi: 3.0.3
+info:
+  title: {req} API contract
+  version: 1.0.0
+paths:
+  /example/{id}:
+    get:
+      summary: ...
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Example"}
+components:
+  schemas:
+    Example:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}

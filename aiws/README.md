@@ -125,13 +125,13 @@ Diff-scope is the real guarantee; the hook only blocks earlier. Diff-scope **can
 
 | File | Content |
 | --- | --- |
-| `config/workflow.yaml` | Phases, order, gates, retries, routing on failure or critical findings. There is no "skip phase" command: change this file through review instead. |
+| `config/workflow.yaml` | Phases, order, gates, retries, routing on failure or critical findings. `language: vi|en` sets the language of every document the agents write. There is no "skip phase" command: change this file through review instead. |
 | `config/policies.yaml` | `protected_paths`, `maintainer_editable`, `read_deny`, `phase_write_scope`, `sides`, `commands`, `bash_allow_extra`, `bash_denylist`, `limits`, `approvals.require_signed`. |
 | `config/runtime.yaml` | Adapter per phase, `model_hint` → model mapping (`opus`/`sonnet`), timeout, `guard_command`, `wait` (retry pace of `--wait`), `notify` (command or webhook that tells you when a run stops: gate reached, blocked, 80% of the budget, paused by the usage limit). |
 | `config/contracts/*.yaml` | Per phase: agent, skills, tools, reads, outputs (required headings, template), rules, checks, `max_attempts`. |
 | `agents/*.md` | Roles: front matter `id`, `description`, `tools`, `skills`, `model_hint`; the body is the prompt. `{req}` and `{task}` are substituted. |
 | `skills/*/SKILL.md` | Shared knowledge, copied to `.claude/skills` and embedded in headless prompts. |
-| `templates/` | Output templates: the headings and id formats that the validator checks. |
+| `templates/` | Output templates: the headings and id formats that the validator checks. `templates/en/` holds the English set, used when `language: en`. |
 
 Built-in validator rules: `ac_numbered`, `no_blocking_questions`, `every_ac_has_tc`, `plan_valid`, `review_no_open_critical`, plus `format: openapi|yaml` for outputs.
 

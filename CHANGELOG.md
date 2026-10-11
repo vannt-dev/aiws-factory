@@ -56,6 +56,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   document is noted, not failed (`policies.yaml -> api_contract.require_spec`
   demands one; `api_contract.spec` pins it). `aiws check api-contract --req R`
   runs the same check from CI or by hand.
+- `workflow.yaml -> language: vi|en` chooses the language of the documents
+  the agents write. With `en`, the templates of `aiws/templates/en/` and the
+  English headings of the contracts (`required_headings_en`) are used, every
+  prompt says which language to write in, `aiws answer` writes `## Answer`,
+  and the agent files `aiws sync claude` generates carry English notes. The
+  prompts and skills of the kit stay Vietnamese. Default: `vi`, unchanged.
 
 ### Changed
 

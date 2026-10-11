@@ -11,6 +11,7 @@ outputs:
   - path: aiws/work/{req}/03-test-spec.md
     template: 03-test-spec.md
     required_headings: [Chiến lược, Test cases, Ma trận AC]
+    required_headings_en: [Strategy, Test cases, AC matrix]
 rules:
   - every_ac_has_tc
 max_attempts: 3
