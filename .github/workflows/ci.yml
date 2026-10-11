@@ -102,20 +102,14 @@ jobs:
     # Beside the Linux tests, not after them: the Windows job is the long one, and the
     # Linux result it used to wait for is checked by the result stage all the same.
     needs: lint
-    # The Windows leg takes five minutes for what Linux does in one, so it runs on main (and on
-    # demand), not on every pull request; the other legs still run everywhere.
-    if: matrix.os != 'windows-latest' || github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
+      # The Windows leg takes five minutes for what Linux does in one, so it is part of the
+      # matrix on main and on demand, not on pull requests. (A job-level if cannot look at
+      # the matrix, hence the two lists.)
       matrix:
-        include:
-          - os: windows-latest
-            node: 22
-          - os: macos-latest
-            node: 22
-          - os: ubuntu-latest
-            node: 24
+        include: ${{ fromJSON(github.event_name == 'pull_request' && '[{"os":"macos-latest","node":22},{"os":"ubuntu-latest","node":24}]' || '[{"os":"windows-latest","node":22},{"os":"macos-latest","node":22},{"os":"ubuntu-latest","node":24}]') }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
