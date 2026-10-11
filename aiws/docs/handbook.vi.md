@@ -78,6 +78,7 @@ Khi có điều chưa rõ, analyst không lặng lẽ tự đoán. Nó ghi một
 
 ```bash
 aiws new REQ-001          # tạo aiws/work/REQ-001 và nhánh aiws/REQ-001
+                          # requirement nhỏ: aiws new REQ-001 --profile small (một bước design, không có test designer riêng)
 aiws run REQ-001          # chạy tới điểm kế tiếp cần bạn
 ```
 

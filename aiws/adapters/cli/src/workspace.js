@@ -49,6 +49,40 @@ export class Workspace {
     return (this._cache.workflow ??= this._loadConfig('workflow.yaml'));
   }
 
+  /** The workflow profile in use (`aiws new --profile NAME`), or null for workflow.yaml itself. */
+  get profile() {
+    return this._profile ?? null;
+  }
+
+  /**
+   * Switches to the workflow of a profile: aiws/config/workflow.<name>.yaml, whose keys sit on top of
+   * workflow.yaml (phases usually; language, prerequisites and the rest come from the default when the profile
+   * leaves them out). `loadState` calls this for the profile a requirement was created with.
+   */
+  useProfile(name) {
+    if (!name) {
+      this._profile = null;
+      this._cache.workflow = this._loadConfig('workflow.yaml');
+      return this.workflow;
+    }
+    if (!/^[A-Za-z0-9_-]+$/.test(name)) throw new AiwsError(`Invalid profile name '${name}'.`);
+    const base = this._loadConfig('workflow.yaml');
+    const own = readYaml(path.join(this.configDir, `workflow.${name}.yaml`));
+    if (!own) throw new AiwsError(`Unknown profile '${name}': aiws/config/workflow.${name}.yaml is missing.`);
+    this._profile = name;
+    this._cache.workflow = { ...base, ...own };
+    return this.workflow;
+  }
+
+  /** The profiles this workspace offers: the NAME of every aiws/config/workflow.NAME.yaml. */
+  listProfiles() {
+    return fs
+      .readdirSync(this.configDir)
+      .map((f) => /^workflow\.([A-Za-z0-9_-]+)\.yaml$/.exec(f)?.[1])
+      .filter(Boolean)
+      .sort();
+  }
+
   get policies() {
     return (this._cache.policies ??= this._loadConfig('policies.yaml'));
   }

@@ -21,7 +21,10 @@ Setup
                                        knowledge commit), and skips the AI run when nothing changed
 
 Requirement lifecycle
-  aiws new REQ-001 [--worktree PATH]   create aiws/work/REQ-001 and branch aiws/REQ-001
+  aiws new REQ-001 [--worktree PATH] [--profile NAME]
+                                       create aiws/work/REQ-001 and branch aiws/REQ-001; --profile runs it on
+                                       aiws/config/workflow.NAME.yaml ("small": one design step, no separate
+                                       test designer)
   aiws run REQ-001 [--once] [--wait[=MIN]]
                                        run phases until the next human gate / block / done; exit 75 when the
                                        AI usage limit paused it (run it again once the limit resets, or let
@@ -58,7 +61,19 @@ export function version() {
   return JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8')).version;
 }
 
-const VALUE_FLAGS = new Set(['-m', '--message', '--task', '--req', '--phase', '--base', '--range', '--worktree', '--budget', '--out']);
+const VALUE_FLAGS = new Set([
+  '-m',
+  '--message',
+  '--task',
+  '--req',
+  '--phase',
+  '--base',
+  '--range',
+  '--worktree',
+  '--budget',
+  '--out',
+  '--profile',
+]);
 
 export function parseArgs(argv) {
   const pos = [];
@@ -110,7 +125,7 @@ export async function main(argv) {
       C.detect({ write: Boolean(flags.write), force: Boolean(flags.force) });
       return 0;
     case 'new':
-      C.newReq(a1, { worktree: flags.worktree });
+      C.newReq(a1, { worktree: flags.worktree, profile: flags.profile });
       return 0;
     case 'run':
       await C.run(a1, { once: Boolean(flags.once), wait: flags.wait });

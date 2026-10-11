@@ -60,6 +60,10 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
     );
   }
 
+  if (contract.notes?.length) {
+    parts.push(['## Notes for this phase', ...contract.notes.map((n) => `- ${n}`)].join('\n'));
+  }
+
   const outs = contract.outputs ?? [];
   if (outs.length) {
     const lines = ['## Required outputs'];

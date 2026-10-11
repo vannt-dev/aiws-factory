@@ -62,6 +62,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   prompt says which language to write in, `aiws answer` writes `## Answer`,
   and the agent files `aiws sync claude` generates carry English notes. The
   prompts and skills of the kit stay Vietnamese. Default: `vi`, unchanged.
+- A workflow profile per requirement: `aiws new REQ-001 --profile small` runs
+  it on `aiws/config/workflow.small.yaml`, whose keys sit on top of
+  `workflow.yaml`. The `small` profile has one design step: the architect
+  writes the design, the API contract and the test specification in one run
+  (`contracts/design-small.yaml`), which saves one run of the most expensive
+  model on a requirement with a few acceptance criteria; gates, enforcement
+  and the other phases are unchanged. The profile is recorded in `state.yaml`
+  and shown by `aiws status`. Contracts may carry `notes:` that the prompt
+  lists under "Notes for this phase".
 
 ### Changed
 
