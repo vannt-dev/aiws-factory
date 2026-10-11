@@ -28,6 +28,7 @@ import * as DS from './diffscope.js';
 import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 import { notify, stopEvent } from './notify.js';
 import { buildReport, renderHtml } from './report.js';
+import { checkApiContract } from './apicontract.js';
 
 // ---------------------------------------------------------------- init / sync
 
@@ -648,6 +649,19 @@ export function checkApprovals({ req }) {
     bad.forEach((b) => log(b));
     process.exitCode = 1;
   } else log(`approvals ok (${listApprovals(ws, req, 'design').length} design record(s))`);
+}
+
+/** `aiws check api-contract --req R`: lints the contract and compares it with the backend's OpenAPI document. */
+export function checkApiContractCmd({ req }) {
+  const ws = Workspace.open();
+  assertReqId(req);
+  const { problems, notes } = checkApiContract(ws, req);
+  for (const n of notes) log(n);
+  if (problems.length) {
+    log(`api-contract FAILED for ${req}:`);
+    for (const p of problems) log(`  ${p}`);
+    process.exitCode = 1;
+  } else log(`api-contract ok for ${req}`);
 }
 
 /**

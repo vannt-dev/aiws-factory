@@ -210,6 +210,6 @@ Dự án mẫu dùng cho test nằm ở `test/fixtures/sample`. Các agent giả
 
 - [ ] Đưa code thật vào `source-fe/`, `source-be/`, `source-legacy/`; chạy `aiws detect --write` để điền `commands` trong `policies.yaml` (hiện đang trống).
 - [ ] Chốt `fe-conventions` / `be-conventions` (đang là khung `[CẦN XÁC NHẬN]`).
-- [ ] Công cụ kiểm API contract (Spec §13). Thêm `commands.api_contract_be` / `api_contract_fe`; phase review sẽ tự chạy chúng và coi lỗi là finding critical.
+- [x] Công cụ kiểm API contract (Spec §13), phần không cần công cụ riêng theo stack: contract được lint ngay khi viết, và phase review chạy check builtin `api_contract` để đối chiếu với tài liệu OpenAPI mà BE giữ trong mã nguồn (`aiws check api-contract --req R` làm điều tương tự). Còn mở: sinh tài liệu OpenAPI từ code với các stack không commit sẵn (`commands.api_contract_be` / `api_contract_fe` vẫn là chỗ cắm tuỳ chọn cho việc đó).
 - [ ] Chạy thử DB migration (Spec §13, lựa chọn A/B).
 - [x] Adapter Codex và review chéo model (`runtime.yaml → phases.review.adapter: codex`), cho các phase không cần shell. Còn mở: adapter Gemini, và chạy phase implementation bằng Codex (cần cách giới hạn shell của nó vào đúng lệnh của dự án).

@@ -15,6 +15,7 @@ import { buildTrace, traceMarkdown } from './trace.js';
 import { adapterName, getAdapter, preflightAdapters } from './adapters/index.js';
 import { detectStacks, reportText } from './stacks.js';
 import { runStats } from './stats.js';
+import { checkApiContract } from './apicontract.js';
 
 // Phases that are only legal while the design approval is valid (hash unchanged).
 const AFTER_APPROVAL = new Set(['planning', 'implementation', 'design_change_requested', 'review', 'pr_approval']);
@@ -336,7 +337,7 @@ function stepAgentPhase(ws, st, def) {
   let errors = r.errors;
   if (!errors.length) errors = validateOutputs(ws, contract, { req }).errors;
   if (!errors.length && def.checks)
-    errors = runNamedChecks(ws, def.checks, null).map((m) => ({ kind: def.checks_severity ?? 'critical', message: m }));
+    errors = runNamedChecks(ws, def.checks, null, req).map((m) => ({ kind: def.checks_severity ?? 'critical', message: m }));
 
   r.evidence.validation = errors;
   const invalid = errors.filter((e) => e.kind === 'invalid');
@@ -564,6 +565,7 @@ function expandChecks(ws, checks, task) {
   const out = [];
   for (const c of checks ?? []) {
     const entry = typeof c === 'string' ? { command: c } : c;
+    if (!entry.command) continue; // a builtin check
     if (!entry.command.includes('{side}')) {
       out.push(entry);
       continue;
@@ -574,9 +576,21 @@ function expandChecks(ws, checks, task) {
   return out;
 }
 
-/** Runs configured shell checks. Each entry: {command: <policies.commands key or literal>, when, optional}. Returns failure messages. */
-function runNamedChecks(ws, checks, task) {
+const BUILTIN_CHECKS = {
+  api_contract: (ws, req) => checkApiContract(ws, req).problems,
+};
+
+/**
+ * Runs configured checks. Each entry: {command: <policies.commands key or literal>, when, optional}, or
+ * {builtin: api_contract}. Returns failure messages.
+ */
+function runNamedChecks(ws, checks, task, req = null) {
   const failures = [];
+  for (const entry of (checks ?? []).filter((c) => c && typeof c === 'object' && c.builtin)) {
+    const check = BUILTIN_CHECKS[entry.builtin];
+    if (!check) failures.push(`unknown builtin check '${entry.builtin}'`);
+    else failures.push(...check(ws, req));
+  }
   for (const entry of expandChecks(ws, checks, task)) {
     if (!whenMatches(ws, entry.when, task)) continue;
     const configured = ws.policies.commands?.[entry.command];

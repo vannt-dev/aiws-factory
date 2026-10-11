@@ -3,6 +3,7 @@ import YAML from 'yaml';
 import { fill, readTextIfExists } from './util.js';
 import { matcher } from './scope.js';
 import * as P from './parse.js';
+import { lintOpenApi } from './apicontract.js';
 
 /**
  * Validates a phase's outputs against its contract.
@@ -30,8 +31,12 @@ export function validateOutputs(ws, contract, { req, task } = {}) {
     if (out.format === 'yaml' || out.format === 'openapi') {
       try {
         const data = YAML.parse(text);
-        if (out.format === 'openapi' && !isOpenApi(data)) {
-          errors.push({ kind: 'invalid', message: `${rel} is not a valid OpenAPI document (needs 'openapi' version and 'paths' map)` });
+        if (out.format === 'openapi') {
+          if (!isOpenApi(data)) {
+            errors.push({ kind: 'invalid', message: `${rel} is not a valid OpenAPI document (needs 'openapi' version and 'paths' map)` });
+          } else {
+            for (const p of lintOpenApi(data)) errors.push({ kind: 'invalid', message: `${rel}: ${p}` });
+          }
         }
       } catch (e) {
         errors.push({ kind: 'invalid', message: `${rel} is not valid YAML: ${e.message.split('\n')[0]}` });

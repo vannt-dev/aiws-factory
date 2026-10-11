@@ -45,6 +45,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tokens, not USD. `codex.models`, `agent_models`, `phase_models` and
   `extra_args` work like their Claude counterparts. Not yet tried against
   the real CLI; the tests use a stand-in.
+- API contract checks, without any dependency. A lint of
+  `aiws/work/REQ/api-contract.yaml` (3.x version, operations, responses,
+  declared path parameters, `$ref`s that resolve) runs when the architect
+  writes it, so a malformed contract is sent back before the design gate. The
+  review phase runs the builtin check `api_contract`: every path and method
+  of the contract must be exposed by the OpenAPI 3 document the backend keeps
+  in its source (prefix and parameter names aside); a missing one is a
+  critical finding, so the planner adds a fix task. A backend without such a
+  document is noted, not failed (`policies.yaml -> api_contract.require_spec`
+  demands one; `api_contract.spec` pins it). `aiws check api-contract --req R`
+  runs the same check from CI or by hand.
 
 ### Changed
 
