@@ -267,4 +267,4 @@ Orchestrator chỉ cần mỗi thư mục source có một lệnh build và mộ
 Orchestrator tự chạy toàn bộ test sau mỗi task và không tin lời AI. Trong CI, `aiws check build` build và test lại pull request.
 
 **Tôi dùng công cụ AI khác được không?**
-Bản 1 chạy trên Claude Code. Agent, skill và quy tắc trong `aiws/` là Markdown và YAML thuần, nên một adapter khác có thể dùng lại; adapter cho các công cụ khác nằm trong kế hoạch.
+Mặc định là Claude Code. Codex CLI có thể nhận các phase không cần shell, nhất là review: `runtime.yaml → phases: {review: {adapter: codex}}` để code được một model khác review so với model đã viết. Dưới Codex, giới hạn là sandbox của nó và diff-scope (không có hook guard), và chi phí các lần chạy đó không biết theo USD. Agent, skill và quy tắc trong `aiws/` là Markdown và YAML thuần, nên một adapter Gemini cũng dùng lại được; adapter đó chưa viết.

@@ -267,4 +267,4 @@ The orchestrator only needs a build command and a test command for each source f
 The orchestrator runs the full test suites itself after each task and does not take the AI's word. In CI, `aiws check build` builds and tests the pull request again.
 
 **Can I use another AI tool?**
-Version 1 runs on Claude Code. The agents, skills and rules in `aiws/` are plain Markdown and YAML, so another adapter can reuse them; adapters for other tools are planned.
+The default is Claude Code. The Codex CLI can take the phases that need no shell, the review above all: `runtime.yaml → phases: {review: {adapter: codex}}` has the code reviewed by another model than the one that wrote it. Under Codex the limits are its sandbox and diff-scope (there is no guard hook), and the cost of those runs is not known in USD. The agents, skills and rules in `aiws/` are plain Markdown and YAML, so a Gemini adapter can reuse them too; it is not written yet.

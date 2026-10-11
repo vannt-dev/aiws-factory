@@ -212,4 +212,4 @@ Dự án mẫu dùng cho test nằm ở `test/fixtures/sample`. Các agent giả
 - [ ] Chốt `fe-conventions` / `be-conventions` (đang là khung `[CẦN XÁC NHẬN]`).
 - [ ] Công cụ kiểm API contract (Spec §13). Thêm `commands.api_contract_be` / `api_contract_fe`; phase review sẽ tự chạy chúng và coi lỗi là finding critical.
 - [ ] Chạy thử DB migration (Spec §13, lựa chọn A/B).
-- [ ] V2: adapter Codex/Gemini (`src/adapters/`), review chéo qua `runtime.yaml → phases.review.adapter`.
+- [x] Adapter Codex và review chéo model (`runtime.yaml → phases.review.adapter: codex`), cho các phase không cần shell. Còn mở: adapter Gemini, và chạy phase implementation bằng Codex (cần cách giới hạn shell của nó vào đúng lệnh của dự án).

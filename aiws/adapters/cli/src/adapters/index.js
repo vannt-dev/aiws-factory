@@ -1,9 +1,10 @@
 import { AiwsError } from '../util.js';
 import * as claude from './claude.js';
 import * as scripted from './scripted.js';
+import * as codex from './codex.js';
 
-// V2: codex and gemini adapters implement the same {sync, runAgent} interface (preflight is optional).
-const ADAPTERS = { claude, scripted };
+// Every adapter implements {sync, runAgent}; preflight, shellCommand are optional. A gemini adapter would go here too.
+const ADAPTERS = { claude, scripted, codex };
 
 /** Runs the preflight of every adapter the given phases use, before any agent starts. Throws on the first problem. */
 export function preflightAdapters(ws, phases) {

@@ -212,4 +212,4 @@ The sample project used by the tests lives in `test/fixtures/sample`; the simula
 - [ ] Finalise `fe-conventions` / `be-conventions` (currently skeletons marked `[CẦN XÁC NHẬN]`).
 - [ ] API contract tooling (spec §13): add `commands.api_contract_be` / `api_contract_fe`; the review phase runs them and treats failures as critical findings.
 - [ ] Trial DB migrations (spec §13, option A or B).
-- [ ] V2: Codex/Gemini adapters (`src/adapters/`) and cross-model review via `runtime.yaml → phases.review.adapter`.
+- [x] Codex adapter and cross-model review (`runtime.yaml → phases.review.adapter: codex`), for phases without a shell. Still open: a Gemini adapter, and a Codex run of the implementation phase (needs a way to limit its shell to the project commands).
