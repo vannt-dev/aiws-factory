@@ -1,4 +1,5 @@
 node_modules/
 .tmp/
+kit/
 package-lock.json
 test/fixtures/sample/

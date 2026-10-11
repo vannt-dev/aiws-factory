@@ -192,6 +192,10 @@ npm ci
 npm run check                    # ESLint + Prettier check + all tests
 npm test                         # 39 tests: e2e, guard, diff-scope, retry, gates, lock, init/sync, languages (~6 min)
 AIWS_KEEP_TMP=1 npm test         # keep the temporary workspaces for inspection
+
+### Packaging for npm
+
+`npm pack` in `aiws/adapters/cli` bundles the kit (`aiws/config`, `agents`, `skills`, `templates`, `docs` and `AGENTS.md`) into `kit/` of the package (`tool/bundle-kit.mjs`, run by `prepack`; `postpack` removes it again), so that `aiws init` from an installed package creates a whole workspace. `aiws init` writes the release into `aiws/config/kit-version`, and `aiws run` / `aiws status` warn when the CLI and the kit of a workspace are different releases. The package is not on npm yet. The first publish is a person's `npm publish` in that folder; after it, set up trusted publishing on npmjs.com for this repository and the `Publish to npm` workflow (`.github/workflows/publish.yml`, run by hand, dry run by default), and the workflow can then publish on a `v*` tag with provenance.
 ```
 
 CI (GitHub Actions) is a staged pipeline; each stage runs only if the previous one passed:

@@ -1,0 +1,48 @@
+name: Publish to npm
+
+# Publishes aiws/adapters/cli to npm with provenance, through npm trusted publishing (no token in the
+# repository). Started by hand for now: the package is not on npm yet, and the first publish has to be
+# made by a person (`npm publish` in aiws/adapters/cli) before npm lets a trusted publisher be set up
+# for it (npmjs.com -> the package -> Settings -> Trusted publishing: this repository, this workflow).
+# Once that is done, the trigger can become `push: tags: ['v*']`.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Pack and check only; publish nothing'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aiws/adapters/cli
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: aiws/adapters/cli/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - name: The tag, if any, must be the package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=$(node -p "require('./package.json').version")
+          test "${GITHUB_REF#refs/tags/v}" = "$version" || { echo "tag $GITHUB_REF is not v$version"; exit 1; }
+      - name: Pack (the kit is bundled by prepack) and list the tarball
+        run: |
+          npm pack --json > pack.json
+          node -e "const p=require('./pack.json')[0];console.log(p.filename, p.size, 'bytes,', p.entryCount, 'files');for(const f of p.files)console.log(' ', f.path)"
+          test -f kit/config/workflow.yaml
+      - name: Publish
+        if: ${{ !inputs.dry_run }}
+        run: npm publish --provenance --access public

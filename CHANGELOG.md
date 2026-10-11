@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The CLI package is ready for npm (not published yet): `npm pack` bundles
+  the kit (config, agents, skills, templates, docs, `AGENTS.md`) into the
+  package, so `aiws init` from an installed package creates a whole
+  workspace; `aiws init` records the release in `aiws/config/kit-version`
+  and `aiws run` / `aiws status` say so when the CLI and the kit of a
+  workspace are different releases. A `Publish to npm` workflow (run by
+  hand, dry run by default, trusted publishing with provenance) is in place
+  for the day the package goes up.
+
 ## [0.4.0] - 2026-10-11
 
 Eight features for the person who runs requirements, after the six demo runs:

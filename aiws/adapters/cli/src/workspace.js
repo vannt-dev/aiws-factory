@@ -3,10 +3,21 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AiwsError, readYaml, parseFrontMatter, readText } from './util.js';
 
-// The CLI lives in <workspace>/aiws/adapters/cli; the aiws/ folder around it is the reference kit
-// that `aiws init` copies into another project.
+// The CLI lives in <workspace>/aiws/adapters/cli; the aiws/ folder around it is the reference kit that
+// `aiws init` copies into another project. A package installed from npm carries that kit in kit/ instead
+// (bundled by tool/bundle-kit.mjs on pack).
 export const PKG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const KIT_DIR = path.resolve(PKG_ROOT, '..', '..');
+const BUNDLED_KIT = path.join(PKG_ROOT, 'kit');
+export const KIT_DIR = fs.existsSync(path.join(BUNDLED_KIT, 'config', 'workflow.yaml')) ? BUNDLED_KIT : path.resolve(PKG_ROOT, '..', '..');
+/** AGENTS.md of the kit: beside aiws/ in the repository, inside kit/ in the package. */
+export const KIT_AGENTS_MD = fs.existsSync(path.join(KIT_DIR, 'AGENTS.md'))
+  ? path.join(KIT_DIR, 'AGENTS.md')
+  : path.join(KIT_DIR, '..', 'AGENTS.md');
+
+/** The version of this CLI, from its package.json. */
+export function cliVersion() {
+  return JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8')).version;
+}
 export const BIN_PATH = path.join(PKG_ROOT, 'bin', 'aiws.js');
 export const LANGUAGES = ['vi', 'en'];
 
@@ -89,6 +100,27 @@ export class Workspace {
 
   get runtime() {
     return (this._cache.runtime ??= readYaml(path.join(this.configDir, 'runtime.yaml')) ?? { default_adapter: 'claude' });
+  }
+
+  /** The release the kit of this workspace came from (`aiws/config/kit-version`, written by `aiws init`), or null. */
+  get kitVersion() {
+    const file = path.join(this.configDir, 'kit-version');
+    return fs.existsSync(file) ? fs.readFileSync(file, 'utf8').trim() || null : null;
+  }
+
+  /**
+   * Says, on stderr, when the kit of the workspace and this CLI are different releases: agents, contracts and
+   * templates move with the CLI. Nothing is said for a workspace that records no version (the repository).
+   */
+  warnKitVersion() {
+    const kit = this.kitVersion;
+    const cli = cliVersion();
+    if (!kit || kit === cli) return false;
+    process.stderr.write(
+      `aiws: this workspace has kit ${kit} but the CLI is ${cli}. Compare aiws/config, agents, skills and templates with the ` +
+        'release notes, or run `aiws init` in a scratch folder with this CLI and copy over what changed.\n'
+    );
+    return true;
   }
 
   _loadConfig(name) {
