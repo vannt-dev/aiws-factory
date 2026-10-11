@@ -102,6 +102,9 @@ jobs:
     # Beside the Linux tests, not after them: the Windows job is the long one, and the
     # Linux result it used to wait for is checked by the result stage all the same.
     needs: lint
+    # The Windows leg takes five minutes for what Linux does in one, so it runs on main (and on
+    # demand), not on every pull request; the other legs still run everywhere.
+    if: matrix.os != 'windows-latest' || github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
