@@ -175,7 +175,7 @@ Hãy nhớ review nói được gì và không nói được gì. Reviewer đọ
 | `design_change_requested` | Developer hỏi trong `questions.md` | `aiws answer` hoặc `aiws redesign`, rồi `aiws run` |
 | `blocked`, "failed 3 attempts" | Một bước lỗi ở mọi lần được phép thử: ba lần, riêng review và knowledge update là hai lần | Đọc lý do và file cuối trong `evidence/runs/`. Sửa nguyên nhân hoặc revert bằng tay, rồi `aiws resume REQ-001` và `aiws run` |
 | `blocked`, "budget exceeded" | Chi phí AI đã chạm ngân sách | `aiws resume REQ-001` cấp thêm một lần ngân sách; `--budget 80` đặt giới hạn mới |
-| `running`, "paused by the AI usage limit" | Tài khoản AI hết giới hạn sử dụng; `aiws run` thoát với mã 75 | Không cần duyệt gì. Chạy lại `aiws run REQ-001` sau giờ đặt lại ghi trong thông báo |
+| `running`, "paused by the AI usage limit" | Tài khoản AI hết giới hạn sử dụng; `aiws run` thoát với mã 75 | Không cần duyệt gì. Chạy lại `aiws run REQ-001` sau giờ đặt lại ghi trong thông báo `aiws run REQ-001 --wait` tự chờ và chạy lại mỗi 15 phút; `runtime.yaml -> notify` báo cho bạn khi run dừng (hướng dẫn vận hành, mục 5). |
 
 Một số lỗi xuất hiện trước khi lần chạy bắt đầu:
 

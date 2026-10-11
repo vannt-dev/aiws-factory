@@ -26,6 +26,7 @@ import { runStats, statsLine, workspaceStats, statsText, estimateFromHistory, es
 import { getAdapter, preflightAdapters } from './adapters/index.js';
 import * as DS from './diffscope.js';
 import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
+import { notify, stopEvent } from './notify.js';
 
 // ---------------------------------------------------------------- init / sync
 
@@ -142,12 +143,54 @@ function installWorktreeCli(wt) {
   else log(`Could not install the CLI dependencies of the worktree. Run \`npm ci --omit=dev\` in ${cli} before \`aiws run\`.`);
 }
 
-export function run(req, opts) {
+/**
+ * `aiws run REQ [--once] [--wait[=MINUTES]]`. With --wait, a run paused by the AI usage limit is started again
+ * every MINUTES (default `runtime.yaml -> wait.minutes`, else 15) until it stops for another reason, or until
+ * `wait.max_hours` (default 12) have passed; `aiws stop REQ` ends the wait too.
+ */
+export async function run(req, opts) {
   assertReqId(req);
   const ws = Workspace.open();
-  const st = runReq(ws, req, opts);
+  const waiting = opts.wait !== undefined && opts.wait !== false;
+  const interval = waitInterval(ws, opts.wait);
+  const deadline = Date.now() + (Number(ws.runtime.wait?.max_hours) > 0 ? Number(ws.runtime.wait.max_hours) : 12) * 3600 * 1000;
+  let st = runReq(ws, req, opts);
+  while (st.paused && waiting && Date.now() + interval <= deadline) {
+    log(`  waiting ${describeInterval(interval)} for the usage limit to reset (\`aiws stop ${req}\` ends the wait)`);
+    await sleep(interval);
+    if (Lock.takeStop(ws.root, req)) {
+      log(`[${req}] stop requested: the wait ends here. Continue with \`aiws run ${req}\`.`);
+      break;
+    }
+    st = runReq(ws, req, opts);
+  }
   printStop(ws, st);
+  await notifyStop(ws, st);
   if (st.paused) process.exitCode = EXIT_TEMPFAIL; // lets a script tell "retry later" from "waits for a human"
+}
+
+function waitInterval(ws, flag) {
+  const fromEnv = Number(process.env.AIWS_WAIT_SECONDS); // tests
+  if (fromEnv > 0) return fromEnv * 1000;
+  const minutes = Number(flag) > 0 ? Number(flag) : Number(ws.runtime.wait?.minutes) > 0 ? Number(ws.runtime.wait.minutes) : 15;
+  return minutes * 60 * 1000;
+}
+
+function describeInterval(ms) {
+  return ms >= 60 * 1000 ? `${Math.round(ms / 60000)} min` : `${Math.round(ms / 1000)} s`;
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** The person is told why the run stopped, through `runtime.yaml -> notify`, when it is configured. */
+async function notifyStop(ws, st) {
+  const budget = budgetStatus(ws, st);
+  const budgetWarning = budget.limit !== null && budget.spent >= BUDGET_WARN_RATIO * budget.limit;
+  const event = stopEvent(st, { budgetWarning });
+  if (!event) return;
+  const message = [`${st.phase} / ${st.status}`, st.reason, budgetWarning ? budgetLine(budget) : null].filter(Boolean).join(' - ');
+  const sent = await notify(ws, { event, req: st.req_id, phase: st.phase, status: st.status, message });
+  if (sent.length) log(`  notified (${sent.join(', ')})`);
 }
 
 function printStop(ws, st) {

@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and median per requirement); `aiws estimate` gives the median and range of
   cost and time of the finished requirements, per phase too, as an order of
   magnitude for the next one. Neither needs a running requirement.
+- `aiws run --wait[=MINUTES]` starts the run again by itself after a pause by
+  the AI usage limit, every MINUTES (default `runtime.yaml -> wait.minutes`,
+  15), for at most `wait.max_hours` (12); `aiws stop` ends the wait too.
+- `runtime.yaml -> notify` tells a person why a run stopped: a shell `command`
+  (`{message}`, `{req}`, `{event}` filled in, `AIWS_NOTIFY_*` in its
+  environment) and/or a `webhook` that receives JSON (`${VAR}` is read from
+  the environment, so no address sits in git). Events: `gate`, `blocked`,
+  `budget` (80% of the budget reached at a gate), `paused`. A notification
+  that fails only warns.
 
 ### Changed
 
