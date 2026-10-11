@@ -23,6 +23,8 @@ Requirement lifecycle
                                        AI usage limit paused it (run it again once the limit resets)
   aiws stop REQ-001                    ask a running \`aiws run\` to stop after its current step
   aiws status [REQ-001]              phase, tasks, recent history, source lock
+  aiws stats                           every requirement with its AI runs, time and cost; cost per phase across them
+  aiws estimate                        cost and time of the finished requirements, as an order of magnitude for the next
   aiws prompt REQ-001 PHASE [--task T] print the prompt an agent would receive
 
 Human-only (refuse to run inside an AI session; confirm interactively or pass --yes)
@@ -110,6 +112,12 @@ export async function main(argv) {
       return 0;
     case 'status':
       C.status(a1);
+      return 0;
+    case 'stats':
+      C.stats();
+      return 0;
+    case 'estimate':
+      C.estimate();
       return 0;
     case 'prompt':
       C.prompt(a1, a2, { task: flags.task });

@@ -22,7 +22,7 @@ import { detectStacks, reportText } from './stacks.js';
 import { requireHuman, inAiSession, currentUser, recordApproval, hashArtifacts, listApprovals, designApprovalStatus } from './gate.js';
 import { buildPrompt } from './prompt.js';
 import { buildTrace, traceMarkdown } from './trace.js';
-import { runStats, statsLine } from './stats.js';
+import { runStats, statsLine, workspaceStats, statsText, estimateFromHistory, estimateText } from './stats.js';
 import { getAdapter, preflightAdapters } from './adapters/index.js';
 import * as DS from './diffscope.js';
 import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
@@ -254,6 +254,18 @@ export function status(req) {
     }
   }
   if (lock) log(`source lock: held by ${lock.req} since ${lock.at}`);
+}
+
+/** `aiws stats`: every requirement of aiws/work/ with its runs, time and cost, and the cost of each phase across them. */
+export function stats() {
+  const ws = Workspace.open();
+  log(statsText(workspaceStats(ws)));
+}
+
+/** `aiws estimate`: what the finished requirements of this workspace took, as an order of magnitude for the next one. */
+export function estimate() {
+  const ws = Workspace.open();
+  log(estimateText(estimateFromHistory(ws)));
 }
 
 // ---------------------------------------------------------------- human gates

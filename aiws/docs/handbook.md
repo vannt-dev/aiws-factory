@@ -194,6 +194,8 @@ Some errors appear before a run starts:
 
 These are the six demo requirements. They are small features on a small codebase, so treat them as an order of magnitude, not a forecast.
 
+Once a few requirements of your own are done, `aiws estimate` gives their median and range instead of these numbers, and `aiws stats` lists them all with the cost of each phase.
+
 | Requirement | AC → TC | Tasks | AI time | Cost (USD) | Models |
 | --- | --- | --- | --- | --- | --- |
 | REQ-001 customer phone | 22 → 43 | 5 | 74 min | 32.15 | Opus everywhere |
