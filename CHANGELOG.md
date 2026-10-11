@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the environment, so no address sits in git). Events: `gate`, `blocked`,
   `budget` (80% of the budget reached at a gate), `paused`. A notification
   that fails only warns.
+- `aiws report REQ-001 [--out FILE]` writes one HTML page of a requirement:
+  status and why it stopped, cost per phase, the trace matrix, the tasks,
+  the approvals, every AI run with its outcome and cost, the test runs, the
+  history and the documents, with everything agents wrote shown as text.
+  Default place: `aiws/work/REQ-001/report.html`.
 
 ### Changed
 

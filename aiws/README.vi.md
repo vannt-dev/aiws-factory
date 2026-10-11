@@ -150,6 +150,7 @@ Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
 
 - `aiws/work/REQ/evidence/runs/run-NNNN.json` + `.prompt.md` ghi: adapter, lệnh, tool được phép, hash prompt, thời gian, số turn, chi phí quy đổi, file đã đổi, vi phạm đã revert, lỗi validate.
 - `evidence/test-results/<task>-attempt-N.yaml` ghi: lệnh test, exit code, log rút gọn, TC của task.
+- `aiws report REQ-001` gom tất cả những thứ trên vào một trang HTML (`aiws/work/REQ-001/report.html`, hoặc `--out FILE`): trạng thái, trace, task, approval, các lần AI chạy kèm chi phí, kết quả test, lịch sử và các tài liệu.
 - Commit của task có các trailer `REQ-ID`, `Task`, `Tests`, `AIWS-Run`. Lệnh `git log --grep "REQ-ID: REQ-001"` liệt kê mọi thay đổi của một REQ.
 - CI chạy `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (bật `require_signed` để bắt buộc approval ký GPG/SSH qua `aiws approve --sign`), `aiws trace REQ-001` và `aiws check build`. Lệnh cuối chạy lại mọi lệnh `<side>_build` và `<side>_test` trong `policies.yaml`, để code sắp merge được build và test lại bên ngoài lần chạy của AI.
 

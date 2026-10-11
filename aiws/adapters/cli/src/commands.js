@@ -27,6 +27,7 @@ import { getAdapter, preflightAdapters } from './adapters/index.js';
 import * as DS from './diffscope.js';
 import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 import { notify, stopEvent } from './notify.js';
+import { buildReport, renderHtml } from './report.js';
 
 // ---------------------------------------------------------------- init / sync
 
@@ -559,6 +560,17 @@ export function prompt(req, phase, { task } = {}) {
   const t = task ? st.tasks.find((x) => x.id === task) : null;
   if (task && !t) throw new AiwsError(`Task ${task} not found in ${req}.`);
   process.stdout.write(buildPrompt(ws, st, { phase, agentId: step.agent, contract: ws.contract(step.contract), task: t }));
+}
+
+/** `aiws report REQ [--out FILE]`: one HTML page of the requirement (status, trace, tasks, approvals, runs, cost, documents). */
+export function report(req, { out } = {}) {
+  assertReqId(req);
+  const ws = Workspace.open();
+  const st = loadState(ws, req);
+  const html = renderHtml(buildReport(ws, st));
+  const file = out ? path.resolve(out) : path.join(ws.workDir(req), 'report.html');
+  writeText(file, html);
+  log(`Report written: ${file}`);
 }
 
 export function trace(req, { write = true } = {}) {
