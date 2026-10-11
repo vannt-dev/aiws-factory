@@ -23,8 +23,7 @@
   "license": "MIT",
   "author": "Van Nguyen",
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "type": "module",
   "bin": {
