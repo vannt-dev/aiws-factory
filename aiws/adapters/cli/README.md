@@ -1,9 +1,10 @@
-# aiws
+# aiws-factory
 
-The orchestrator of [AIWS — AI Software Factory](https://github.com/vannt-dev/aiws-factory): a requirement becomes tested code through gated phases (analysis → design + test specification → human approval → implementation task by task with unit tests → review → human pull-request merge → knowledge update). A deterministic CLI owns the state; AI agents only work inside the write scope of the current phase. Runs on Claude Code; a Codex adapter can take the review.
+The `aiws` command: the orchestrator of [AIWS — AI Software Factory](https://github.com/vannt-dev/aiws-factory): a requirement becomes tested code through gated phases (analysis → design + test specification → human approval → implementation task by task with unit tests → review → human pull-request merge → knowledge update). A deterministic CLI owns the state; AI agents only work inside the write scope of the current phase. Runs on Claude Code; a Codex adapter can take the review.
 
 ```bash
-npx aiws init my-project       # a new workspace with the reference kit (config, agents, skills, templates, docs)
+npx aiws-factory init my-project   # a new workspace with the reference kit (config, agents, skills, templates, docs)
+npm install -g aiws-factory        # puts the `aiws` command on your PATH
 cd my-project && git init && git add -A && git commit -m "aiws workspace"
 aiws detect --write            # recognise the stack of each source-* folder
 aiws sync claude               # generate CLAUDE.md and .claude/
