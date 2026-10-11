@@ -1,9 +1,10 @@
 name: Publish to npm
 
-# Publishes aiws/adapters/cli to npm with provenance, through npm trusted publishing (no token in the
-# repository). Started by hand for now: the package is not on npm yet, and the first publish has to be
-# made by a person (`npm publish` in aiws/adapters/cli) before npm lets a trusted publisher be set up
-# for it (npmjs.com -> the package -> Settings -> Trusted publishing: this repository, this workflow).
+# Publishes aiws/adapters/cli to npm as `aiws-factory` (the command stays `aiws`; npm refuses the name
+# `aiws` as too similar to existing packages) with provenance, through npm trusted publishing (no token
+# in the repository). Started by hand for now: the first publish has to be made by a person
+# (`npm publish` in aiws/adapters/cli) before npm lets a trusted publisher be set up for it
+# (npmjs.com -> the package -> Settings -> Trusted publishing: this repository, this workflow).
 # Once that is done, the trigger can become `push: tags: ['v*']`.
 on:
   workflow_dispatch:

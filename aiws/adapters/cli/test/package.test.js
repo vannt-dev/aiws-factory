@@ -40,7 +40,7 @@ test('the packed package carries the kit, and aiws init from it creates a whole 
   fs.writeFileSync(path.join(installDir, 'package.json'), '{"name":"consumer","private":true}\n');
   const installed = run(npm, ['install', '--no-audit', '--no-fund', path.join(packDir, info.filename)], installDir);
   assert.equal(installed.status, 0, installed.stdout + installed.stderr);
-  const bin = path.join(installDir, 'node_modules', 'aiws', 'bin', 'aiws.js');
+  const bin = path.join(installDir, 'node_modules', 'aiws-factory', 'bin', 'aiws.js');
   const project = tempDir('aiws-from-npm-');
   const init = spawnSync(process.execPath, [bin, 'init'], { cwd: project, encoding: 'utf8', env: cleanEnv() });
   assert.equal(init.status, 0, init.stdout + init.stderr);
