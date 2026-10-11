@@ -89,7 +89,7 @@ When the orchestrator stops, `aiws status REQ-001` tells you why and what to run
 | A task failed 3 times | `implementation / blocked` | fix or revert by hand, `aiws resume REQ-001`, then `aiws run` |
 | Review found a `[critical]` issue | back to `planning` automatically | nothing: the planner adds fix tasks. The review after them is a follow-up: it checks the earlier findings and reads in full only what changed since |
 | The design changed after approval | back to `design_approval` automatically | approve again |
-| The AI usage limit is reached | same phase, still `running` | nothing to approve: `aiws run REQ-001` again once the limit resets |
+| The AI usage limit is reached | same phase, still `running` | nothing to approve: `aiws run REQ-001` again once the limit resets, or `aiws run REQ-001 --wait` to have it retried every 15 minutes |
 
 Human-only commands (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **refuse to run inside an AI session** and ask you to retype the requirement id. Pass `--yes` in CI scripts.
 
@@ -127,7 +127,7 @@ Diff-scope is the real guarantee; the hook only blocks earlier. Diff-scope **can
 | --- | --- |
 | `config/workflow.yaml` | Phases, order, gates, retries, routing on failure or critical findings. There is no "skip phase" command: change this file through review instead. |
 | `config/policies.yaml` | `protected_paths`, `maintainer_editable`, `read_deny`, `phase_write_scope`, `sides`, `commands`, `bash_allow_extra`, `bash_denylist`, `limits`, `approvals.require_signed`. |
-| `config/runtime.yaml` | Adapter per phase, `model_hint` → model mapping (`opus`/`sonnet`), timeout, `guard_command`. |
+| `config/runtime.yaml` | Adapter per phase, `model_hint` → model mapping (`opus`/`sonnet`), timeout, `guard_command`, `wait` (retry pace of `--wait`), `notify` (command or webhook that tells you when a run stops: gate reached, blocked, 80% of the budget, paused by the usage limit). |
 | `config/contracts/*.yaml` | Per phase: agent, skills, tools, reads, outputs (required headings, template), rules, checks, `max_attempts`. |
 | `agents/*.md` | Roles: front matter `id`, `description`, `tools`, `skills`, `model_hint`; the body is the prompt. `{req}` and `{task}` are substituted. |
 | `skills/*/SKILL.md` | Shared knowledge, copied to `.claude/skills` and embedded in headless prompts. |

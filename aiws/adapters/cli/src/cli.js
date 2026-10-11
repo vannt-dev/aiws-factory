@@ -19,8 +19,10 @@ Setup
 
 Requirement lifecycle
   aiws new REQ-001 [--worktree PATH]   create aiws/work/REQ-001 and branch aiws/REQ-001
-  aiws run REQ-001 [--once]            run phases until the next human gate / block / done; exit 75 when the
-                                       AI usage limit paused it (run it again once the limit resets)
+  aiws run REQ-001 [--once] [--wait[=MIN]]
+                                       run phases until the next human gate / block / done; exit 75 when the
+                                       AI usage limit paused it (run it again once the limit resets, or let
+                                       --wait do that every MIN minutes, default 15)
   aiws stop REQ-001                    ask a running \`aiws run\` to stop after its current step
   aiws status [REQ-001]              phase, tasks, recent history, source lock
   aiws stats                           every requirement with its AI runs, time and cost; cost per phase across them
@@ -105,7 +107,7 @@ export async function main(argv) {
       C.newReq(a1, { worktree: flags.worktree });
       return 0;
     case 'run':
-      C.run(a1, { once: Boolean(flags.once) });
+      await C.run(a1, { once: Boolean(flags.once), wait: flags.wait });
       return process.exitCode ?? 0;
     case 'stop':
       C.stop(a1);

@@ -175,7 +175,7 @@ Keep in mind what the review can and cannot tell you. The reviewer reads code an
 | `design_change_requested` | The developer asked a question in `questions.md` | `aiws answer` or `aiws redesign`, then `aiws run` |
 | `blocked`, "failed 3 attempts" | A step failed on every attempt it is allowed: three, or two for the review and the knowledge update | Read the reason and the last file in `evidence/runs/`. Fix the cause or revert by hand, then `aiws resume REQ-001` and `aiws run` |
 | `blocked`, "budget exceeded" | The AI runs reached the budget | `aiws resume REQ-001` grants one more budget; `--budget 80` sets a new limit |
-| `running`, "paused by the AI usage limit" | The AI account reached its usage limit; `aiws run` exited with code 75 | Nothing to approve. Run `aiws run REQ-001` again after the reset time in the message |
+| `running`, "paused by the AI usage limit" | The AI account reached its usage limit; `aiws run` exited with code 75 | Nothing to approve. Run `aiws run REQ-001` again after the reset time in the message `aiws run REQ-001 --wait` waits and retries by itself, every 15 minutes; `runtime.yaml -> notify` can tell you when a run stops (operations guide, section 5). |
 
 Some errors appear before a run starts:
 

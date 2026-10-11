@@ -89,7 +89,7 @@ Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lện
 | Task fail 3 lần | `implementation / blocked` | sửa tay hoặc revert, rồi `aiws resume REQ-001`, rồi `aiws run` |
 | Review có `[critical]` | tự quay lại `planning` | không cần làm gì: planner thêm task sửa. Lần review sau đó là review tiếp nối: kiểm lại các finding cũ và chỉ đọc kỹ phần đã thay đổi từ lần trước |
 | Sửa design sau khi đã duyệt | tự quay về `design_approval` | duyệt lại |
-| AI hết giới hạn sử dụng | giữ nguyên phase, vẫn `running` | không cần duyệt gì: chạy lại `aiws run REQ-001` khi giới hạn được đặt lại |
+| AI hết giới hạn sử dụng | giữ nguyên phase, vẫn `running` | không cần duyệt gì: chạy lại `aiws run REQ-001` khi giới hạn được đặt lại, hoặc `aiws run REQ-001 --wait` để tự chạy lại mỗi 15 phút |
 
 Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **từ chối chạy trong phiên AI** và đòi gõ lại mã REQ để xác nhận. Trong script CI thì truyền `--yes`.
 
@@ -127,7 +127,7 @@ Diff-scope là đảm bảo thật; hook chỉ giúp chặn sớm. Diff-scope **
 | --- | --- |
 | `config/workflow.yaml` | Phase, thứ tự, gate, retry, route khi fail/critical. Không có lệnh "skip phase": muốn bỏ thì sửa file này qua review. |
 | `config/policies.yaml` | `protected_paths`, `maintainer_editable`, `read_deny`, `phase_write_scope`, `commands`, `bash_denylist`, `limits`, `approvals.require_signed`. |
-| `config/runtime.yaml` | Adapter theo phase, map `model_hint` sang model (`opus`/`sonnet`), timeout, `guard_command`. |
+| `config/runtime.yaml` | Adapter theo phase, map `model_hint` sang model (`opus`/`sonnet`), timeout, `guard_command`, `wait` (nhịp chạy lại của `--wait`), `notify` (lệnh hoặc webhook báo khi run dừng: tới gate, bị chặn, 80% ngân sách, tạm dừng vì hạn mức). |
 | `config/contracts/*.yaml` | Mỗi phase: agent, skills, tools, reads, outputs (heading bắt buộc, template), rules, checks, `max_attempts`. |
 | `agents/*.md` | Vai trò: frontmatter `id`, `description`, `tools`, `skills`, `model_hint` và thân là prompt. `{req}` và `{task}` được thay tự động. |
 | `skills/*/SKILL.md` | Kiến thức dùng chung, được chép sang `.claude/skills` và nhúng vào prompt headless. |

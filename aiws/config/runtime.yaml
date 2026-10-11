@@ -24,6 +24,19 @@ claude:
   #   knowledge_update: sonnet
   extra_args: []
 
+# `aiws run --wait`: chạy lại sau mỗi `minutes` phút khi AI hết hạn mức, tối đa `max_hours` giờ.
+# wait:
+#   minutes: 15
+#   max_hours: 12
+
+# Báo cho người khi run dừng (tới gate, bị chặn, chạm 80% ngân sách, tạm dừng vì hạn mức AI).
+# Lệnh shell: {message}, {req}, {event} được điền; biến môi trường AIWS_NOTIFY_MESSAGE/_REQ/_EVENT/_PHASE cũng có.
+# Webhook: POST JSON {text, content, req, event, phase, status}; ${VAR} lấy từ môi trường để không ghi bí mật vào git.
+# notify:
+#   events: [gate, blocked, budget, paused]
+#   command: 'notify-send AIWS "{message}"'
+#   webhook: ${AIWS_WEBHOOK_URL}
+
 # Adapter tất định để demo/test không tốn token: chạy node <dir>/<agent>.js thay cho AI.
 scripted:
   dir: aiws/adapters/cli/test/fixtures/scripted
