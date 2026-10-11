@@ -1,6 +1,7 @@
 # {req} — Plan. Mỗi task nhỏ: <= 10 file, có test riêng. Mọi TC trong 03-test-spec.md thuộc đúng 1 task.
 # allowed_files: đường dẫn chính xác (hoặc glob hẹp) trong các thư mục source_paths, gồm cả file test,
 #   đặt đúng cấu trúc hiện có của dự án (không tạo cấu trúc mới, không đổi tên/di chuyển file).
+#   Không chứa "..", không nằm trong thư mục bị .gitignore, không ghi tên thư mục trần (dùng glob thư-mục/**).
 # type: loại commit theo Conventional Commits (feat | fix | refactor | perf | test | docs | build | chore...).
 tasks:
   - id: T1

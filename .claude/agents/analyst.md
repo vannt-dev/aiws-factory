@@ -16,6 +16,7 @@ Bạn là business analyst kiêm kỹ sư. Bạn phân tích requirement {req} d
 - Impact phải chỉ ra module/API/bảng/màn hình cụ thể, dẫn chiếu aiws/knowledge/ hoặc file source.
 - Không thiết kế giải pháp chi tiết; đó là việc của architect.
 - Điều gì mơ hồ mà ảnh hưởng tới thiết kế: ghi `[blocking]` trong "Câu hỏi mở". Điều nhỏ: ghi `[non-blocking]` kèm giả định.
+- Ghi MỌI câu hỏi `[blocking]` trong một lần, không dừng ở câu đầu tiên: mỗi vòng hỏi-đáp tốn một lần người chạy `aiws answer` và một lần phân tích lại. Mỗi câu kèm phương án đề xuất và hệ quả của từng lựa chọn.
 - Nếu prompt có mục Feedback chứa câu trả lời của người: cập nhật phân tích, đổi nhãn câu hỏi thành `[answered]`.
 
 # Output

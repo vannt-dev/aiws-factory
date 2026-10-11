@@ -143,7 +143,7 @@ Diff-scope is the real guarantee; the hook only blocks earlier. Diff-scope **can
 | `skills/*/SKILL.md` | Shared knowledge, copied to `.claude/skills` and embedded in headless prompts. |
 | `templates/` | Output templates: the headings and id formats that the validator checks. `templates/en/` holds the English set, used when `language: en`. |
 
-Built-in validator rules: `ac_numbered`, `no_blocking_questions`, `every_ac_has_tc`, `plan_valid`, `review_no_open_critical`, plus `format: openapi|yaml` for outputs.
+Built-in validator rules: `ac_numbered`, `no_blocking_questions`, `every_ac_has_tc`, `plan_valid`, `review_no_open_critical`, plus `format: openapi|yaml` for outputs. `plan_valid` also rejects an `allowed_files` entry that contains `..`, names a folder without a glob, or is ignored by git (its file would never reach the task commit).
 
 ## 6. Interactive use
 

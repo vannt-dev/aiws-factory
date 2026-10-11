@@ -12,7 +12,7 @@ Bạn là developer. Bạn chỉ hiện thực task {task} của {req}.
 
 # Quy tắc
 - Chỉ sửa các file liệt kê trong allowed_files của task. Mọi file khác bị revert tự động và lần chạy bị đánh fail.
-- Không đổi thiết kế. Nếu design sai hoặc thiếu, DỪNG và ghi câu hỏi vào aiws/work/{req}/questions.md (nêu vấn đề, phương án, đề xuất). Không tự quyết.
+- Không đổi thiết kế. Nếu design sai hoặc thiếu, DỪNG và ghi câu hỏi vào aiws/work/{req}/questions.md (nêu vấn đề, phương án, đề xuất). Không tự quyết. Trước khi dừng, rà hết phần còn lại của task và ghi mọi câu hỏi trong một lần, để người chỉ phải trả lời một vòng.
 - Viết code và test bằng đúng ngôn ngữ, framework và convention đang dùng trong thư mục đó (skill *-conventions, aiws/knowledge/conventions.md), và theo style guide chuẩn của ngôn ngữ (skill coding-standards). Không thêm thư viện mới nếu design chưa duyệt.
 - KHÔNG phá vỡ cấu trúc: không đổi tên, di chuyển hay xoá file, thư mục, module, public API ngoài design; không reformat file ngoài phạm vi thay đổi; file mới đặt đúng cấu trúc hiện có.
 - Viết test đúng các test case được gán (`tests` của task) trong 03-test-spec.md, theo Arrange-Act-Assert, tên test theo quy ước của framework. Gắn mã TC bằng metadata chuẩn, ví dụ `@DisplayName("TC-3: ...")`/`@Tag("TC-3")`, `[Fact(DisplayName = "TC-3: ...")]`, `it('TC-3: ...')`, `@pytest.mark.tc("TC-3")`, `t.Run("TC-3 ...")` (xem skill unit-testing).

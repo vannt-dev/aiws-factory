@@ -1,6 +1,7 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import YAML from 'yaml';
-import { fill, readTextIfExists } from './util.js';
+import { fill, readTextIfExists, run } from './util.js';
 import { matcher } from './scope.js';
 import * as P from './parse.js';
 import { lintOpenApi } from './apicontract.js';
@@ -143,7 +144,9 @@ export function validatePlan(ws, text, testCases) {
     else {
       if (files.length > maxFiles) errs.push(`${id}: ${files.length} allowed_files exceeds limit ${maxFiles}; split the task`);
       for (const f of files) {
-        if (isProtected(f)) errs.push(`${id}: allowed file ${f} is protected`);
+        const problem = pathProblem(ws, f);
+        if (problem) errs.push(`${id}: allowed file ${f} ${problem}`);
+        else if (isProtected(f)) errs.push(`${id}: allowed file ${f} is protected`);
         else if (!inSource(f)) errs.push(`${id}: allowed file ${f} is outside source_paths`);
       }
     }
@@ -165,6 +168,38 @@ export function validatePlan(ws, text, testCases) {
     }
   for (const tc of known) if (!assigned.has(tc)) errs.push(`${tc} is not assigned to any task`);
   return errs;
+}
+
+/**
+ * The developer follows a plan path literally and the orchestrator commits exactly those files, so
+ * an entry must name a place a commit can reach. Returns what is wrong with it, or null.
+ * A file or folder that does not exist yet is fine: a new feature may need one.
+ */
+function pathProblem(ws, file) {
+  const rel = String(file);
+  // the scope matcher compares text, so `source-be/../aiws/config/x` would pass as `source-be/**`
+  if (rel.split(/[\\/]/).includes('..')) return "must not contain '..'";
+  if (/[*?[\]{}]/.test(rel)) return null;
+  const abs = ws.abs(rel);
+  if (fs.existsSync(abs) && fs.statSync(abs).isDirectory()) {
+    return `is a folder; list its files or use ${rel.replace(/[\\/]+$/, '')}/**`;
+  }
+  if (isGitIgnored(abs)) return 'is ignored by git, so the task commit would not contain it';
+  return null;
+}
+
+/**
+ * Asks git from the nearest existing folder, so a source folder that is its own repository or a
+ * submodule answers for itself.
+ */
+function isGitIgnored(abs) {
+  let dir = path.dirname(abs);
+  while (!fs.existsSync(dir) && path.dirname(dir) !== dir) dir = path.dirname(dir);
+  try {
+    return run('git', ['check-ignore', '-q', '--', abs], { cwd: dir }).status === 0;
+  } catch {
+    return false; // no git: nothing to ask
+  }
 }
 
 function hasCycle(tasks) {
