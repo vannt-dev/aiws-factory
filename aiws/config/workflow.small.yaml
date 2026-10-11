@@ -1,0 +1,74 @@
+# Profile "small": cho requirement nhỏ (vài AC, 1-3 task). Chọn bằng `aiws new REQ-xxx --profile small`.
+# Khác workflow.yaml ở một chỗ: phase design chỉ có một bước, architect viết cả 02-design.md, api-contract.yaml
+# và 03-test-spec.md (contracts/design-small.yaml) thay vì hai bước architect + test-designer. Bớt một lần
+# chạy AI của model đắt nhất; các gate, enforcement và các phase còn lại giữ nguyên. Khoá nào không có ở đây
+# (language, prerequisites, concurrency, base_branch...) lấy từ workflow.yaml.
+version: 1
+name: software-project-small
+
+phases:
+  - id: analysis
+    agent: analyst
+    contract: contracts/analysis.yaml
+    next: design
+
+  - id: design
+    keep_feedback: true
+    steps:
+      - agent: architect
+        contract: contracts/design-small.yaml   # design + api-contract + test spec trong một lần
+    next: design_approval
+
+  - id: design_approval
+    type: human_gate
+    gate: design
+    artifacts: [02-design.md, 03-test-spec.md, api-contract.yaml]
+    on_approve: planning
+    on_reject: design
+
+  - id: planning
+    agent: planner
+    contract: contracts/plan.yaml
+    next: implementation
+
+  - id: implementation
+    type: loop
+    requires_lock: source
+    steps:
+      - agent: developer
+        contract: contracts/implementation.yaml
+      - builtin: unit_test
+    on_fail: {retry: 3, then: blocked}
+    on_question: design_change_requested
+    next: review
+
+  - id: design_change_requested
+    type: human_gate
+    gate: question
+    on_design_change: design
+    on_answer: implementation
+
+  - id: review
+    agent: reviewer
+    contract: contracts/review.yaml
+    require_trace: true
+    checks:
+      - {builtin: api_contract}
+      - {command: api_contract_be, optional: true}
+      - {command: api_contract_fe, optional: true}
+    on_critical: planning
+    next: pr_approval
+
+  - id: pr_approval
+    type: human_gate
+    gate: pr
+    via: git_host
+    on_approve: knowledge_update
+    on_changes_requested: planning
+    release_lock: source
+
+  - id: knowledge_update
+    agent: discovery
+    mode: incremental
+    contract: contracts/knowledge-update.yaml
+    next: done

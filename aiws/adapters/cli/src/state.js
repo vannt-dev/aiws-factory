@@ -11,6 +11,8 @@ export function statePath(ws, req) {
 export function loadState(ws, req) {
   const st = readYaml(statePath(ws, req));
   if (!st) throw new AiwsError(`${req} does not exist. Create it with \`aiws new ${req}\`.`);
+  // the requirement runs on the workflow it was created with
+  if ((st.profile ?? null) !== ws.profile) ws.useProfile(st.profile ?? null);
   st.history ??= [];
   st.tasks ??= [];
   st.feedback ??= [];
@@ -25,7 +27,7 @@ export function saveState(ws, st) {
 
 // Keep the human-readable fields at the top of state.yaml.
 function orderState(st) {
-  const keys = ['req_id', 'title', 'requirement', 'branch', 'base_branch', 'base_commit', 'phase', 'status', 'paused', 'reason'];
+  const keys = ['req_id', 'title', 'requirement', 'branch', 'base_branch', 'base_commit', 'profile', 'phase', 'status', 'paused', 'reason'];
   const out = {};
   for (const k of keys) if (st[k] !== undefined) out[k] = st[k];
   for (const [k, v] of Object.entries(st)) if (!(k in out)) out[k] = v;

@@ -78,6 +78,7 @@ If something is unclear, the analyst does not guess silently. It writes an open 
 
 ```bash
 aiws new REQ-001          # creates aiws/work/REQ-001 and the branch aiws/REQ-001
+                          # a small requirement: aiws new REQ-001 --profile small (one design step, no separate test designer)
 aiws run REQ-001          # runs until the next point that needs you
 ```
 

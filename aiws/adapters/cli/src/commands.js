@@ -88,9 +88,10 @@ function titleOf(ws, rel, req) {
   return h ? h.replace(new RegExp(`^${req}\\s*[-:—]?\\s*`), '') : req;
 }
 
-export function newReq(req, { worktree } = {}) {
+export function newReq(req, { worktree, profile } = {}) {
   assertReqId(req);
   let ws = Workspace.open();
+  if (profile) ws.useProfile(String(profile)); // fails here, before any branch exists, when the profile is unknown
   if (!G.isRepo(ws.root) || !G.hasCommits(ws.root)) throw new AiwsError('The workspace must be a git repository with at least one commit.');
   const requirement = findRequirement(ws, req);
   if (!requirement) throw new AiwsError(`No requirement file requirements/${req}-*.md found. Write the requirement first.`);
@@ -106,6 +107,7 @@ export function newReq(req, { worktree } = {}) {
     const wt = path.resolve(worktree);
     G.git(ws.root, ['worktree', 'add', '-q', '-b', branch, wt]);
     ws = new Workspace(wt);
+    if (profile) ws.useProfile(String(profile));
     log(`Worktree created at ${wt}. Run further commands for ${req} from there.`);
     installWorktreeCli(wt);
   } else {
@@ -118,6 +120,7 @@ export function newReq(req, { worktree } = {}) {
     branch,
     base_branch: baseBranch,
     base_commit: baseCommit,
+    ...(profile ? { profile: String(profile) } : {}),
     phase: null,
     status: 'running',
     history: [],
@@ -130,7 +133,9 @@ export function newReq(req, { worktree } = {}) {
   addHistory(st, { phase: 'new', result: 'created', by: currentUser(ws.root) });
   saveState(ws, st);
   G.commit(ws.root, `chore(${req}): start ${st.title}\n\nREQ-ID: ${req}\n`, [ws.workRel(req)]);
-  log(`${req} created on branch ${branch} (base ${baseBranch} @ ${baseCommit.slice(0, 7)}). Next: aiws run ${req}`);
+  log(
+    `${req} created on branch ${branch} (base ${baseBranch} @ ${baseCommit.slice(0, 7)})${profile ? ` on profile ${profile}` : ''}. Next: aiws run ${req}`
+  );
 }
 
 /**
@@ -271,7 +276,7 @@ export function status(req) {
   for (const r of reqs) {
     const st = loadState(ws, r);
     log(`${st.req_id}  ${st.title}`);
-    log(`  branch: ${st.branch}   phase: ${st.phase}   status: ${st.status}`);
+    log(`  branch: ${st.branch}   phase: ${st.phase}   status: ${st.status}${st.profile ? `   profile: ${st.profile}` : ''}`);
     if (st.reason) log(`  reason: ${st.reason}`);
     const usage = statsLine(runStats(ws, r));
     if (usage) log(`  ${usage}`);
