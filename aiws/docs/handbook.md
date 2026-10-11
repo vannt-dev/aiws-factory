@@ -25,7 +25,7 @@ You run two approval commands for each requirement. The AI cannot run them: they
 
 Set the workspace up once. The operations guide has the details in [sections 1 and 2](https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.md#1-installation).
 
-1. Install the CLI: `cd aiws/adapters/cli && npm install && npm link`.
+1. Install the CLI: `npm install -g aiws-factory` (then `aiws init my-project` for a new workspace), or from a clone `cd aiws/adapters/cli && npm install && npm link`.
 2. Put your code into `source-fe/`, `source-be/` and `source-legacy/`.
 3. Run `aiws detect --write` and check the build and test commands it wrote to `aiws/config/policies.yaml`.
 4. Fill in `aiws/skills/fe-conventions` and `aiws/skills/be-conventions` with the real conventions of your code.

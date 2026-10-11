@@ -32,7 +32,9 @@ Requirements: Node.js ≥ 22, Git, and Claude Code signed in. Works on **Windows
 build/test commands can differ per OS (`{windows: ..., posix: ...}` in `policies.yaml`).
 
 ```bash
-cd aiws/adapters/cli && npm install && npm link && cd ../../..
+npm install -g aiws-factory   # the `aiws` command, with the kit of this release; or from a clone of this repository:
+                              #   cd aiws/adapters/cli && npm install && npm link && cd ../../..
+aiws init my-project && cd my-project && git init   # a new workspace (skip inside a clone: the repository is one)
 aiws detect --write      # recognise the stack of each source-* folder
 aiws sync claude         # generate CLAUDE.md and .claude/
 aiws discover            # build aiws/knowledge/

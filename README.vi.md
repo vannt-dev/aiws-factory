@@ -32,7 +32,9 @@ Yêu cầu: Node.js ≥ 22, Git, Claude Code đã đăng nhập. Chạy được
 lệnh build/test có thể khai báo riêng theo OS (`{windows: ..., posix: ...}` trong `policies.yaml`).
 
 ```bash
-cd aiws/adapters/cli && npm install && npm link && cd ../../..
+npm install -g aiws-factory   # lệnh `aiws` kèm bộ kit của bản phát hành; hoặc từ bản clone repo này:
+                              #   cd aiws/adapters/cli && npm install && npm link && cd ../../..
+aiws init my-project && cd my-project && git init   # workspace mới (trong bản clone thì bỏ qua: repo đã là workspace)
 aiws detect --write      # nhận diện stack của từng thư mục source-*
 aiws sync claude         # sinh CLAUDE.md và .claude/
 aiws discover            # lập aiws/knowledge/

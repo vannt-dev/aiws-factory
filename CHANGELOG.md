@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- The CLI package is ready for npm as `aiws-factory` (the command stays
-  `aiws`; npm refuses the name `aiws` as too similar to existing packages):
-  `npm pack` bundles
+- The CLI is on npm as `aiws-factory` (the command stays `aiws`; npm
+  refuses the name `aiws` as too similar to existing packages):
+  `npm install -g aiws-factory`, then `aiws init my-project`. `npm pack` bundles
   the kit (config, agents, skills, templates, docs, `AGENTS.md`) into the
   package, so `aiws init` from an installed package creates a whole
   workspace; `aiws init` records the release in `aiws/config/kit-version`

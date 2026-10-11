@@ -21,13 +21,23 @@ New to AIWS? The [handbook](docs/handbook.md) walks through one requirement, fro
 
 Requirements: Node.js ≥ 22, Git, and Claude Code (`claude`) signed in.
 
+From npm, for a new workspace: the package `aiws-factory` carries the `aiws` command and the kit of its release.
+
+```bash
+npm install -g aiws-factory
+aiws init my-project          # config, agents, skills, templates, docs and AGENTS.md of this release
+cd my-project && git init
+```
+
+From a clone of this repository (the repository itself is a workspace):
+
 ```bash
 cd aiws/adapters/cli
 npm install          # required: the guard hook runs from this folder
 npm link             # optional: puts `aiws` on your PATH
 ```
 
-Without `npm link`, run `node aiws/adapters/cli/bin/aiws.js <command>` from the workspace root.
+Without `npm link`, run `node aiws/adapters/cli/bin/aiws.js <command>` from the workspace root. A workspace made by `aiws init` has no CLI of its own: the guard hook calls the `aiws` on PATH.
 
 ## 2. Getting started with a real project
 
