@@ -21,13 +21,23 @@ Mới dùng AIWS? [Sổ tay](docs/handbook.vi.md) dẫn bạn đi hết một re
 
 Yêu cầu: Node ≥ 22, Git, Claude Code (`claude`) đã đăng nhập.
 
+Từ npm, cho workspace mới: gói `aiws-factory` mang lệnh `aiws` và bộ kit của bản phát hành đó.
+
+```bash
+npm install -g aiws-factory
+aiws init my-project          # config, agents, skills, templates, docs và AGENTS.md của bản này
+cd my-project && git init
+```
+
+Từ bản clone repo này (chính repo là một workspace):
+
 ```bash
 cd aiws/adapters/cli
 npm install          # bắt buộc: hook guard chạy từ thư mục này
 npm link             # tuỳ chọn: có lệnh `aiws` toàn cục
 ```
 
-Không muốn `npm link` thì gọi `node aiws/adapters/cli/bin/aiws.js <lệnh>` từ gốc workspace.
+Không muốn `npm link` thì gọi `node aiws/adapters/cli/bin/aiws.js <lệnh>` từ gốc workspace. Workspace tạo bằng `aiws init` không có CLI riêng: hook guard gọi lệnh `aiws` trên PATH.
 
 ## 2. Bắt đầu với dự án thật
 

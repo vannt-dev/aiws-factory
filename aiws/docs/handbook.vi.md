@@ -25,7 +25,7 @@ Mỗi requirement bạn chạy hai lệnh duyệt. AI không chạy được hai
 
 Bạn dựng workspace một lần. Chi tiết nằm ở [mục 1 và 2](https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.vi.md#1-cài-đặt) của hướng dẫn vận hành.
 
-1. Cài CLI: `cd aiws/adapters/cli && npm install && npm link`.
+1. Cài CLI: `npm install -g aiws-factory` (rồi `aiws init my-project` cho workspace mới), hoặc từ bản clone `cd aiws/adapters/cli && npm install && npm link`.
 2. Đưa code vào `source-fe/`, `source-be/` và `source-legacy/`.
 3. Chạy `aiws detect --write` và kiểm tra các lệnh build, test mà nó ghi vào `aiws/config/policies.yaml`.
 4. Điền `aiws/skills/fe-conventions` và `aiws/skills/be-conventions` bằng convention thật của code.
