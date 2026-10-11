@@ -194,6 +194,8 @@ Một số lỗi xuất hiện trước khi lần chạy bắt đầu:
 
 Đây là sáu requirement của demo. Chúng là các tính năng nhỏ trên một codebase nhỏ, nên hãy coi đây là bậc độ lớn chứ không phải dự báo.
 
+Khi đã có vài requirement của chính bạn chạy xong, `aiws estimate` cho trung vị và khoảng của chúng thay cho các con số này, còn `aiws stats` liệt kê tất cả kèm chi phí từng phase.
+
 | Requirement | AC → TC | Task | Thời gian AI | Chi phí (USD) | Model |
 | --- | --- | --- | --- | --- | --- |
 | REQ-001 số điện thoại khách hàng | 22 → 43 | 5 | 74 phút | 32,15 | Opus cho mọi bước |

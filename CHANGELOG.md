@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   what to read at each human gate, what to do for each kind of stop, and the
   cost, time and model setup of six real requirements on the demo workspace.
   `aiws init` copies it into a new project with the rest of `aiws/docs/`.
+- `aiws stats` lists every requirement of `aiws/work/` with its AI runs, time
+  and cost, the totals, and the cost of each phase across requirements (total
+  and median per requirement); `aiws estimate` gives the median and range of
+  cost and time of the finished requirements, per phase too, as an order of
+  magnitude for the next one. Neither needs a running requirement.
 
 ### Changed
 

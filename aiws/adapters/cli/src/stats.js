@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { readYaml } from './util.js';
 
 /**
  * Totals over the evidence of a requirement (evidence/runs/run-NNNN.json): number of AI runs,
@@ -8,7 +9,7 @@ import path from 'node:path';
  */
 export function runStats(ws, req) {
   const dir = path.join(ws.workDir(req), 'evidence', 'runs');
-  const stats = { runs: 0, duration_ms: 0, cost_usd: null, by_phase: {} };
+  const stats = { runs: 0, duration_ms: 0, cost_usd: null, by_phase: {}, duration_by_phase: {}, runs_by_phase: {} };
   if (!fs.existsSync(dir)) return stats;
   for (const file of fs.readdirSync(dir).filter((f) => /^run-\d+\.json$/.test(f))) {
     let ev;
@@ -17,12 +18,14 @@ export function runStats(ws, req) {
     } catch {
       continue; // a run that was interrupted while writing its evidence
     }
+    const phase = ev.phase ?? 'unknown';
     stats.runs += 1;
+    stats.runs_by_phase[phase] = (stats.runs_by_phase[phase] ?? 0) + 1;
     stats.duration_ms += ev.duration_ms ?? 0;
+    stats.duration_by_phase[phase] = (stats.duration_by_phase[phase] ?? 0) + (ev.duration_ms ?? 0);
     const cost = ev.report?.cost_usd;
     if (typeof cost === 'number') {
       stats.cost_usd = (stats.cost_usd ?? 0) + cost;
-      const phase = ev.phase ?? 'unknown';
       stats.by_phase[phase] = (stats.by_phase[phase] ?? 0) + cost;
     }
   }
@@ -41,4 +44,185 @@ export function statsLine(stats) {
     line += `, cost ${stats.cost_usd.toFixed(2)} USD list-price equivalent (${phases})`;
   }
   return line;
+}
+
+// ---------------------------------------------------------------- across requirements
+
+/** The phases of the workflow, in order, so that tables read the way the work went. */
+function phaseOrder(ws, extra = []) {
+  const order = (ws.workflow.phases ?? []).map((p) => p.id);
+  for (const p of extra) if (!order.includes(p)) order.push(p);
+  return order;
+}
+
+/**
+ * One row per requirement of aiws/work/ (whatever branch it ran on, as long as its work directory is
+ * here): title, phase, status, runs, time, cost and the models the evidence names.
+ */
+export function workspaceStats(ws) {
+  const dir = path.join(ws.aiwsDir, 'work');
+  const rows = [];
+  if (!fs.existsSync(dir)) return { rows, phases: phaseOrder(ws) };
+  for (const req of fs.readdirSync(dir).sort()) {
+    const st = readYaml(path.join(dir, req, 'state.yaml'));
+    if (!st) continue; // _discover and the like keep no state
+    const stats = runStats(ws, req);
+    rows.push({
+      req,
+      title: st.title ?? '',
+      phase: st.phase ?? '',
+      status: st.status ?? '',
+      tasks: (st.tasks ?? []).length,
+      ...stats,
+      models: modelsUsed(ws, req),
+    });
+  }
+  const seen = new Set(rows.flatMap((r) => Object.keys(r.runs_by_phase)));
+  return { rows, phases: phaseOrder(ws, [...seen]) };
+}
+
+function modelsUsed(ws, req) {
+  const dir = path.join(ws.workDir(req), 'evidence', 'runs');
+  const models = new Set();
+  if (!fs.existsSync(dir)) return [];
+  for (const file of fs.readdirSync(dir).filter((f) => /^run-\d+\.json$/.test(f))) {
+    try {
+      const m = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')).report?.model;
+      if (m) models.add(String(m));
+    } catch {
+      // unreadable evidence is skipped by runStats as well
+    }
+  }
+  return [...models].sort();
+}
+
+function median(values) {
+  const v = values.filter((x) => typeof x === 'number').sort((a, b) => a - b);
+  if (!v.length) return null;
+  const mid = Math.floor(v.length / 2);
+  return v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2;
+}
+
+function range(values) {
+  const v = values.filter((x) => typeof x === 'number');
+  return v.length ? { min: Math.min(...v), max: Math.max(...v) } : null;
+}
+
+/**
+ * What a requirement has cost so far, from the requirements that reached `done`: median and range of the
+ * total, and the median per phase. An estimate, not a forecast: it says what finished requirements of this
+ * workspace took, nothing about the one being planned. Null when no requirement is finished.
+ */
+export function estimateFromHistory(ws) {
+  const { rows, phases } = workspaceStats(ws);
+  const done = rows.filter((r) => r.status === 'done' && r.runs > 0);
+  if (!done.length) return null;
+  const costs = done.map((r) => r.cost_usd).filter((c) => typeof c === 'number');
+  const minutes = done.map((r) => r.duration_ms / 60000);
+  const byPhase = {};
+  for (const phase of phases) {
+    const cost = done.map((r) => r.by_phase[phase]).filter((c) => typeof c === 'number');
+    const time = done.map((r) => r.duration_by_phase[phase]).filter((t) => typeof t === 'number' && t > 0);
+    if (!cost.length && !time.length) continue;
+    byPhase[phase] = { cost_usd: median(cost), minutes: median(time.map((t) => t / 60000)) };
+  }
+  return {
+    based_on: done.length,
+    cost_usd: costs.length ? { median: median(costs), ...range(costs) } : null,
+    minutes: { median: median(minutes), ...range(minutes) },
+    by_phase: byPhase,
+  };
+}
+
+// ---------------------------------------------------------------- text
+
+const money = (n) => (typeof n === 'number' ? n.toFixed(2) : '-');
+const mins = (ms) => (ms ? String(Math.max(1, Math.round(ms / 60000))) : '-');
+
+function table(headers, rows) {
+  const widths = headers.map((h, i) => Math.max(h.length, ...rows.map((r) => String(r[i]).length)));
+  const line = (cells) =>
+    cells
+      .map((c, i) => String(c).padEnd(widths[i]))
+      .join('  ')
+      .trimEnd();
+  return [line(headers), ...rows.map(line)].join('\n');
+}
+
+/** The `aiws stats` text: one line per requirement, totals, and the cost of each phase across them. */
+export function statsText(summary) {
+  const { rows, phases } = summary;
+  if (!rows.length) return 'No requirements in aiws/work/ yet.';
+  const out = [];
+  out.push(
+    table(
+      ['REQ', 'status', 'phase', 'tasks', 'runs', 'min', 'USD', 'title'],
+      rows.map((r) => [r.req, r.status, r.phase, r.tasks, r.runs, mins(r.duration_ms), money(r.cost_usd), r.title])
+    )
+  );
+  const withCost = rows.filter((r) => typeof r.cost_usd === 'number');
+  const totalRuns = rows.reduce((n, r) => n + r.runs, 0);
+  const totalMs = rows.reduce((n, r) => n + r.duration_ms, 0);
+  const totalCost = withCost.reduce((n, r) => n + r.cost_usd, 0);
+  out.push(
+    '',
+    `${rows.length} requirement(s), ${totalRuns} AI run(s), ${mins(totalMs)} min` +
+      (withCost.length ? `, ${money(totalCost)} USD list-price equivalent` : '')
+  );
+  const used = phases.filter((p) => rows.some((r) => r.runs_by_phase[p]));
+  if (used.length && withCost.length) {
+    out.push('', 'Per phase, across these requirements:');
+    out.push(
+      table(
+        ['phase', 'runs', 'min', 'USD', 'USD median/REQ'],
+        used.map((p) => [
+          p,
+          rows.reduce((n, r) => n + (r.runs_by_phase[p] ?? 0), 0),
+          mins(rows.reduce((n, r) => n + (r.duration_by_phase[p] ?? 0), 0)),
+          money(withCost.reduce((n, r) => n + (r.by_phase[p] ?? 0), 0)),
+          money(median(withCost.map((r) => r.by_phase[p]))),
+        ])
+      )
+    );
+  }
+  const models = [...new Set(rows.flatMap((r) => r.models))];
+  if (models.length) out.push('', `Models seen in the evidence: ${models.join(', ')}.`);
+  return out.join('\n');
+}
+
+/** The `aiws estimate` text. */
+export function estimateText(est) {
+  if (!est) {
+    return [
+      'No finished requirement in aiws/work/ yet, so there is nothing to estimate from.',
+      'For an order of magnitude: the six demo requirements of the handbook (3 to 7 tasks each) took 60 to 90 minutes',
+      'and 25 to 41 USD list-price equivalent, mostly on Opus. See aiws/docs/handbook.md, section 8.',
+    ].join('\n');
+  }
+  const out = [`Based on ${est.based_on} finished requirement(s) of this workspace:`];
+  if (est.cost_usd) {
+    out.push(
+      `  cost: median ${money(est.cost_usd.median)} USD, range ${money(est.cost_usd.min)} to ${money(est.cost_usd.max)} USD (list-price equivalent)`
+    );
+  } else {
+    out.push('  cost: no run reported a cost (scripted adapter?)');
+  }
+  const m = est.minutes;
+  out.push(`  AI time: median ${Math.round(m.median)} min, range ${Math.round(m.min)} to ${Math.round(m.max)} min`);
+  const phases = Object.entries(est.by_phase);
+  if (phases.length) {
+    out.push('', 'Median per phase:');
+    out.push(
+      table(
+        ['phase', 'USD', 'min'],
+        phases.map(([p, v]) => [p, money(v.cost_usd), v.minutes === null ? '-' : Math.round(v.minutes)])
+      )
+    );
+  }
+  out.push(
+    '',
+    'This is what finished requirements took, not a forecast for the next one: a requirement with more acceptance',
+    'criteria or tasks costs more, and the models in runtime.yaml decide most of the price.'
+  );
+  return out.join('\n');
 }
