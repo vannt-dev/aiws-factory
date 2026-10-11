@@ -12,7 +12,7 @@ import {
   runShell,
   osCommand,
 } from './util.js';
-import { Workspace, KIT_DIR, assertReqId, findRoot } from './workspace.js';
+import { Workspace, KIT_DIR, KIT_AGENTS_MD, cliVersion, assertReqId, findRoot } from './workspace.js';
 import * as G from './git.js';
 import * as Lock from './lock.js';
 import { loadState, saveState, setPhase, addHistory, addFeedback, listReqs, statePath } from './state.js';
@@ -48,10 +48,15 @@ export function init(dir = process.cwd()) {
       const src = path.join(KIT_DIR, part);
       if (fs.existsSync(src)) created.push(...copyDir(src, path.join(root, 'aiws', part)));
     }
-    const agentsMd = path.join(KIT_DIR, '..', 'AGENTS.md');
-    if (fs.existsSync(agentsMd) && !fs.existsSync(path.join(root, 'AGENTS.md'))) {
-      fs.copyFileSync(agentsMd, path.join(root, 'AGENTS.md'));
+    if (fs.existsSync(KIT_AGENTS_MD) && !fs.existsSync(path.join(root, 'AGENTS.md'))) {
+      fs.copyFileSync(KIT_AGENTS_MD, path.join(root, 'AGENTS.md'));
       created.push(path.join(root, 'AGENTS.md'));
+    }
+    // which release the kit came from, so a later CLI can tell when they drift apart
+    const versionFile = path.join(root, 'aiws', 'config', 'kit-version');
+    if (!fs.existsSync(versionFile)) {
+      writeText(versionFile, `${cliVersion()}\n`);
+      created.push(versionFile);
     }
   }
   for (const d of SKELETON_DIRS) {
@@ -158,6 +163,7 @@ function installWorktreeCli(wt) {
 export async function run(req, opts) {
   assertReqId(req);
   const ws = Workspace.open();
+  ws.warnKitVersion();
   const waiting = opts.wait !== undefined && opts.wait !== false;
   const interval = waitInterval(ws, opts.wait);
   const deadline = Date.now() + (Number(ws.runtime.wait?.max_hours) > 0 ? Number(ws.runtime.wait.max_hours) : 12) * 3600 * 1000;
@@ -266,6 +272,7 @@ export function discover({ branch, since } = {}) {
 
 export function status(req) {
   const ws = Workspace.open();
+  ws.warnKitVersion();
   const reqs = req ? [assertReqId(req)] : listReqs(ws);
   const lock = G.isRepo(ws.root) ? Lock.readLock(ws.root) : null;
   if (!reqs.length) {
