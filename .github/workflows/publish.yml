@@ -41,8 +41,8 @@ jobs:
       - name: Pack (the kit is bundled by prepack) and list the tarball
         run: |
           npm pack --json > pack.json
-          node -e "const p=require('./pack.json')[0];console.log(p.filename, p.size, 'bytes,', p.entryCount, 'files');for(const f of p.files)console.log(' ', f.path)"
-          test -f kit/config/workflow.yaml
+          # postpack removes kit/ from the tree again, so the tarball listing is what is checked
+          node -e "const p=require('./pack.json')[0];console.log(p.filename, p.size, 'bytes,', p.entryCount, 'files');for(const f of p.files)console.log(' ', f.path);if(!p.files.some(f=>f.path==='kit/config/workflow.yaml'))process.exit(1)"
       - name: Publish
         if: ${{ !inputs.dry_run }}
         run: npm publish --provenance --access public
