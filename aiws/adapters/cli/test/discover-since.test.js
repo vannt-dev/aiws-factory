@@ -40,7 +40,7 @@ test('discover --since updates the knowledge base for the source files changed s
   assert.equal(git(root, ['status', '--porcelain']), '');
 
   // an explicit revision, and an unknown one
-  const r2 = ok(root, ['discover', `--since=${knowledgeCommit}`]);
+  ok(root, ['discover', `--since=${knowledgeCommit}`]);
   assert.equal(runs(root).length, 3);
   assert.match(readFile(root, 'aiws/work/_discover/evidence/runs/run-0003.prompt.md'), /source-be\/src\/audit\.js/);
   const bad = aiws(root, ['discover', '--since=nope']);
