@@ -102,6 +102,8 @@ Lần chạy dừng với `phase=design_approval status=waiting_human`. Chưa c�
 
 Tài liệu nằm trong `aiws/work/REQ-001/`. Hãy đọc theo thứ tự này:
 
+`aiws report REQ-001` gom các tài liệu, trace và chi phí đến lúc đó vào một trang, `aiws/work/REQ-001/report.html`, nếu bạn muốn đọc trên trình duyệt.
+
 1. **`02-design.md`, mục cuối "Quyết định cần duyệt".** Architect liệt kê mọi lựa chọn cần bạn cân nhắc, kèm các phương án nó đã loại. Những điều nó không tự kiểm chứng được mang nhãn `[CẦN XÁC NHẬN]`.
 2. **`01-analysis.md`.** Kiểm tra từng acceptance criterion (`AC-1`, `AC-2`, ...) có nói đúng ý bạn không, và đọc các giả định ở mục "Câu hỏi mở".
 3. **`03-test-spec.md`, mục cuối "Ma trận AC".** Mọi acceptance criterion đều phải có test case. Hãy đọc trọn vài test case: chúng phải nêu dữ liệu và kết quả mong đợi cụ thể.

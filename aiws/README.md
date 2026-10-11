@@ -150,6 +150,7 @@ To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 
 - `aiws/work/REQ/evidence/runs/run-NNNN.json` and `.prompt.md` record the adapter, command, allowed tools, prompt hash, duration, turns, estimated cost, changed files, reverted violations and validation errors.
 - `evidence/test-results/<task>-attempt-N.yaml` records the test command, exit code, a log excerpt and the task's test cases.
+- `aiws report REQ-001` gathers all of the above into one HTML page (`aiws/work/REQ-001/report.html`, or `--out FILE`): status, trace, tasks, approvals, runs with cost, test runs, history and the documents.
 - Task commits carry the trailers `REQ-ID`, `Task`, `Tests` and `AIWS-Run`; `git log --grep "REQ-ID: REQ-001"` lists every change of a requirement.
 - CI runs `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (enable `require_signed` to require GPG/SSH-signed approvals via `aiws approve --sign`), `aiws trace REQ-001` and `aiws check build`. The last one re-runs every `<side>_build` and `<side>_test` command of `policies.yaml`, so code about to be merged is rebuilt and retested outside the AI run.
 

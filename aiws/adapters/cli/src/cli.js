@@ -28,6 +28,8 @@ Requirement lifecycle
   aiws stats                           every requirement with its AI runs, time and cost; cost per phase across them
   aiws estimate                        cost and time of the finished requirements, as an order of magnitude for the next
   aiws prompt REQ-001 PHASE [--task T] print the prompt an agent would receive
+  aiws report REQ-001 [--out FILE]     one HTML page: status, trace, tasks, approvals, runs, cost, documents
+                                       (default aiws/work/REQ-001/report.html)
 
 Human-only (refuse to run inside an AI session; confirm interactively or pass --yes)
   aiws approve REQ-001 design|pr [-m NOTE] [--sign] [--no-merge-check]
@@ -52,7 +54,7 @@ export function version() {
   return JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'package.json'), 'utf8')).version;
 }
 
-const VALUE_FLAGS = new Set(['-m', '--message', '--task', '--req', '--phase', '--base', '--range', '--worktree', '--budget']);
+const VALUE_FLAGS = new Set(['-m', '--message', '--task', '--req', '--phase', '--base', '--range', '--worktree', '--budget', '--out']);
 
 export function parseArgs(argv) {
   const pos = [];
@@ -123,6 +125,9 @@ export async function main(argv) {
       return 0;
     case 'prompt':
       C.prompt(a1, a2, { task: flags.task });
+      return 0;
+    case 'report':
+      C.report(a1, { out: flags.out });
       return 0;
     case 'approve':
       await C.approve(a1, a2, { ...human, mergeCheck: !flags['no-merge-check'] });
