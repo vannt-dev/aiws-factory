@@ -37,6 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   changed since REV (default: the last commit that touched the knowledge base)
   instead of reading the whole codebase again, and makes no AI run at all when
   nothing changed there.
+- A `codex` adapter: `runtime.yaml -> phases.review.adapter: codex` has the
+  review made by the Codex CLI (`codex exec`, headless), so the code is
+  reviewed by another model than the one that wrote it. It serves any phase
+  whose contract has no shell; the sandbox (`read-only` or `workspace-write`
+  by the contract) and diff-scope keep the scope, and a Codex run reports
+  tokens, not USD. `codex.models`, `agent_models`, `phase_models` and
+  `extra_args` work like their Claude counterparts. Not yet tried against
+  the real CLI; the tests use a stand-in.
 
 ### Changed
 

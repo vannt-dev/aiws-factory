@@ -1,8 +1,9 @@
-# Chọn adapter/AI theo phase. V1: claude. V2: codex, gemini (review chéo bằng model khác).
+# Chọn adapter/AI theo phase: claude (mặc định), codex, scripted. Review chéo bằng model khác: giao phase
+# review cho codex (xem mục codex bên dưới).
 default_adapter: claude
 
 phases: {}
-#  review: {adapter: gemini}   # V2
+#  review: {adapter: codex}
 
 claude:
   command: claude
@@ -23,6 +24,20 @@ claude:
   # phase_models:
   #   knowledge_update: sonnet
   extra_args: []
+
+# Codex CLI (`codex exec`, headless) cho các phase không cần shell: review, analysis, design. Sandbox của Codex
+# (read-only khi contract không ghi, workspace-write khi có) và diff-scope giữ phạm vi; không có hook guard,
+# nên phase có `bash` (implementation) bị từ chối. Codex báo token chứ không báo USD: cost_usd để trống.
+# codex:
+#   command: codex
+#   timeout_minutes: 30
+#   models:                      # model_hint -> model của Codex
+#     strong-reasoning: gpt-5-codex
+#     strong-coding: gpt-5-codex
+#     fast: gpt-5-codex
+#   agent_models: {}             # ưu tiên hơn model_hint, ví dụ reviewer: gpt-5-codex
+#   phase_models: {}             # ưu tiên hơn agent_models, ví dụ review: gpt-5-codex
+#   extra_args: []
 
 # `aiws run --wait`: chạy lại sau mỗi `minutes` phút khi AI hết hạn mức, tối đa `max_hours` giờ.
 # wait:
