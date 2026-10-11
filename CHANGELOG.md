@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-11
+
+The CLI installs from npm, and a plan is checked against the workspace
+before a developer follows it: every path in it has to be a place a commit
+can reach.
+
 ### Added
 
 - The CLI is on npm as `aiws-factory` (the command stays `aiws`; npm
@@ -280,7 +286,8 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.1.0...v0.2.0
