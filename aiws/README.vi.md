@@ -143,7 +143,7 @@ Diff-scope là đảm bảo thật; hook chỉ giúp chặn sớm. Diff-scope **
 | `skills/*/SKILL.md` | Kiến thức dùng chung, được chép sang `.claude/skills` và nhúng vào prompt headless. |
 | `templates/` | Mẫu output, heading và định dạng ID mà validator kiểm tra. `templates/en/` là bộ tiếng Anh, dùng khi `language: en`. |
 
-Rule validator có sẵn: `ac_numbered`, `no_blocking_questions`, `every_ac_has_tc`, `plan_valid`, `review_no_open_critical`, cùng `format: openapi|yaml` cho output.
+Rule validator có sẵn: `ac_numbered`, `no_blocking_questions`, `every_ac_has_tc`, `plan_valid`, `review_no_open_critical`, cùng `format: openapi|yaml` cho output. `plan_valid` cũng từ chối mục `allowed_files` chứa `..`, ghi tên thư mục mà không có glob, hoặc bị git bỏ qua (file ở đó không vào được commit của task).
 
 ## 6. Làm việc tương tác
 

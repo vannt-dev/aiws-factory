@@ -33,6 +33,8 @@ Ví dụ gộp:
 - `[blocking]`: không biết thì thiết kế sai (vd. quy tắc nghiệp vụ mâu thuẫn, thiếu định nghĩa trạng thái). Orchestrator sẽ dừng chờ người trả lời.
 - `[non-blocking]`: có giả định hợp lý; ghi giả định để người duyệt design thấy.
 - Đừng biến mọi thứ thành blocking. Chỉ blocking khi hai cách hiểu dẫn tới hai thiết kế khác nhau đáng kể.
+- Lọc trước khi hỏi: nếu người trả lời thế nào thì code phải viết vẫn như nhau, đừng hỏi; chọn mặc định an toàn và ghi `[non-blocking]`.
+- Hỏi hết trong một lần. Mỗi câu `[blocking]` nêu: điểm chưa rõ, vì sao nó quan trọng, các cách hiểu, phương án đề xuất và hệ quả của từng lựa chọn.
 
 ## Reuse
 Liệt kê component/service/util có sẵn giải quyết một phần yêu cầu, kèm đường dẫn.

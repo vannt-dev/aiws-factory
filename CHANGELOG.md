@@ -19,6 +19,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   workspace are different releases. The `Publish to npm` workflow publishes
   on every `v*` tag through npm trusted publishing, with provenance; run by
   hand it is a dry run.
+- `plan_valid` checks that every `allowed_files` entry names a place a
+  commit can reach. It rejects a folder named without a glob and a path
+  that git ignores, whose file would never be in the task commit. A file
+  or folder that does not exist yet is still accepted.
+
+### Changed
+
+- The analyst and the developer write every blocking question in one pass,
+  each with a recommended answer and what each choice leads to, and ask
+  only when the answer changes the work. One round of questions costs one
+  `aiws answer` and one more run.
+
+### Fixed
+
+- `plan_valid` accepted an `allowed_files` path that contains `..`: the
+  scope matcher compares text, so `source-be/../aiws/config/x` passed as
+  `source-be/**`. Such a path is now rejected.
 
 ## [0.4.0] - 2026-10-11
 
