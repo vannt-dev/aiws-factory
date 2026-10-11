@@ -773,9 +773,41 @@ function runUnitTests(ws, st, task, attempt, runId) {
 
 // ---------------------------------------------------------------- discovery
 
-/** `aiws discover`: builds (or incrementally refreshes) aiws/knowledge/ outside any REQ. */
-export function runDiscover(ws, { maxAttempts } = {}) {
+/**
+ * What changed in the source directories since a revision, for `aiws discover --since`. `true` means since the
+ * last commit that touched aiws/knowledge/, which is what the previous discovery (or knowledge update) left.
+ */
+export function changesSince(ws, since) {
+  let rev;
+  if (since === true) {
+    rev = G.git(ws.root, ['log', '-1', '--format=%H', '--', 'aiws/knowledge'], { allowFail: true }).stdout.trim();
+    if (!rev)
+      throw new AiwsError('aiws/knowledge/ has no commit yet, so there is nothing to update since. Run `aiws discover` without --since.');
+  } else {
+    rev = G.revParse(ws.root, String(since));
+    if (!rev) throw new AiwsError(`--since: unknown revision '${since}'.`);
+  }
+  const files = G.git(ws.root, ['diff', '--name-only', rev, 'HEAD'], { allowFail: true })
+    .stdout.split(/\r?\n/)
+    .filter((f) => /^source-[^/]+\//.test(f));
+  const logOut = G.git(ws.root, ['log', '--format=%h %s', `${rev}..HEAD`, '--', 'source-fe', 'source-be', 'source-legacy'], {
+    allowFail: true,
+  }).stdout.trim();
+  return { rev, files, log: logOut };
+}
+
+/**
+ * `aiws discover`: builds (or incrementally refreshes) aiws/knowledge/ outside any REQ. With `since`, the agent is
+ * given the source files changed since that revision and told to update only what they affect; when nothing
+ * changed there is no AI run at all.
+ */
+export function runDiscover(ws, { maxAttempts, since } = {}) {
   const req = '_discover';
+  const incremental = since === undefined || since === null || since === false ? null : changesSince(ws, since);
+  if (incremental && !incremental.files.length) {
+    log(`[discover] nothing changed in source-* since ${incremental.rev.slice(0, 7)}; aiws/knowledge/ is up to date, no AI run.`);
+    return { ok: true, unchanged: true, rev: incremental.rev };
+  }
   preflightAdapters(ws, ['discover']);
   const contract = ws.contract('contracts/discover.yaml');
   const max = maxAttempts ?? contract.max_attempts ?? 2;
@@ -791,6 +823,22 @@ export function runDiscover(ws, { maxAttempts } = {}) {
     '## Detected stacks (heuristic - verify against the code)',
     reportText(report),
     'The workspace may use any language. Describe each source-* directory in its own terms (framework, build tool, test framework).',
+    ...(incremental
+      ? [
+          '',
+          '## Incremental mode',
+          `aiws/knowledge/ already describes the code as of ${incremental.rev.slice(0, 7)}. Update it ONLY for what the files below changed; ` +
+            'keep every other section as it is. Read the current knowledge files first.',
+          'Source files changed since then:',
+          '```',
+          incremental.files.join('\n'),
+          '```',
+          'Commits:',
+          '```',
+          incremental.log || '(none)',
+          '```',
+        ]
+      : []),
   ].join('\n');
   // a discovery paused by the usage limit left partial knowledge files in the working tree
   let failure = counter.interrupted ? STEP_INTERRUPTED_NOTE : null;
@@ -819,11 +867,14 @@ export function runDiscover(ws, { maxAttempts } = {}) {
     r.evidence.outcome = errors.length ? 'failed' : 'ok';
     writeEvidence(ws, req, r.evidence);
     if (!errors.length) {
-      const sha = G.commit(ws.root, `docs(knowledge): discover knowledge base\n\nAIWS-Run: ${r.runId}\n`, [
-        'aiws/knowledge',
-        ws.workRel(req),
-      ]);
-      log(`  knowledge written${sha ? ` (${sha.slice(0, 7)})` : ''}. Review aiws/knowledge/ and correct it before the first REQ.`);
+      const subject = incremental
+        ? `docs(knowledge): update knowledge base since ${incremental.rev.slice(0, 7)}`
+        : 'docs(knowledge): discover knowledge base';
+      const sha = G.commit(ws.root, `${subject}\n\nAIWS-Run: ${r.runId}\n`, ['aiws/knowledge', ws.workRel(req)]);
+      log(
+        `  knowledge ${incremental ? 'updated' : 'written'}${sha ? ` (${sha.slice(0, 7)})` : ''}. Review aiws/knowledge/ and correct it` +
+          (incremental ? '.' : ' before the first REQ.')
+      );
       return { ok: true };
     }
     failure = formatErrors(errors);

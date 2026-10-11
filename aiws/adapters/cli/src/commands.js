@@ -16,7 +16,7 @@ import { Workspace, KIT_DIR, assertReqId, findRoot } from './workspace.js';
 import * as G from './git.js';
 import * as Lock from './lock.js';
 import { loadState, saveState, setPhase, addHistory, addFeedback, listReqs, statePath } from './state.js';
-import { enterPhase, runReq, runDiscover, budgetStatus } from './engine.js';
+import { enterPhase, runReq, runDiscover, changesSince, budgetStatus } from './engine.js';
 import YAML from 'yaml';
 import { detectStacks, reportText } from './stacks.js';
 import { requireHuman, inAiSession, currentUser, recordApproval, hashArtifacts, listApprovals, designApprovalStatus } from './gate.js';
@@ -226,18 +226,20 @@ function budgetLine(budget) {
  * current branch. With --branch it goes to a new branch (default aiws/discover-YYYYMMDD), to be merged
  * through a pull request: the way to use discovery when the base branch is protected.
  */
-export function discover({ branch } = {}) {
+export function discover({ branch, since } = {}) {
   const ws = Workspace.open();
   let target = null;
   if (branch) {
     preflightAdapters(ws, ['discover']); // fail before creating a branch nobody will use
+    if (since) changesSince(ws, since); // and before a revision that does not exist
     const from = G.currentBranch(ws.root);
     target = branch === true ? `aiws/discover-${nowIso().slice(0, 10).replace(/-/g, '')}` : String(branch);
     if (G.branchExists(ws.root, target)) throw new AiwsError(`Branch ${target} already exists. Pass another name: --branch=NAME.`);
     G.git(ws.root, ['switch', '-q', '-c', target]);
     log(`Discovery runs on the new branch ${target} (from ${from}).`);
   }
-  const r = runDiscover(ws);
+  const r = runDiscover(ws, { since });
+  if (r.unchanged) return;
   if (r.paused) {
     log(
       `Discovery paused by the AI usage limit (${r.paused}). Run \`aiws discover\` again once the limit resets` +
