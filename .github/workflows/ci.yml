@@ -99,7 +99,9 @@ jobs:
 
   test-matrix:
     name: 3. Test (${{ matrix.os }}, Node ${{ matrix.node }})
-    needs: test-linux
+    # Beside the Linux tests, not after them: the Windows job is the long one, and the
+    # Linux result it used to wait for is checked by the result stage all the same.
+    needs: lint
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
