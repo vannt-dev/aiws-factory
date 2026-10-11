@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the approvals, every AI run with its outcome and cost, the test runs, the
   history and the documents, with everything agents wrote shown as text.
   Default place: `aiws/work/REQ-001/report.html`.
+- `aiws discover --since[=REV]` updates `aiws/knowledge/` for the source files
+  changed since REV (default: the last commit that touched the knowledge base)
+  instead of reading the whole codebase again, and makes no AI run at all when
+  nothing changed there.
 
 ### Changed
 
