@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-11
+
+Eight features for the person who runs requirements, after the six demo runs:
+what they cost, runs that need no watching, one page per requirement, a
+cheaper profile, English documents, a review by another model, the API
+contract checked against the backend, and a knowledge base that updates for
+what changed.
+
 ### Added
 
 - A handbook in `aiws/docs/`, `handbook.md` (English) and `handbook.vi.md`
@@ -242,7 +250,8 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/vannt-dev/aiws-factory/releases/tag/v0.1.0
