@@ -29,6 +29,16 @@ import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 import { notify, stopEvent } from './notify.js';
 import { buildReport, renderHtml } from './report.js';
 import { checkApiContract } from './apicontract.js';
+import {
+  MANIFEST_REL,
+  NEW_SUFFIX,
+  applyUpgrade,
+  bundledManifest,
+  pendingMerges,
+  planUpgrade,
+  readManifest,
+  writeKitRecord,
+} from './kit.js';
 
 // ---------------------------------------------------------------- init / sync
 
@@ -52,11 +62,12 @@ export function init(dir = process.cwd()) {
       fs.copyFileSync(KIT_AGENTS_MD, path.join(root, 'AGENTS.md'));
       created.push(path.join(root, 'AGENTS.md'));
     }
-    // which release the kit came from, so a later CLI can tell when they drift apart
+    // which release the kit came from and how each file was installed, so a later CLI can tell when they
+    // drift apart and `aiws upgrade` can tell the project's own changes from the previous release's files
     const versionFile = path.join(root, 'aiws', 'config', 'kit-version');
     if (!fs.existsSync(versionFile)) {
-      writeText(versionFile, `${cliVersion()}\n`);
-      created.push(versionFile);
+      writeKitRecord(root);
+      created.push(versionFile, path.join(root, MANIFEST_REL));
     }
   }
   for (const d of SKELETON_DIRS) {
@@ -70,6 +81,82 @@ export function init(dir = process.cwd()) {
   if (!G.isRepo(root)) log('Note: this folder is not a git repository yet. Run `git init` - AIWS keeps all state in git.');
   log(created.length ? `Created ${created.length} file(s)/folder(s).` : 'Workspace already initialised; nothing to create.');
   log('Next: `aiws sync claude`, then `aiws discover`.');
+}
+
+const UPGRADE_GROUPS = [
+  ['add', 'Added'],
+  ['update', 'Updated'],
+  ['remove', 'Removed, no longer in the kit'],
+  ['overwrite', "Replaced by the kit's, because of --force"],
+  ['conflict', 'Changed here and in the kit'],
+  ['keep', 'Yours, kept as they are'],
+  ['orphan', 'No longer in the kit, changed here, kept'],
+  ['deleted', 'Removed here earlier, left out'],
+];
+
+/**
+ * `aiws upgrade [--dry-run] [--force]`: brings the kit of a workspace (config, agents, skills, templates,
+ * docs, AGENTS.md) to the one this CLI carries. A file the project left as it was installed is replaced; a
+ * file the project changed is kept, and when the kit changed it too the kit's version is written beside it
+ * as `<file>.aiws-new`, to merge by hand. Nothing is committed: the result is a diff to review.
+ */
+export function upgrade({ dryRun = false, force = false } = {}) {
+  const ws = Workspace.open();
+  if (path.resolve(KIT_DIR) === ws.abs('aiws')) {
+    throw new AiwsError(
+      'This workspace is the kit itself (the aiws-factory repository): update it with git, there is nothing to upgrade from.'
+    );
+  }
+  if (!dryRun) {
+    if (!G.isRepo(ws.root)) throw new AiwsError('The workspace must be a git repository: an upgrade is reviewed as a diff.');
+    const dirty = G.dirtyFiles(ws.root);
+    if (dirty.length)
+      throw new AiwsError(`Working tree is not clean (commit or stash first, or look with --dry-run):\n  ${dirty.join('\n  ')}`);
+  }
+  const from = ws.kitVersion;
+  const to = cliVersion();
+  const recorded = readManifest(ws.root);
+  const base = recorded ?? bundledManifest(from);
+  const plan = planUpgrade(ws.root, base).map((step) => (force && step.action === 'conflict' ? { ...step, action: 'overwrite' } : step));
+  const pending = () => {
+    const left = pendingMerges(ws.root);
+    if (left.length)
+      log(`Still to merge by hand (${left.length}):\n  ${left.join('\n  ')}\nMerge what you want from each into its file, then delete it.`);
+  };
+
+  const changes = plan.filter((step) => ['add', 'update', 'remove', 'overwrite', 'conflict'].includes(step.action));
+  if (!changes.length && from === to && recorded) {
+    log(`The kit is already that of this CLI (${to}).`);
+    pending();
+    return;
+  }
+
+  log(`Kit ${from ?? '(no version recorded)'} -> ${to}${dryRun ? ' (dry run: nothing is written)' : ''}`);
+  if (!base) {
+    log(
+      'No record of how this kit was installed, so a file that differs from the kit cannot be told from one you changed:\n' +
+        "every such file is kept, with the kit's version beside it (--force replaces them instead)."
+    );
+  }
+  for (const [action, title] of UPGRADE_GROUPS) {
+    const paths = plan.filter((step) => step.action === action).map((step) => step.path);
+    if (!paths.length) continue;
+    const note = action === 'conflict' ? `: yours is kept, the kit's is beside it as *${NEW_SUFFIX}` : ':';
+    log(`${title} (${paths.length})${note}\n  ${paths.join('\n  ')}`);
+  }
+  if (!changes.length) log('No file differs from the kit; only the record of the release is brought up to date.');
+  if (dryRun) return;
+
+  applyUpgrade(
+    ws.root,
+    plan.map((step) => (step.action === 'overwrite' ? { ...step, action: 'conflict' } : step)),
+    { force }
+  );
+  log(
+    `Kit is now ${to}. Review it with \`git diff\` (and \`git status\` for new files), then commit.` +
+      (plan.some((step) => step.action === 'conflict') ? `\nMerge each *${NEW_SUFFIX} file into the file beside it, then delete it.` : '') +
+      '\nThen run `aiws sync claude` to regenerate CLAUDE.md and .claude/ from the new agents and skills.'
+  );
 }
 
 export function sync(target = 'claude') {

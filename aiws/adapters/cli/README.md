@@ -12,7 +12,7 @@ aiws discover                  # build aiws/knowledge/
 aiws new REQ-001 && aiws run REQ-001
 ```
 
-Requirements: Node.js 22 or newer, Git, and Claude Code signed in. The package carries the kit it was released with; `aiws init` records that version in `aiws/config/kit-version`, and `aiws run` says so when the CLI and the kit of a workspace are not the same release.
+Requirements: Node.js 22 or newer, Git, and Claude Code signed in. The package carries the kit it was released with; `aiws init` records that version in `aiws/config/kit-version`, and `aiws run` says so when the CLI and the kit of a workspace are not the same release. `aiws upgrade` then brings the kit to the CLI's: it replaces the files you left alone, keeps the ones you changed (with the kit's version beside them as `*.aiws-new` when both changed), and commits nothing.
 
 Documentation, the handbook and the changelog live in the repository: <https://github.com/vannt-dev/aiws-factory>.
 

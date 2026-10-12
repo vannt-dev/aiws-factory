@@ -22,6 +22,7 @@ test('the packed package carries the kit, and aiws init from it creates a whole 
   for (const p of [
     'bin/aiws.js',
     'src/cli.js',
+    'src/kit-manifests/0.5.0.json',
     'kit/config/workflow.yaml',
     'kit/agents/developer.md',
     'kit/templates/en/01-analysis.md',
@@ -53,6 +54,7 @@ test('the packed package carries the kit, and aiws init from it creates a whole 
     'aiws/docs/handbook.vi.md',
     'AGENTS.md',
     'aiws/config/kit-version',
+    'aiws/config/kit-manifest.json',
   ]) {
     assert.ok(fs.existsSync(path.join(project, p)), p);
   }
@@ -72,7 +74,7 @@ test('a workspace whose kit is another release than the CLI is told so, once per
   git(root, ['commit', '-q', '-m', 'an old kit']);
   const r = ok(root, ['status']);
   assert.match(r.stderr, /kit 0\.1\.0 but the CLI is \d+\.\d+\.\d+/);
-  assert.match(r.stderr, /aiws init/);
+  assert.match(r.stderr, /aiws upgrade/);
   ok(root, ['new', 'REQ-001']);
   const run1 = ok(root, ['run', 'REQ-001']);
   assert.match(run1.stderr, /kit 0\.1\.0/);
