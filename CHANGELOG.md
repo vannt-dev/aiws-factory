@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `aiws upgrade [--dry-run] [--force]` brings the kit of a workspace (config,
+  agents, skills, templates, docs, `AGENTS.md`) to that of the installed CLI.
+  A file left as it was installed is replaced; a file the project changed is
+  kept, and when the kit changed it too the kit's version is written beside it
+  as `<file>.aiws-new`, to merge by hand. Files a release dropped are removed
+  when untouched. Nothing is committed, and the working tree has to be clean.
+  `aiws init` now records how each file was installed
+  (`aiws/config/kit-manifest.json`); the CLI carries that record for 0.5.0,
+  which wrote none, so a workspace made with 0.5.0 upgrades the same way.
+
+### Changed
+
+- The notice about a kit of another release now points to `aiws upgrade`.
+
 ## [0.5.0] - 2026-10-11
 
 The CLI installs from npm, and a plan is checked against the workspace

@@ -117,8 +117,8 @@ export class Workspace {
     const cli = cliVersion();
     if (!kit || kit === cli) return false;
     process.stderr.write(
-      `aiws: this workspace has kit ${kit} but the CLI is ${cli}. Compare aiws/config, agents, skills and templates with the ` +
-        'release notes, or run `aiws init` in a scratch folder with this CLI and copy over what changed.\n'
+      `aiws: this workspace has kit ${kit} but the CLI is ${cli}. Run \`aiws upgrade\` (first with --dry-run to see what it ` +
+        'would change): it replaces the files you left alone and keeps the ones you changed.\n'
     );
     return true;
   }

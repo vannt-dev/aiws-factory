@@ -11,6 +11,10 @@ Usage: aiws <command> [options]        aiws --version | --help
 
 Setup
   aiws init [dir]                      create workspace skeleton (copies the aiws/ kit into a new project)
+  aiws upgrade [--dry-run] [--force]   bring the kit of this workspace (config, agents, skills, templates, docs,
+                                       AGENTS.md) to this CLI's: files you left alone are replaced, files you
+                                       changed are kept, with the kit's version beside them as *.aiws-new when
+                                       it changed too (--force replaces those instead); nothing is committed
   aiws detect [--write] [--force]      recognise the stack of each source-* dir (any language) and propose
                                        sides + build/test commands; --write merges them into policies.yaml
   aiws sync claude                     generate CLAUDE.md + .claude/ (agents, skills, settings, hooks) from aiws/
@@ -114,6 +118,9 @@ export async function main(argv) {
       return 0;
     case 'init':
       C.init(a1);
+      return 0;
+    case 'upgrade':
+      C.upgrade({ dryRun: Boolean(flags['dry-run']), force: Boolean(flags.force) });
       return 0;
     case 'sync':
       C.sync(a1 ?? 'claude');
