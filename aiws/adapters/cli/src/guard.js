@@ -11,6 +11,19 @@ const WRITE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 const READ_TOOLS = new Set(['Read']);
 // Claude Code on Windows also has a PowerShell tool; it gets the same command checks as Bash.
 const SHELL_TOOLS = new Set(['Bash', 'PowerShell']);
+/**
+ * What `aiws sync` writes for the tools: their agents, skills and, above all, the hook that calls this guard.
+ * No agent working on a requirement writes there, whatever the workspace's policies.yaml lists.
+ */
+const TOOL_PATHS = ['.claude/**', '.opencode/**', '.agents/**', '.codex/**'];
+/** Antigravity's tools, as the tools this guard knows. */
+const ANTIGRAVITY_TOOLS = {
+  run_command: 'Bash',
+  view_file: 'Read',
+  write_to_file: 'Write',
+  replace_file_content: 'Edit',
+  multi_replace_file_content: 'MultiEdit',
+};
 
 /**
  * Works out which REQ / phase / task the current session acts for.
@@ -84,7 +97,7 @@ export function decide(ws, input, env = process.env) {
     if (ctx.source === 'env') return deny(`writing outside the workspace (${target}) is not allowed during ${ctx.req} ${ctx.phase}`);
     return { allow: true };
   }
-  if (matcher(pol.protected_paths)(rel)) return deny(`${rel} is protected; agents may never write it`);
+  if (matcher([...(pol.protected_paths ?? []), ...TOOL_PATHS])(rel)) return deny(`${rel} is protected; agents may never write it`);
   if (ctx.status !== 'running') {
     return deny(
       `${ctx.req} is '${ctx.status}' in phase ${ctx.phase}; no agent writes are allowed until a human acts (aiws status ${ctx.req})`
@@ -234,8 +247,9 @@ export function stripLiteralText(command) {
 }
 
 /** Hook entry point: reads the tool call JSON from stdin, exits 2 with a reason to block. */
-export async function runHook(ws, { bash = false } = {}) {
+export async function runHook(ws, { bash = false, from = 'claude' } = {}) {
   const raw = await readStdin();
+  if (from === 'antigravity') return antigravityHook(ws, raw);
   let input;
   try {
     input = JSON.parse(raw || '{}');
@@ -250,6 +264,46 @@ export async function runHook(ws, { bash = false } = {}) {
     return 2;
   } catch (e) {
     return failClosed(e.message);
+  }
+}
+
+/**
+ * The tool call as Antigravity hands it to a hook, `{ toolCall: { name, args } }`, in the words `decide` reads;
+ * null when it is no tool call. A file tool names its target `TargetFile` (writes) or `AbsolutePath` (reads).
+ */
+export function fromAntigravity(payload) {
+  const call = payload?.toolCall;
+  if (!call || typeof call !== 'object' || typeof call.name !== 'string') return null;
+  const args = call.args && typeof call.args === 'object' ? call.args : {};
+  const tool = ANTIGRAVITY_TOOLS[call.name];
+  if (!tool) return { tool_name: call.name, tool_input: {} };
+  if (tool === 'Bash') return { tool_name: 'Bash', tool_input: { command: String(args.CommandLine ?? '') } };
+  return { tool_name: tool, tool_input: { file_path: args.TargetFile ?? args.AbsolutePath } };
+}
+
+/**
+ * Antigravity reads a decision from stdout and takes silence for no objection, so a refusal is
+ * `{"decision": "deny", "reason": ...}` with exit 0. What cannot be decided is refused inside an orchestrated
+ * run and let through in a maintainer session, as under Claude Code.
+ */
+function antigravityHook(ws, raw) {
+  const refuse = (reason) => {
+    process.stdout.write(JSON.stringify({ decision: 'deny', reason }) + '\n');
+    return 0;
+  };
+  const undecided = (msg) => (process.env.AIWS_PHASE ? refuse(`AIWS guard error: ${msg}`) : 0);
+  let input;
+  try {
+    input = fromAntigravity(JSON.parse(raw || '{}'));
+  } catch {
+    return undecided('could not parse hook input');
+  }
+  if (!input) return undecided('hook input is not a tool call');
+  try {
+    const d = decide(ws, { cwd: ws.root, ...input });
+    return d.allow ? 0 : refuse(d.reason);
+  } catch (e) {
+    return undecided(e.message);
   }
 }
 

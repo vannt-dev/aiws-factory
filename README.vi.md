@@ -24,6 +24,7 @@ source-legacy/        hệ thống cũ, chỉ đọc
 aiws/                 rule, agent, skill, template, knowledge, work, CLI điều phối
 AGENTS.md             quy tắc chung cho mọi AI
 CLAUDE.md, .claude/   sinh bởi `aiws sync claude`, không sửa tay
+.codex/, .opencode/, .agents/   sinh bởi `aiws sync codex|opencode|antigravity`, khi bạn dùng các công cụ đó
 ```
 
 ## Bắt đầu nhanh
@@ -37,6 +38,7 @@ npm install -g aiws-factory   # lệnh `aiws` kèm bộ kit của bản phát h�
 aiws init my-project && cd my-project && git init   # workspace mới (trong bản clone thì bỏ qua: repo đã là workspace)
 aiws detect --write      # nhận diện stack của từng thư mục source-*
 aiws sync claude         # sinh CLAUDE.md và .claude/
+aiws sync opencode       # hoặc codex, antigravity: cùng agent, skill và guard cho công cụ đó
 aiws discover            # lập aiws/knowledge/
 aiws new REQ-001 && aiws run REQ-001
 ```

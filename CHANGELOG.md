@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `aiws sync codex`, `aiws sync opencode` and `aiws sync antigravity` generate
+  what each of those tools reads of a project from `aiws/`, as `aiws sync
+  claude` does for Claude Code: one agent per agent, the skills (in
+  `.agents/skills/`, which all three read), and the guard. OpenCode gets a
+  plugin and Antigravity a hook that ask `aiws guard`, so the write scope of a
+  phase, protected paths and secrets hold there too; Codex has no hook, and
+  its agents without a write tool run in the read-only sandbox. Only files
+  the sync wrote are replaced or removed, and `.codex/config.toml` and
+  `.agents/hooks.json` keep what was already in them. `aiws run` still drives
+  `claude` and `codex`; the two others are for interactive sessions.
+- `aiws guard --from antigravity` reads a tool call as Antigravity hands it
+  to a hook and answers the way Antigravity expects.
+- No agent working on a requirement may write the folders the tools are
+  configured in (`.claude/`, `.codex/`, `.opencode/`, `.agents/`), whatever a
+  workspace's `policies.yaml` lists; the kit's `policies.yaml` lists them too.
+
 - `aiws upgrade [--dry-run] [--force]` brings the kit of a workspace (config,
   agents, skills, templates, docs, `AGENTS.md`) to that of the installed CLI.
   A file left as it was installed is replaced; a file the project changed is

@@ -164,6 +164,9 @@ export function sync(target = 'claude') {
   const written = getAdapter(target).sync(ws);
   log(`Generated for ${target}:`);
   for (const f of written) log(`  ${f}`);
+  if (target === 'codex') {
+    log('Codex has no guard hook: its sandbox and `aiws check diff-scope` are what checks a run.');
+  }
 }
 
 // ---------------------------------------------------------------- REQ lifecycle

@@ -17,7 +17,10 @@ Setup
                                        it changed too (--force replaces those instead); nothing is committed
   aiws detect [--write] [--force]      recognise the stack of each source-* dir (any language) and propose
                                        sides + build/test commands; --write merges them into policies.yaml
-  aiws sync claude                     generate CLAUDE.md + .claude/ (agents, skills, settings, hooks) from aiws/
+  aiws sync <claude|codex|opencode|antigravity>
+                                       generate what the tool reads of a project from aiws/: its agents, the skills
+                                       and the guard hook (claude: CLAUDE.md + .claude/; codex: .codex/, no hook;
+                                       opencode: .opencode/; antigravity: .agents/). Default: claude
   aiws discover [--branch[=NAME]] [--since[=REV]]
                                        build aiws/knowledge/ from source-* (run once, and after big changes);
                                        --branch commits on a new branch, for a pull request; --since updates
@@ -58,7 +61,8 @@ Checks (for CI and debugging)
   aiws check approvals --req R
   aiws check api-contract --req R      lint api-contract.yaml and compare it with the backend's OpenAPI document
   aiws check build                     run every <side>_build and <side>_test command of policies.yaml
-  aiws guard [--bash]                  Claude Code PreToolUse hook (reads tool JSON on stdin)
+  aiws guard [--bash] [--from antigravity]
+                                       the PreToolUse hook the tools call (reads the tool call as JSON on stdin)
 `;
 
 export function version() {
@@ -77,6 +81,7 @@ const VALUE_FLAGS = new Set([
   '--budget',
   '--out',
   '--profile',
+  '--from',
 ]);
 
 export function parseArgs(argv) {
@@ -191,7 +196,7 @@ export async function main(argv) {
       } catch {
         return 0; // not an AIWS workspace: nothing to guard
       }
-      return runHook(ws, { bash: Boolean(flags.bash) });
+      return runHook(ws, { bash: Boolean(flags.bash), from: typeof flags.from === 'string' ? flags.from : 'claude' });
     }
     case 'where':
       C.where();
