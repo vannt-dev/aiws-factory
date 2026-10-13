@@ -8,6 +8,7 @@ npm install -g aiws-factory        # puts the `aiws` command on your PATH
 cd my-project && git init && git add -A && git commit -m "aiws workspace"
 aiws detect --write            # recognise the stack of each source-* folder
 aiws sync claude               # generate CLAUDE.md and .claude/
+aiws sync opencode             # or codex, antigravity: agents, skills and the guard for that tool
 aiws discover                  # build aiws/knowledge/
 aiws new REQ-001 && aiws run REQ-001
 ```

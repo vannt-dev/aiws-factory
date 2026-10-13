@@ -38,6 +38,11 @@ export function cleanEnv(extra = {}) {
   }
   // inherited from the outer `node --test`; it makes the sample project's own `node --test` always exit 0
   delete env.NODE_TEST_CONTEXT;
+  // set by git for a hook: with them, the `git init` and `git commit` of a throwaway workspace would act on the
+  // repository the hook runs for
+  for (const k of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_PREFIX', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_NAMESPACE']) {
+    delete env[k];
+  }
   Object.assign(env, {
     GIT_AUTHOR_NAME: 'Tester',
     GIT_AUTHOR_EMAIL: 'tester@example.com',

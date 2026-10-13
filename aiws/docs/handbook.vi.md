@@ -29,7 +29,7 @@ Bạn dựng workspace một lần. Chi tiết nằm ở [mục 1 và 2](https:/
 2. Đưa code vào `source-fe/`, `source-be/` và `source-legacy/`.
 3. Chạy `aiws detect --write` và kiểm tra các lệnh build, test mà nó ghi vào `aiws/config/policies.yaml`.
 4. Điền `aiws/skills/fe-conventions` và `aiws/skills/be-conventions` bằng convention thật của code.
-5. Chạy `aiws sync claude`, rồi `aiws discover`, và sửa lại những gì discovery ghi trong `aiws/knowledge/`.
+5. Chạy `aiws sync claude` (hoặc `codex`, `opencode`, `antigravity` cho các công cụ đó; xem `aiws/README.vi.md`), rồi `aiws discover`, và sửa lại những gì discovery ghi trong `aiws/knowledge/`.
 
 Trước khi đi tiếp, hãy chạy `aiws check build`. Lệnh này chạy mọi lệnh build và test đã cấu hình. Nếu bây giờ nó lỗi thì về sau task nào cũng lỗi vì cùng lý do.
 

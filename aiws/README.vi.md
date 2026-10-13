@@ -49,6 +49,16 @@ Không muốn `npm link` thì gọi `node aiws/adapters/cli/bin/aiws.js <lệnh>
 2. **Khai báo lệnh build/test**: chạy `aiws detect` để xem đề xuất, rồi `aiws detect --write` để ghi vào `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Kiểm tra lại. Lệnh chạy tại gốc workspace; có thể viết riêng cho từng OS: `{windows: ..., posix: ...}`.
 3. **Chốt convention**: mở Claude Code tại gốc, trên `main`, và yêu cầu: *"Đọc source-fe/, điền aiws/skills/fe-conventions/SKILL.md bằng convention THẬT, mỗi ý kèm file ví dụ, chỗ không chắc đánh dấu [CẦN XÁC NHẬN]"*. Làm tương tự với `be-conventions`. Người đọc lại và sửa.
 4. **Sinh cấu hình Claude**: `aiws sync claude`. Lệnh này sinh `CLAUDE.md`, `.claude/agents`, `.claude/skills` và `.claude/settings.json` (deny rules + hook guard). Chạy lại mỗi khi sửa `aiws/`.
+
+   **Công cụ khác.** Cùng bộ agent và skill đó có thể sinh cho ba công cụ nữa, để làm việc tương tác bên cạnh Claude Code hoặc thay cho nó. Mỗi công cụ tự đọc `AGENTS.md`.
+
+   | Lệnh | Sinh ra | Guard |
+   | --- | --- | --- |
+   | `aiws sync codex` | `.codex/agents/<id>.toml`, một khối có đánh dấu trong `.codex/config.toml` (phần còn lại của file được giữ nguyên), skill trong `.agents/skills/` | không có: Codex không có hook mà guard này dùng được, nên sandbox của nó (read-only với agent không có công cụ ghi) và `aiws check diff-scope` là thứ kiểm tra một lần chạy |
+   | `aiws sync opencode` | `.opencode/agents/<id>.md` với `permission` theo công cụ của agent, skill trong `.agents/skills/`, `.opencode/plugins/aiws-guard.js` | plugin hỏi `aiws guard` trước khi đọc hay ghi file và trước khi chạy lệnh |
+   | `aiws sync antigravity` | `.agents/agents/<id>/agent.md`, skill trong `.agents/skills/`, mục riêng của nó trong `.agents/hooks.json` (các mục khác được giữ) | hook chạy `aiws guard --from antigravity` |
+
+   Guard áp cùng một bộ luật dù công cụ nào gọi nó: phạm vi ghi của phase, đường dẫn được bảo vệ, bí mật, và các lệnh chỉ người mới được chạy. Chính các thư mục này cũng được bảo vệ: agent đang làm cho một requirement không được ghi vào `.claude/`, `.codex/`, `.opencode/` hay `.agents/`. Chỉ những file do sync sinh ra mới bị thay hoặc xoá, nên agent và hook của riêng bạn trong các thư mục đó vẫn còn. `aiws run` vẫn chỉ điều khiển `claude` hoặc `codex`; OpenCode và Antigravity dành cho phiên tương tác.
 5. **Discovery**: `aiws discover`, sau đó review `aiws/knowledge/*` và sửa chỗ sai. Commit. Về sau, khi code đã đổi, `aiws discover --since` chỉ cập nhật knowledge cho các file nguồn đổi kể từ lần commit knowledge gần nhất (không chạy AI nếu không có gì đổi). Kết quả được commit vào nhánh đang đứng. Nếu nhánh đó được bảo vệ, hãy chạy `aiws discover --branch`: knowledge sẽ nằm trên nhánh mới `aiws/discover-YYYYMMDD` (hoặc `--branch=TÊN`), bạn push và merge qua pull request trước lần `aiws new` đầu tiên.
 6. **Viết requirement**: `requirements/REQ-001-<tên>.md`, rồi commit.
 

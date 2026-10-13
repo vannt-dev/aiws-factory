@@ -29,7 +29,7 @@ Set the workspace up once. The operations guide has the details in [sections 1 a
 2. Put your code into `source-fe/`, `source-be/` and `source-legacy/`.
 3. Run `aiws detect --write` and check the build and test commands it wrote to `aiws/config/policies.yaml`.
 4. Fill in `aiws/skills/fe-conventions` and `aiws/skills/be-conventions` with the real conventions of your code.
-5. Run `aiws sync claude`, then `aiws discover`, and correct what discovery wrote in `aiws/knowledge/`.
+5. Run `aiws sync claude` (or `codex`, `opencode`, `antigravity` for those tools; see `aiws/README.md`), then `aiws discover`, and correct what discovery wrote in `aiws/knowledge/`.
 
 Before you go on, run `aiws check build`. It runs every configured build and test command. If it fails now, every task will fail later for the same reason.
 

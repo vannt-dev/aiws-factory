@@ -34,6 +34,9 @@ protected_paths:            # không agent nào được ghi, ở mọi phase
   - AGENTS.md
   - CLAUDE.md
   - .claude/**
+  - .codex/**             # aiws sync codex
+  - .opencode/**          # aiws sync opencode
+  - .agents/**            # aiws sync antigravity; skills of Codex and OpenCode
   - .github/**            # CI, templates, community files
   - LICENSE
   - README.md
@@ -56,6 +59,9 @@ maintainer_editable:
   - AGENTS.md
   - CLAUDE.md
   - .claude/**
+  - .codex/**
+  - .opencode/**
+  - .agents/**
   - .github/**
   - LICENSE
   - README.md

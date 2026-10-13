@@ -49,6 +49,16 @@ Without `npm link`, run `node aiws/adapters/cli/bin/aiws.js <command>` from the 
 2. **Declare build/test commands**: run `aiws detect` to see the proposal, then `aiws detect --write` to merge it into `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Review the result. Commands run from the workspace root and may differ per OS: `{windows: ..., posix: ...}`.
 3. **Pin down conventions**: open Claude Code at the root, on `main`, and ask: *"Read source-fe/ and fill aiws/skills/fe-conventions/SKILL.md with the REAL conventions in use, each with an example file; mark anything uncertain with [CẦN XÁC NHẬN]"*. Do the same for `be-conventions`, then review and correct them.
 4. **Generate the Claude configuration**: `aiws sync claude` writes `CLAUDE.md`, `.claude/agents`, `.claude/skills` and `.claude/settings.json` (deny rules and the guard hook). Re-run it whenever `aiws/` changes.
+
+   **Other tools.** The same agents and skills can be generated for three more tools, for interactive work beside Claude Code or instead of it. Each reads `AGENTS.md` by itself.
+
+   | Command | Writes | Guard |
+   | --- | --- | --- |
+   | `aiws sync codex` | `.codex/agents/<id>.toml`, a marked block in `.codex/config.toml` (the rest of that file is left alone), skills in `.agents/skills/` | none: Codex has no hook this guard can use, so its sandbox (read-only for an agent without a write tool) and `aiws check diff-scope` check a run |
+   | `aiws sync opencode` | `.opencode/agents/<id>.md` with `permission` from the agent's tools, skills in `.agents/skills/`, `.opencode/plugins/aiws-guard.js` | the plugin asks `aiws guard` before a file is read or written and before a command runs |
+   | `aiws sync antigravity` | `.agents/agents/<id>/agent.md`, skills in `.agents/skills/`, its own entry in `.agents/hooks.json` (other entries are kept) | the hook runs `aiws guard --from antigravity` |
+
+   The guard applies the same rules whatever tool calls it: the write scope of the phase, protected paths, secrets, and the commands only a human runs. These folders are themselves protected: no agent working on a requirement may write `.claude/`, `.codex/`, `.opencode/` or `.agents/`. Only files the sync wrote are replaced or removed, so agents and hooks of your own in those folders stay. `aiws run` still drives `claude` or `codex` only; OpenCode and Antigravity are for interactive sessions.
 5. **Discovery**: run `aiws discover`, then review and correct `aiws/knowledge/*` and commit. Later, after code changes, `aiws discover --since` updates the knowledge base for the source files changed since the last knowledge commit only (no AI run when nothing changed). The result is committed on the current branch. When that branch is protected, run `aiws discover --branch` instead: the knowledge base goes to a new `aiws/discover-YYYYMMDD` branch (or `--branch=NAME`), which you push and merge through a pull request before the first `aiws new`.
 6. **Write a requirement** in `requirements/REQ-001-<name>.md` and commit it.
 
