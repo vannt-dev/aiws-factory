@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-13
+
+A workspace follows the CLI to a new release with one command, and the
+agents, skills and guard of a project reach Codex, OpenCode and Antigravity
+as they reach Claude Code.
+
 ### Added
 
 - `aiws sync codex`, `aiws sync opencode` and `aiws sync antigravity` generate
@@ -24,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No agent working on a requirement may write the folders the tools are
   configured in (`.claude/`, `.codex/`, `.opencode/`, `.agents/`), whatever a
   workspace's `policies.yaml` lists; the kit's `policies.yaml` lists them too.
-
 - `aiws upgrade [--dry-run] [--force]` brings the kit of a workspace (config,
   agents, skills, templates, docs, `AGENTS.md`) to that of the installed CLI.
   A file left as it was installed is replaced; a file the project changed is
@@ -318,7 +323,8 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.2.0...v0.3.0
