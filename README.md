@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js ≥ 22](https://img.shields.io/badge/node-%E2%89%A5%2022-339933.svg)](aiws/adapters/cli/package.json)
 [![Website](https://img.shields.io/badge/website-vannt--dev.github.io-4f46e5.svg)](https://vannt-dev.github.io/aiws-factory/)
+[![Official vannt-dev build](https://vannt-dev.github.io/badges/official.svg)](https://vannt-dev.github.io/official.html)
 
 **Language:** English · [Tiếng Việt](README.vi.md)
 
