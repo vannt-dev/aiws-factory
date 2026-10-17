@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import YAML from 'yaml';
-import { AiwsError, log, nowIso, writeText, writeYaml, readTextIfExists, runShell, osCommand, fill } from './util.js';
+import { AiwsError, log, warn, nowIso, writeText, writeYaml, readTextIfExists, runShell, osCommand, fill } from './util.js';
 import * as G from './git.js';
 import * as DS from './diffscope.js';
 import * as Lock from './lock.js';
@@ -257,7 +257,68 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
     else stepAgentPhase(ws, st, def);
     if (st.paused || once) break; // paused: the status stays running, so without this the same step would spin
   }
+  st = loadState(ws, req);
+  const gate = st.status === 'waiting_human' ? ws.phaseDef(st.phase) : null;
+  if (gate?.gate === 'pr' && gate.via === 'git_host' && ws.runtime.pull_request && !st.pr_url) {
+    openDraftPr(ws, st);
+  }
   return loadState(ws, req);
+}
+
+/**
+ * `runtime.yaml -> pull_request`: at the PR gate, pushes the branch and runs the configured command, which
+ * opens a draft pull request ({branch}, {base}, {title}, {body_file} are filled in). The last URL it prints is
+ * kept in the state. Nothing here is required: a failure is reported and the gate stays as it was, waiting for
+ * the human to open the pull request.
+ */
+function openDraftPr(ws, st) {
+  const req = st.req_id;
+  const cfg = ws.runtime.pull_request;
+  const command = osCommand(cfg.command);
+  if (!command) return;
+  const remote = cfg.remote ?? 'origin';
+  const base = st.base_branch ?? ws.baseBranch();
+  const bodyRel = ws.workRel(req, 'pr-body.md');
+  writeText(ws.abs(bodyRel), prBody(st));
+  commitWork(ws, st, `chore(${req}): pull request description`);
+
+  const failed = (what) => {
+    warn(`draft pull request not opened: ${what}. Open it yourself; the gate is unchanged.`);
+    addHistory(st, { phase: st.phase, result: 'draft_pr_failed', reason: what.slice(0, 300) });
+    commitWork(ws, st, `chore(${req}): draft pull request not opened`);
+  };
+  const push = G.git(ws.root, ['push', '-u', remote, st.branch], { allowFail: true });
+  if (push.status !== 0) return failed(`git push ${remote} ${st.branch} failed: ${(push.stderr || push.stdout).trim()}`);
+  const title = `${req}: ${st.title ?? req}`.replace(/["\r\n]+/g, ' ');
+  const line = fill(command, { branch: st.branch, base, title, body_file: bodyRel, req });
+  const res = runShell(line, { cwd: ws.root, env: cleanEnv({}), timeout: 2 * 60 * 1000 });
+  if (res.status !== 0) return failed(`the command exited ${res.status}: ${(res.stderr || res.stdout).trim()}`);
+  const url = (res.stdout.match(/https?:\/\/\S+/g) ?? []).at(-1) ?? null;
+  if (url) st.pr_url = url;
+  addHistory(st, { phase: st.phase, result: 'draft_pr', url });
+  commitWork(ws, st, `chore(${req}): draft pull request opened`);
+  // the branch on the host carries the state that records the pull request, so the merged branch is this one
+  G.git(ws.root, ['push', remote, st.branch], { allowFail: true });
+  log(`  draft pull request opened${url ? `: ${url}` : ''}`);
+}
+
+/** What the draft pull request says: the tasks with their commits, and where the documents are. */
+function prBody(st) {
+  const work = `aiws/work/${st.req_id}`;
+  return [
+    `Requirement ${st.req_id}${st.title ? `: ${st.title}` : ''} (\`${st.requirement ?? ''}\`).`,
+    '',
+    '## Tasks',
+    ...st.tasks.map((t) => `- ${t.id} ${t.title ?? ''}${t.commit ? ` (${String(t.commit).slice(0, 7)})` : ''}`),
+    '',
+    '## Documents',
+    `- Design: \`${work}/02-design.md\`, test specification: \`${work}/03-test-spec.md\``,
+    `- Review: \`${work}/05-review.md\`, trace: \`${work}/trace.md\``,
+    `- \`aiws report ${st.req_id}\` gathers everything into one page.`,
+    '',
+    `After the merge, run \`aiws approve ${st.req_id} pr\`.`,
+    '',
+  ].join('\n');
 }
 
 function assertOnBranch(ws, st) {

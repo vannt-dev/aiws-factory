@@ -687,3 +687,53 @@ test('unit_test runs: 2 passes a task whose tests pass every run', () => {
   const t1 = state(root).tasks.find((t) => t.id === 'T1');
   assert.equal(t1.status, 'done', t1.last_failure);
 });
+
+test('pull_request in runtime.yaml: at the PR gate the branch is pushed and a draft pull request opened', () => {
+  const root = makeWorkspace({ discover: true });
+  const remote = tempDir('aiws-remote-');
+  git(remote, ['init', '-q', '--bare']);
+  git(root, ['remote', 'add', 'origin', remote]);
+  const script = path.join(tempDir('aiws-pr-'), 'create-pr.cjs');
+  const calls = `${script}.calls`;
+  fs.writeFileSync(
+    script,
+    `const fs = require('fs');\n` +
+      `fs.writeFileSync(${JSON.stringify(calls)}, JSON.stringify(process.argv.slice(2)));\n` +
+      `console.log('Creating draft pull request');\n` +
+      `console.log('https://example.test/acme/shop/pull/7');\n`
+  );
+  const rtFile = path.join(root, 'aiws/config/runtime.yaml');
+  const rt = YAML.parse(fs.readFileSync(rtFile, 'utf8'));
+  rt.pull_request = { command: `node "${script}" "{branch}" "{base}" "{title}" "{body_file}"` };
+  fs.writeFileSync(rtFile, YAML.stringify(rt));
+  git(root, ['commit', '-qam', 'open draft pull requests']);
+
+  toImplementation(root);
+  ok(root, ['run', 'REQ-001']);
+  const st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+  assert.equal(st.pr_url, 'https://example.test/acme/shop/pull/7');
+  const [branch, base, title, bodyFile] = JSON.parse(fs.readFileSync(calls, 'utf8'));
+  assert.deepEqual([branch, base], ['aiws/REQ-001', 'main']);
+  assert.match(title, /^REQ-001/);
+  assert.match(fs.readFileSync(path.join(root, bodyFile), 'utf8'), /T1/);
+  // the remote has the branch as it is locally, state commit with the URL included
+  assert.equal(git(remote, ['rev-parse', 'aiws/REQ-001']), git(root, ['rev-parse', 'aiws/REQ-001']));
+  assert.equal(git(root, ['status', '--porcelain']), '');
+});
+
+test('pull_request: a failing command leaves the gate as it was and says so', () => {
+  const root = makeWorkspace({ discover: true });
+  const rtFile = path.join(root, 'aiws/config/runtime.yaml');
+  const rt = YAML.parse(fs.readFileSync(rtFile, 'utf8'));
+  rt.pull_request = { command: 'node -e "process.exit(3)"' };
+  fs.writeFileSync(rtFile, YAML.stringify(rt));
+  git(root, ['commit', '-qam', 'open draft pull requests']);
+  toImplementation(root);
+  const r = ok(root, ['run', 'REQ-001']);
+  const st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+  assert.equal(st.pr_url, undefined);
+  assert.match(r.out, /draft pull request not opened/);
+  assert.equal(git(root, ['status', '--porcelain']), '');
+});
