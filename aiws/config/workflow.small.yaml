@@ -38,6 +38,7 @@ phases:
       - agent: developer
         contract: contracts/implementation.yaml
       - builtin: unit_test
+        runs: 1                    # 2 = chạy lại cả suite; qua một lần, lỗi một lần -> task fail với lỗi "flaky"
     on_fail: {retry: 3, then: blocked}
     on_question: design_change_requested
     next: review

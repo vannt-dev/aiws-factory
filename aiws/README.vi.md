@@ -145,7 +145,7 @@ Diff-scope là đảm bảo thật; hook chỉ giúp chặn sớm. Diff-scope **
 
 | File | Nội dung |
 | --- | --- |
-| `config/workflow.yaml` | Phase, thứ tự, gate, retry, route khi fail/critical. `language: vi|en` chọn ngôn ngữ của mọi tài liệu agent viết. `workflow.<tên>.yaml` là một profile mà requirement có thể chạy theo (`aiws new --profile <tên>`); `small` chỉ có một bước design, test spec do architect viết luôn. Không có lệnh "skip phase": muốn bỏ thì sửa file này qua review. |
+| `config/workflow.yaml` | Phase, thứ tự, gate, retry, route khi fail/critical. `language: vi|en` chọn ngôn ngữ của mọi tài liệu agent viết. `workflow.<tên>.yaml` là một profile mà requirement có thể chạy theo (`aiws new --profile <tên>`); `small` chỉ có một bước design, test spec do architect viết luôn. `runs: 2` ở bước `unit_test` chạy mỗi suite hai lần: suite qua một lần, lỗi một lần thì task fail với lỗi "flaky", để test phụ thuộc thời gian hay thứ tự không qua nhờ may mắn (mỗi lần chạy có giới hạn 30 phút riêng). Không có lệnh "skip phase": muốn bỏ thì sửa file này qua review. |
 | `config/policies.yaml` | `protected_paths`, `maintainer_editable`, `read_deny`, `phase_write_scope`, `commands`, `bash_denylist`, `limits`, `approvals.require_signed`. |
 | `config/runtime.yaml` | Adapter theo phase, map `model_hint` sang model (`opus`/`sonnet`), timeout, `guard_command`, `wait` (nhịp chạy lại của `--wait`), `notify` (lệnh hoặc webhook báo khi run dừng: tới gate, bị chặn, 80% ngân sách, tạm dừng vì hạn mức). |
 | `config/contracts/*.yaml` | Mỗi phase: agent, skills, tools, reads, outputs (heading bắt buộc, template), rules, checks, `max_attempts`. |

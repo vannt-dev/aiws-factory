@@ -667,7 +667,8 @@ function stepLoop(ws, st, def) {
   }
   if (!errors.length && testStep) {
     testsRan = true;
-    errors.push(...runUnitTests(ws, st, task, attempt, r.runId).map((m) => ({ kind: 'invalid', message: m })));
+    const runs = testStep.runs ?? 1;
+    errors.push(...runUnitTests(ws, st, task, attempt, r.runId, runs).map((m) => ({ kind: 'invalid', message: m })));
   }
 
   r.evidence.validation = errors;
@@ -736,8 +737,12 @@ export function tcPattern(tc) {
   return { test: (s) => standalone.test(s) || camel.test(s) };
 }
 
-/** Runs the full test suite of every side the task touches, records evidence, checks TC ids are referenced. */
-function runUnitTests(ws, st, task, attempt, runId) {
+/**
+ * Runs the full test suite of every side the task touches `runs` times, records evidence, checks TC ids are
+ * referenced. A suite that passes on one run and fails on another is reported as flaky: a test that depends on
+ * timing or order would otherwise pass by luck.
+ */
+function runUnitTests(ws, st, task, attempt, runId, runs = 1) {
   const req = st.req_id;
   const failures = [];
   const results = [];
@@ -750,16 +755,32 @@ function runUnitTests(ws, st, task, attempt, runId) {
       );
       continue;
     }
-    const started = Date.now();
-    const res = runShell(cmd, { cwd: ws.root, env: cleanEnv({}), timeout: 30 * 60 * 1000 });
-    results.push({
-      side,
-      command: cmd,
-      exit_code: res.status,
-      duration_ms: Date.now() - started,
-      output_tail: tail(res.stdout + '\n' + res.stderr, 4000),
-    });
-    if (res.status !== 0) failures.push(`${side} tests failed (${cmd}):\n${tail(res.stdout + '\n' + res.stderr, 3000)}`);
+    const outcomes = [];
+    for (let run = 1; run <= runs; run++) {
+      const started = Date.now();
+      const res = runShell(cmd, { cwd: ws.root, env: cleanEnv({}), timeout: 30 * 60 * 1000 });
+      const output = res.stdout + '\n' + res.stderr;
+      results.push({
+        side,
+        ...(runs > 1 ? { run } : {}),
+        command: cmd,
+        exit_code: res.status,
+        duration_ms: Date.now() - started,
+        output_tail: tail(output, 4000),
+      });
+      outcomes.push({ run, ok: res.status === 0, output });
+    }
+    const failed = outcomes.filter((o) => !o.ok);
+    if (!failed.length) continue;
+    const passed = outcomes.filter((o) => o.ok);
+    if (passed.length) {
+      failures.push(
+        `${side} tests are flaky: passed run ${passed.map((o) => o.run).join(', ')}, failed run ${failed.map((o) => o.run).join(', ')} ` +
+          `(${cmd}). Make them independent of timing and order:\n${tail(failed[0].output, 3000)}`
+      );
+    } else {
+      failures.push(`${side} tests failed (${cmd}):\n${tail(failed[0].output, 3000)}`);
+    }
   }
 
   // every test case of the task must be referenced (by id) in a file the task changed
