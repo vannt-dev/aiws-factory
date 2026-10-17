@@ -28,6 +28,7 @@ import * as DS from './diffscope.js';
 import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 import { notify, stopEvent } from './notify.js';
 import { buildReport, renderHtml } from './report.js';
+import { pipelineSteps, pipelineText } from './pipeline.js';
 import { checkApiContract } from './apicontract.js';
 import {
   MANIFEST_REL,
@@ -375,8 +376,12 @@ export function status(req) {
     log(`${st.req_id}  ${st.title}`);
     log(`  branch: ${st.branch}   phase: ${st.phase}   status: ${st.status}${st.profile ? `   profile: ${st.profile}` : ''}`);
     if (st.reason) log(`  reason: ${st.reason}`);
-    const usage = statsLine(runStats(ws, r));
+    if (st.pr_url) log(`  pull request: ${st.pr_url}`);
+    const stats = runStats(ws, r);
+    const usage = statsLine(stats);
     if (usage) log(`  ${usage}`);
+    log('  pipeline:');
+    for (const line of pipelineText(pipelineSteps(ws.workflow, st, stats))) log(`    ${line}`);
     const budget = budgetLine(budgetStatus(ws, st));
     if (budget) log(`  ${budget}`);
     if (st.tasks.length) {

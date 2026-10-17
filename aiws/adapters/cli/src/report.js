@@ -4,6 +4,7 @@ import { readTextIfExists, readYaml } from './util.js';
 import { listApprovals } from './gate.js';
 import { buildTrace } from './trace.js';
 import { runStats } from './stats.js';
+import { pipelineSteps, pipelineHtml, PIPELINE_STYLE } from './pipeline.js';
 
 /**
  * One page per requirement: what a person reads at a gate, in one place instead of a dozen files.
@@ -15,6 +16,7 @@ export function buildReport(ws, st) {
   const req = st.req_id;
   const work = (f) => readTextIfExists(ws.abs(ws.workRel(req, f)));
   const evidence = path.join(ws.workDir(req), 'evidence');
+  const stats = runStats(ws, req);
   return {
     req,
     title: st.title ?? '',
@@ -25,7 +27,9 @@ export function buildReport(ws, st) {
     reason: st.reason ?? '',
     paused: st.paused ?? null,
     budget_usd: typeof st.budget_usd === 'number' ? st.budget_usd : null,
-    stats: runStats(ws, req),
+    stats,
+    pipeline: pipelineSteps(ws.workflow, st, stats),
+    pr_url: st.pr_url ?? '',
     tasks: (st.tasks ?? []).map((t) => ({
       id: t.id,
       title: t.title ?? '',
@@ -169,6 +173,8 @@ export function renderHtml(d, { generatedAt = new Date().toISOString() } = {}) {
     `<p class="muted">${esc(d.requirement)} · branch <code>${esc(d.branch)}</code> · generated ${esc(generatedAt)} by <code>aiws report</code></p>`
   );
   parts.push(`<div class="cards">${cards}</div>`);
+  if (d.pipeline?.length) parts.push(pipelineHtml(d.pipeline, esc));
+  if (d.pr_url) parts.push(`<p>Pull request: <a href="${esc(d.pr_url)}">${esc(d.pr_url)}</a></p>`);
   if (d.reason) parts.push(`<div class="card"><b>${d.paused ? 'Paused' : 'Why it stopped'}</b><br>${esc(d.reason)}</div>`);
 
   parts.push('<h2>Trace: acceptance criterion → test case → task → commit</h2>');
@@ -263,7 +269,7 @@ export function renderHtml(d, { generatedAt = new Date().toISOString() } = {}) {
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     `<title>${esc(d.req)} — ${esc(d.title)}</title>`,
-    `<style>${STYLE}</style>`,
+    `<style>${STYLE}${PIPELINE_STYLE}</style>`,
     '</head>',
     '<body>',
     parts.join('\n'),

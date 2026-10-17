@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   command that opens a draft pull request (`gh pr create --draft` in the example), with a description
   listing the tasks and documents. The URL is kept in the state. Off unless set; a failed push or
   command is reported and the gate stays as it was.
+- A pipeline in `aiws report` (a row of boxes with a legend) and in `aiws status` (text): each phase
+  done, running, waiting on you or stopped, with its runs, time, cost, review rounds, tasks done and
+  who decided at a gate. The report also links the pull request when one was opened.
 
 ## [0.6.0] - 2026-10-13
 

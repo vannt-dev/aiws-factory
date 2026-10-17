@@ -170,13 +170,13 @@ To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 
 - `aiws/work/REQ/evidence/runs/run-NNNN.json` and `.prompt.md` record the adapter, command, allowed tools, prompt hash, duration, turns, estimated cost, changed files, reverted violations and validation errors.
 - `evidence/test-results/<task>-attempt-N.yaml` records the test command, exit code, a log excerpt and the task's test cases.
-- `aiws report REQ-001` gathers all of the above into one HTML page (`aiws/work/REQ-001/report.html`, or `--out FILE`): status, trace, tasks, approvals, runs with cost, test runs, history and the documents.
+- `aiws report REQ-001` gathers all of the above into one HTML page (`aiws/work/REQ-001/report.html`, or `--out FILE`): status, the pipeline (one box per phase: done, running, waiting on you or stopped, with its runs, time, cost, review rounds and who decided at a gate), the pull request, trace, tasks, approvals, runs with cost, test runs, history and the documents.
 - Task commits carry the trailers `REQ-ID`, `Task`, `Tests` and `AIWS-Run`; `git log --grep "REQ-ID: REQ-001"` lists every change of a requirement.
 - CI runs `aiws check commit-trailer --req REQ-001`, `aiws check approvals --req REQ-001` (enable `require_signed` to require GPG/SSH-signed approvals via `aiws approve --sign`), `aiws trace REQ-001` and `aiws check build`. The last one re-runs every `<side>_build` and `<side>_test` command of `policies.yaml`, so code about to be merged is rebuilt and retested outside the AI run.
 
 ## 8. Cost
 
-`aiws status REQ-001` shows the number of AI runs, their total time and the cumulative cost of the requirement, broken down by phase. `cost_usd` in the evidence is the **API list-price equivalent** reported by Claude Code. With a Claude subscription (Pro/Max) it only counts against your plan's usage limits; with an API key or Console account it is real spend. Run `/status` in Claude Code to see which applies.
+`aiws status REQ-001` shows the number of AI runs, their total time and the cumulative cost of the requirement, broken down by phase, and the same pipeline as the report in text (`[x]` done, `[>]` running, `[?]` waiting on you, `[!]` stopped, `[ ]` not started). `cost_usd` in the evidence is the **API list-price equivalent** reported by Claude Code. With a Claude subscription (Pro/Max) it only counts against your plan's usage limits; with an API key or Console account it is real spend. Run `/status` in Claude Code to see which applies.
 
 `aiws stats` shows the same for every requirement of `aiws/work/` at once, with totals and the cost of each phase across them (total and median per requirement). `aiws estimate` turns the finished requirements into an order of magnitude for the next one: median and range of cost and time, and the median per phase. It reports what finished requirements took, not a forecast; a requirement with more acceptance criteria or tasks costs more.
 
