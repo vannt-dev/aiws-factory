@@ -635,3 +635,55 @@ test('agents never start without a working guard hook (Claude adapter preflight)
   // the scripted adapter has no hook and no preflight: tests and demos are unaffected
   assert.doesNotThrow(() => preflightAdapters({ runtime: { default_adapter: 'scripted' } }, ['analysis']));
 });
+
+/** Points the workspace's be_test at a script whose exit codes follow `codes`, one per run, then 0. */
+function scriptedBeTest(root, codes) {
+  const script = path.join(tempDir('aiws-flaky-'), 'be-test.cjs');
+  const counter = `${script}.count`;
+  fs.writeFileSync(
+    script,
+    `const fs = require('fs');\n` +
+      `const n = fs.existsSync(${JSON.stringify(counter)}) ? Number(fs.readFileSync(${JSON.stringify(counter)}, 'utf8')) : 0;\n` +
+      `fs.writeFileSync(${JSON.stringify(counter)}, String(n + 1));\n` +
+      `const codes = ${JSON.stringify(codes)};\n` +
+      `process.exit(codes[n] ?? 0);\n`
+  );
+  const polFile = path.join(root, 'aiws/config/policies.yaml');
+  const pol = YAML.parse(fs.readFileSync(polFile, 'utf8'));
+  pol.commands.be_test = `node "${script}"`;
+  fs.writeFileSync(polFile, YAML.stringify(pol));
+  const wfFile = path.join(root, 'aiws/config/workflow.yaml');
+  const wf = YAML.parse(fs.readFileSync(wfFile, 'utf8'));
+  wf.phases.find((p) => p.id === 'implementation').steps.find((s) => s.builtin === 'unit_test').runs = 2;
+  fs.writeFileSync(wfFile, YAML.stringify(wf));
+  git(root, ['commit', '-qam', 'test setup']);
+}
+
+test('unit_test runs: 2 fails a task whose tests pass once and fail once, and calls it flaky', () => {
+  const root = makeWorkspace({ discover: true });
+  scriptedBeTest(root, [0, 1]);
+  toImplementation(root);
+  ok(root, ['run', 'REQ-001', '--once']); // planning
+  ok(root, ['run', 'REQ-001', '--once']); // T1 attempt 1
+  const t1 = state(root).tasks.find((t) => t.id === 'T1');
+  assert.equal(t1.test_result, 'fail');
+  assert.match(t1.last_failure, /be tests are flaky: passed run 1, failed run 2/);
+  const evidence = YAML.parse(readFile(root, 'aiws/work/REQ-001/evidence/test-results/T1-attempt-1.yaml'));
+  assert.deepEqual(
+    evidence.suites.filter((s) => s.side === 'be').map((s) => [s.run, s.exit_code]),
+    [
+      [1, 0],
+      [2, 1],
+    ]
+  );
+});
+
+test('unit_test runs: 2 passes a task whose tests pass every run', () => {
+  const root = makeWorkspace({ discover: true });
+  scriptedBeTest(root, [0, 0]);
+  toImplementation(root);
+  ok(root, ['run', 'REQ-001', '--once']); // planning
+  ok(root, ['run', 'REQ-001', '--once']); // T1
+  const t1 = state(root).tasks.find((t) => t.id === 'T1');
+  assert.equal(t1.status, 'done', t1.last_failure);
+});

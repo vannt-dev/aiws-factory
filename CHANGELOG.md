@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `runs: 2` on the `unit_test` step of `workflow.yaml` runs every test suite twice. A suite that passes
+  once and fails once fails the task as flaky, with both runs in the test evidence; the default stays
+  one run.
+
 ## [0.6.0] - 2026-10-13
 
 A workspace follows the CLI to a new release with one command, and the
