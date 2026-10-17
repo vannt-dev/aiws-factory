@@ -28,6 +28,10 @@ test('the report page carries the state, the trace, the tasks, the approvals, th
   assert.match(html, /<title>REQ-001 — User nickname<\/title>/);
   assert.match(html, /<span class="warn">waiting_human<\/span>/);
   assert.match(html, /pr_approval/);
+  // the pipeline row: done steps, the gate that waits, who approved the design
+  assert.match(html, /<div class="step done"><b>analysis<\/b>/);
+  assert.match(html, /<div class="step done gate"><b>design_approval<\/b><span>approved by tuan<\/span>/);
+  assert.match(html, /<div class="step waiting gate"><b>pr_approval<\/b><span>waiting for you<\/span>/);
   // trace rows, tasks and the approval
   assert.match(html, /<td>AC-1<\/td><td>TC-1<\/td><td>T1<\/td><td><code>[0-9a-f]{7}<\/code><\/td><td><span class="ok">pass<\/span><\/td>/);
   assert.match(html, /<td>T2<\/td>/);
