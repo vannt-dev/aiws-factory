@@ -67,14 +67,15 @@ test('runs, status and stats add up the tokens and turns per phase', () => {
   const s = runStats(ws, 'REQ-001');
   assert.deepEqual(s.tokens, { input: 20, cache_write: 2000, cache_read: 3_000_000, output: 60_000 });
   assert.deepEqual(s.tokens_by_phase.design, { input: 10, cache_write: 1000, cache_read: 1_000_000, output: 40_000 });
-  assert.equal(s.turns, 90);
-  assert.equal(s.turns_by_phase.design, 40);
-  assert.match(statsLine(s), /tokens 3\.06M \(98% read from cache, 60k output\), 90 turns/);
+  // the run without token counts (older evidence) leaves its turns out, so turns and tokens describe the same runs
+  assert.equal(s.turns, 80);
+  assert.equal(s.turns_by_phase.design, 30);
+  assert.match(statsLine(s), /tokens 3\.06M \(98% read from cache, 60k output\), 80 turns/);
 
   const text = statsText(workspaceStats(ws));
   assert.match(text, /Tokens per phase/);
   assert.match(text, /analysis\s+50\s+10\s+1\.0k\s+2\.00M\s+20k/);
-  assert.match(text, /design\s+40\s+10\s+1\.0k\s+1\.00M\s+40k/);
+  assert.match(text, /design\s+30\s+10\s+1\.0k\s+1\.00M\s+40k/);
 });
 
 test('a run with several models counts each model once', () => {

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - When a draft pull request was opened, the PR gate still said to open one; it now names the
   pull request. The gate menu counts the open review findings by severity.
+- The turns in `aiws stats` and `aiws status` count only the runs that report tokens, so they match
+  the token columns beside them; runs recorded before 0.7.0 have no token counts.
 
 ## [0.7.0] - 2026-10-18
 
