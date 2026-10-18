@@ -133,7 +133,8 @@ function modelsUsed(ws, req) {
   for (const file of fs.readdirSync(dir).filter((f) => /^run-\d+\.json$/.test(f))) {
     try {
       const m = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')).report?.model;
-      if (m) models.add(String(m));
+      // a run that used several models lists them as "a, b"
+      if (m) for (const one of String(m).split(', ')) models.add(one);
     } catch {
       // unreadable evidence is skipped by runStats as well
     }

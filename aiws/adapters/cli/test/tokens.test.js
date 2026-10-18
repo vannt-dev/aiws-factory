@@ -77,6 +77,16 @@ test('runs, status and stats add up the tokens and turns per phase', () => {
   assert.match(text, /design\s+40\s+10\s+1\.0k\s+1\.00M\s+40k/);
 });
 
+test('a run with several models counts each model once', () => {
+  const root = makeWorkspace();
+  evidence(root, 'REQ-001', [{ phase: 'analysis', turns: 1, tokens: null }]);
+  const file = path.join(root, 'aiws/work/REQ-001/evidence/runs/run-0001.json');
+  const ev = JSON.parse(fs.readFileSync(file, 'utf8'));
+  ev.report.model = 'claude-opus-5-5, claude-haiku-5-5';
+  fs.writeFileSync(file, JSON.stringify(ev));
+  assert.deepEqual(workspaceStats(new Workspace(root)).rows[0].models, ['claude-haiku-5-5', 'claude-opus-5-5']);
+});
+
 test('without token counts the status line and stats stay as they were', () => {
   const root = makeWorkspace();
   evidence(root, 'REQ-001', [{ phase: 'analysis', turns: null, tokens: null }]);
