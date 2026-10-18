@@ -12,6 +12,14 @@ claude:
   # Chạy gọn (mặc định bật): chỉ nạp tool của phase, settings của project (hook guard), không MCP server nào;
   # bỏ plugin/skill/MCP/hook trong settings của user (~20k token mỗi lượt). Đặt false nếu cần apiKeyHelper/env của user.
   # lean: true
+  # MCP server cho agent (tắt mặc định). Ghi ĐỦ tên từng tool (mcp__<server>__<tool>): server có thể có tool ghi
+  # (code-review-graph có refactor), tool không liệt kê bị từ chối. phases bỏ trống = mọi phase. Thư mục dữ liệu
+  # của server (.code-review-graph/) phải nằm trong .gitignore. Đo 18/10 trên repo 90-300 file: không rẻ hơn.
+  # mcp:
+  #   servers:
+  #     crg: {type: stdio, command: uvx, args: [code-review-graph@2.3.6, serve]}
+  #   tools: [mcp__crg__query_graph_tool, mcp__crg__get_impact_radius_tool, mcp__crg__semantic_search_nodes_tool]
+  #   phases: [analysis, design]
   # Lệnh hook bảo vệ. Mặc định tự chọn: workspace có sẵn aiws/adapters/cli thì chạy
   # 'node "${CLAUDE_PROJECT_DIR}/aiws/adapters/cli/bin/aiws.js" guard', còn không thì 'aiws guard' (cần `aiws` trên PATH).
   # guard_command: 'aiws guard'
