@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The default `runtime.yaml` runs the developer, test designer, planner and design reviewer on
+  Sonnet, and the knowledge update too; the analyst, architect and reviewer stay on Opus. Existing
+  workspaces keep their own `runtime.yaml`.
+
 ### Added
 
 - Lean Claude Code runs, on by default: each run loads only the tools of its phase, the project
