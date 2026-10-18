@@ -1,6 +1,6 @@
 # AGENTS.md — hướng dẫn chung cho mọi AI (Claude Code, Codex, Gemini)
 
-Workspace này vận hành theo **AIWS (AI Software Factory)**: requirement -> analysis -> design + test spec -> người duyệt -> implementation theo task -> unit test -> review -> người duyệt PR -> cập nhật knowledge. Đặc tả đầy đủ: `aiws/docs/spec-v1.md`. Hướng dẫn vận hành: `aiws/README.md`.
+Workspace này vận hành theo **AIWS (AI Software Factory)**: requirement -> analysis -> design + test spec -> AI review design -> người duyệt -> implementation theo task -> unit test -> review -> người duyệt PR -> cập nhật knowledge. Đặc tả đầy đủ: `aiws/docs/spec-v1.md`. Hướng dẫn vận hành: `aiws/README.md`.
 
 ## Cấu trúc
 | Đường dẫn | Là gì | Ai ghi |
