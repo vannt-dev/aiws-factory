@@ -168,3 +168,17 @@ test('TC ids are recognised in every language naming style', () => {
   }
   for (const s of ["test('TC-30: x')", 'def test_tc_31():', 'ATC3']) assert.ok(!p.test(s), s);
 });
+
+test('detectStacks reads the .slnx solution format of .NET 9, and prefers it beside an old .sln', () => {
+  const root = tempDir('aiws-stk-');
+  tree(root, {
+    'source-be/Demo.slnx': '<Solution />',
+    'source-be/src/Demo/Demo.csproj': '',
+    'source-api/Api.sln': '',
+    'source-api/Api.slnx': '<Solution />',
+  });
+  const { commands } = detectStacks(root);
+  assert.equal(commands.be_build, 'dotnet build source-be/Demo.slnx');
+  assert.equal(commands.be_test, 'dotnet test source-be/Demo.slnx');
+  assert.equal(commands.api_test, 'dotnet test source-api/Api.slnx');
+});

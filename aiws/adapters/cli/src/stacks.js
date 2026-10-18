@@ -61,7 +61,9 @@ const DETECTORS = [
     return { stack: 'jvm-gradle', build: `gradle -p ${rel} build -x test`, test: `gradle -p ${rel} test` };
   },
   (d, rel) => {
-    const sln = glob1(d, /\.sln$/i);
+    // .slnx is the XML solution format of .NET 9; when a folder has both during a migration, `dotnet` needs one named
+    const slnx = glob1(d, /\.slnx$/i);
+    const sln = slnx.length === 1 ? slnx : [...glob1(d, /\.sln$/i), ...slnx];
     const proj = glob1(d, /\.(cs|fs|vb)proj$/i);
     if (!sln.length && !proj.length) return null;
     const target = sln.length === 1 ? `${rel}/${sln[0]}` : proj.length === 1 && !sln.length ? `${rel}/${proj[0]}` : rel;

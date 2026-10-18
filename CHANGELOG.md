@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `aiws detect` recognises the `.slnx` solution format of .NET 9, and prefers it when a folder also
+  has an old `.sln`.
+
 ## [0.7.1] - 2026-10-19
 
 Fixes found by real runs of 0.7.0, and its measured cost in the documentation.
