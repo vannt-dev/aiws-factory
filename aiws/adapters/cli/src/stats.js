@@ -28,8 +28,47 @@ export function runStats(ws, req) {
       stats.cost_usd = (stats.cost_usd ?? 0) + cost;
       stats.by_phase[phase] = (stats.by_phase[phase] ?? 0) + cost;
     }
+    const turns = ev.report?.num_turns;
+    if (typeof turns === 'number') {
+      stats.turns = (stats.turns ?? 0) + turns;
+      (stats.turns_by_phase ??= {})[phase] = (stats.turns_by_phase[phase] ?? 0) + turns;
+    }
+    const t = tokenCounts(ev.report);
+    if (t) {
+      stats.tokens = addTokens(stats.tokens, t);
+      (stats.tokens_by_phase ??= {})[phase] = addTokens(stats.tokens_by_phase[phase], t);
+    }
   }
   return stats;
+}
+
+/**
+ * The token counts of one run as { input, cache_write, cache_read, output }, from the shape the claude adapter
+ * writes or the raw usage of Codex (whose input count includes the cached part); null when the run has none.
+ */
+export function tokenCounts(report) {
+  const t = report?.tokens;
+  if (!t || typeof t !== 'object') return null;
+  if ('cache_read' in t || 'cache_write' in t) {
+    return { input: t.input ?? 0, cache_write: t.cache_write ?? 0, cache_read: t.cache_read ?? 0, output: t.output ?? 0 };
+  }
+  const cached = t.cached_input_tokens ?? 0;
+  return { input: Math.max(0, (t.input_tokens ?? 0) - cached), cache_write: 0, cache_read: cached, output: t.output_tokens ?? 0 };
+}
+
+function addTokens(a, b) {
+  const base = a ?? { input: 0, cache_write: 0, cache_read: 0, output: 0 };
+  return Object.fromEntries(Object.keys(base).map((k) => [k, base[k] + b[k]]));
+}
+
+const tokenTotal = (t) => t.input + t.cache_write + t.cache_read + t.output;
+
+/** 950, 1.2k, 45k, 3.06M */
+export function count(n) {
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e4) return `${Math.round(n / 1e3)}k`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}k`;
+  return String(n);
 }
 
 /** One status line, e.g. "AI runs: 5 (40 min), cost 14.10 USD list-price equivalent (analysis 2.65, design 7.06)". */
@@ -42,6 +81,12 @@ export function statsLine(stats) {
       .map(([phase, cost]) => `${phase} ${cost.toFixed(2)}`)
       .join(', ');
     line += `, cost ${stats.cost_usd.toFixed(2)} USD list-price equivalent (${phases})`;
+  }
+  if (stats.tokens) {
+    const total = tokenTotal(stats.tokens);
+    const cached = total ? Math.round((100 * stats.tokens.cache_read) / total) : 0;
+    line += `, tokens ${count(total)} (${cached}% read from cache, ${count(stats.tokens.output)} output)`;
+    if (stats.turns) line += `, ${stats.turns} turns`;
   }
   return line;
 }
@@ -88,7 +133,8 @@ function modelsUsed(ws, req) {
   for (const file of fs.readdirSync(dir).filter((f) => /^run-\d+\.json$/.test(f))) {
     try {
       const m = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')).report?.model;
-      if (m) models.add(String(m));
+      // a run that used several models lists them as "a, b"
+      if (m) for (const one of String(m).split(', ')) models.add(one);
     } catch {
       // unreadable evidence is skipped by runStats as well
     }
@@ -182,6 +228,22 @@ export function statsText(summary) {
           money(withCost.reduce((n, r) => n + (r.by_phase[p] ?? 0), 0)),
           money(median(withCost.map((r) => r.by_phase[p]))),
         ])
+      )
+    );
+  }
+  const withTokens = rows.filter((r) => r.tokens_by_phase);
+  const tokenPhases = phases.filter((p) => withTokens.some((r) => r.tokens_by_phase[p]));
+  if (tokenPhases.length) {
+    // every turn reads the whole conversation again, mostly from the cache: many turns or a large context cost most
+    out.push('', 'Tokens per phase (each turn reads the conversation so far again, mostly from the cache):');
+    out.push(
+      table(
+        ['phase', 'turns', 'input', 'cache write', 'cache read', 'output'],
+        tokenPhases.map((p) => {
+          const t = withTokens.reduce((acc, r) => (r.tokens_by_phase[p] ? addTokens(acc, r.tokens_by_phase[p]) : acc), null);
+          const turns = rows.reduce((n, r) => n + (r.turns_by_phase?.[p] ?? 0), 0);
+          return [p, turns || '-', count(t.input), count(t.cache_write), count(t.cache_read), count(t.output)];
+        })
       )
     );
   }

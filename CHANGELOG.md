@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The evidence of a Claude Code run keeps its token counts (new input, cache write, cache read,
+  output) and its model. `aiws stats` adds a table of tokens and turns per phase, and `aiws status`
+  the total, so you can see where the cost of a requirement goes.
 - `runs: 2` on the `unit_test` step of `workflow.yaml` runs every test suite twice. A suite that passes
   once and fails once fails the task as flaky, with both runs in the test evidence; the default stays
   one run.
