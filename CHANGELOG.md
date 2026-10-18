@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-19
+
+Fixes found by real runs of 0.7.0, and its measured cost in the documentation.
+
 ### Changed
 
 - The handbook, the operations guide and `aiws estimate` give the cost of REQ-004 rerun with 0.7.0:
@@ -380,7 +384,8 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/vannt-dev/aiws-factory/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.4.0...v0.5.0
