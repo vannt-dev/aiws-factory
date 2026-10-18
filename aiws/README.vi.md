@@ -183,7 +183,7 @@ Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
 
 `aiws stats` hiện cùng các số đó cho mọi requirement trong `aiws/work/`, kèm tổng và chi phí từng phase tính trên tất cả (tổng và trung vị mỗi requirement). Với Claude Code, lệnh này còn cho số token của từng phase: số lượt, input mới, phần ghi vào và đọc từ prompt cache, và output. Mỗi lượt đọc lại toàn bộ hội thoại đến lúc đó, nên phase có nhiều lượt trên một context lớn là nơi tốn tiền nhất; `aiws status` cho tổng trong một dòng. `aiws estimate` lấy các requirement đã xong làm mức tham khảo cho requirement kế tiếp: trung vị và khoảng của chi phí, thời gian, và trung vị theo phase. Đó là những gì các requirement đã xong tốn, không phải dự báo; requirement có nhiều acceptance criteria hay task hơn sẽ tốn hơn.
 
-Các lần chạy thật để tham khảo. Với Sonnet, một REQ nhỏ có 2 task hết khoảng 1,3 USD quy đổi cho 8 lần chạy. Trên workspace demo, sáu REQ có 3 đến 7 task, mỗi REQ hết 25 đến 41 USD quy đổi và 60 đến 90 phút AI chạy, cộng 2,4 USD cho discovery; [sổ tay](docs/handbook.vi.md#8-chi-phí-và-thời-gian) liệt kê từng REQ kèm model đã dùng. `npm test` dùng adapter `scripted` nên không tốn token.
+Các lần chạy thật để tham khảo. Với Sonnet, một REQ nhỏ có 2 task hết khoảng 1,3 USD quy đổi cho 8 lần chạy. Trên workspace demo, sáu REQ có 3 đến 7 task, mỗi REQ hết 25 đến 41 USD quy đổi và 60 đến 90 phút AI chạy, cộng 2,4 USD cho discovery. Chạy lại bằng 0.7.0 với model mặc định, REQ-004 hết 4,31 USD và 13 phút tới gate pull request thay vì 23,78 USD; [sổ tay](docs/handbook.vi.md#8-chi-phí-và-thời-gian) liệt kê từng REQ kèm model đã dùng. `npm test` dùng adapter `scripted` nên không tốn token.
 
 Có ba cách kiểm soát chi phí:
 

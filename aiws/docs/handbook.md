@@ -223,6 +223,8 @@ What each change of model did on the demo:
 | Review | Opus: 4.1 to 5.1 USD, 9 to 15 min | Fable: 3.4 to 4.4 USD, 4 to 6 min | Two runs; no way to tell yet whether it finds more |
 | Knowledge update | Opus: 4.5 to 5.1 USD, 10 to 11 min | Sonnet: 1.1 to 2.1 USD, 3 to 7 min | Matched the code in each spot check |
 
+**Since 0.7.0.** REQ-004 was run again on the same workspace with 0.7.0 and its default models (Opus for the analyst, architect and reviewer, Sonnet for the rest), up to the pull request gate: 4.31 USD and 13 minutes of AI time, against 23.78 USD and about an hour before. The analysis and the design took 2.84 USD instead of 16.72, design review included. The documents were about half as long, with the same 5 acceptance criteria and 12 test cases instead of 10, and the 3 tasks passed on the first attempt. Lean runs and the cheaper default models account for most of the difference; one requirement is a sample, not a forecast.
+
 One caution from REQ-002: a cheaper developer once built an alternative the design had rejected. The review caught it, and the fix cycle cost about 7.5 USD, about twice the six developer runs before it together (3.55 USD). Since version 0.3.0 the developer is given the exact build and test commands and runs them itself before it hands a task in, and this has not happened again.
 
 The two controls are in the operations guide, [section 8](https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.md#8-cost):

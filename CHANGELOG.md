@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The handbook, the operations guide and `aiws estimate` give the cost of REQ-004 rerun with 0.7.0:
+  4.31 USD and 13 minutes up to the pull request gate, against 23.78 USD before.
+
 ### Fixed
 
 - When a draft pull request was opened, the PR gate still said to open one; it now names the
