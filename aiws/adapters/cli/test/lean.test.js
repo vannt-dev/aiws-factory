@@ -48,3 +48,44 @@ test('lean: false in runtime.yaml keeps the full Claude Code setup of the machin
   for (const flag of ['--tools', '--setting-sources', '--strict-mcp-config', '--mcp-config']) assert.ok(!args.includes(flag), flag);
   assert.ok(args.includes('--allowedTools'));
 });
+
+function withMcp(root, mcp) {
+  const file = path.join(root, 'aiws', 'config', 'runtime.yaml');
+  const rt = YAML.parse(fs.readFileSync(file, 'utf8'));
+  rt.claude.mcp = mcp;
+  fs.writeFileSync(file, YAML.stringify(rt));
+  return new Workspace(root);
+}
+
+const GRAPH = {
+  servers: { crg: { type: 'stdio', command: 'uvx', args: ['code-review-graph@2.3.6', 'serve'] } },
+  tools: ['mcp__crg__query_graph_tool', 'mcp__crg__get_impact_radius_tool'],
+  phases: ['analysis', 'design'],
+};
+
+test('claude.mcp adds its servers and the named tools to the phases it lists, and to no other', () => {
+  const ws = withMcp(makeWorkspace(), GRAPH);
+  const design = argsOf(ws, { contract: { tools: ['read', 'write'] }, agent: { id: 'architect' }, phase: 'design' });
+  assert.deepEqual(JSON.parse(after(design, '--mcp-config')), { mcpServers: GRAPH.servers });
+  for (const flag of ['--tools', '--allowedTools']) {
+    const listed = after(design, flag).split(',');
+    for (const t of GRAPH.tools) assert.ok(listed.includes(t), `${flag} ${t}`);
+  }
+  const review = argsOf(ws, { contract: { tools: ['read', 'write'] }, agent: { id: 'reviewer' }, phase: 'review' });
+  assert.deepEqual(JSON.parse(after(review, '--mcp-config')), { mcpServers: {} });
+  assert.doesNotMatch(after(review, '--tools'), /mcp__/);
+});
+
+test('claude.mcp without phases applies to every phase', () => {
+  const ws = withMcp(makeWorkspace(), { ...GRAPH, phases: undefined });
+  const args = argsOf(ws, { contract: { tools: ['read'] }, agent: { id: 'reviewer' }, phase: 'review' });
+  assert.match(after(args, '--tools'), /mcp__crg__query_graph_tool/);
+});
+
+test('claude.mcp refuses a tool given by server name only, so no write tool of a server comes along', () => {
+  const ws = withMcp(makeWorkspace(), { ...GRAPH, tools: ['mcp__crg'] });
+  assert.throws(
+    () => argsOf(ws, { contract: { tools: ['read'] }, agent: { id: 'analyst' }, phase: 'analysis' }),
+    /claude\.mcp\.tools.*full name.*not mcp__crg$/
+  );
+});

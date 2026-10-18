@@ -209,6 +209,24 @@ function quoteArg(a) {
 }
 
 /**
+ * The MCP servers and tools `claude.mcp` gives a phase: { servers, tools: [full tool names], phases?: [...] }.
+ * Tools are named one by one: a server can offer tools that write (a code graph has refactoring tools), and a
+ * bare `mcp__server` would allow all of them.
+ */
+function mcpFor(mcp, phase) {
+  if (!mcp || (Array.isArray(mcp.phases) && !mcp.phases.includes(phase))) return { servers: {}, tools: [] };
+  const tools = mcp.tools ?? [];
+  const bare = tools.filter((t) => !/^mcp__.+__.+$/.test(String(t)));
+  if (bare.length) {
+    throw new AiwsError(
+      `claude.mcp.tools in aiws/config/runtime.yaml must list each tool by its full name ` +
+        `(mcp__<server>__<tool>), not ${bare.join(', ')}`
+    );
+  }
+  return { servers: mcp.servers ?? {}, tools };
+}
+
+/**
  * The arguments of one headless run. By default (`claude.lean`, on unless set to false) the run loads only the
  * tools the phase may use, the settings of the project (where `aiws sync claude` puts the guard hook) and no MCP
  * server: the plugins, skills, MCP servers and hooks of the user's own setup would otherwise travel with every
@@ -217,12 +235,15 @@ function quoteArg(a) {
 export function claudeArgs(ws, { contract, agent, phase }) {
   const cfg = ws.runtime.claude ?? {};
   const args = ['-p', '--output-format', 'json', '--permission-mode', cfg.permission_mode ?? 'dontAsk'];
-  const tools = allowedTools(ws, contract);
+  const mcp = mcpFor(cfg.mcp, phase);
+  const tools = [...allowedTools(ws, contract), ...mcp.tools];
   args.push('--allowedTools', tools.join(','));
   if (cfg.lean !== false) {
     const names = [...new Set(tools.map((t) => t.replace(/\(.*$/, '')))];
     args.push('--tools', names.join(','), '--setting-sources', 'project,local');
-    args.push('--strict-mcp-config', '--mcp-config', JSON.stringify({ mcpServers: {} }));
+    args.push('--strict-mcp-config', '--mcp-config', JSON.stringify({ mcpServers: mcp.servers }));
+  } else if (mcp.tools.length) {
+    args.push('--mcp-config', JSON.stringify({ mcpServers: mcp.servers }));
   }
   const model = modelFor(ws, agent, phase);
   if (model) args.push('--model', model);

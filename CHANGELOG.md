@@ -7,14 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- The default `runtime.yaml` runs the developer, test designer, planner and design reviewer on
-  Sonnet, and the knowledge update too; the analyst, architect and reviewer stay on Opus. Existing
-  workspaces keep their own `runtime.yaml`.
-
 ### Added
 
+- `claude.mcp` in `runtime.yaml` gives agents MCP servers, such as a code graph, in lean runs too:
+  the servers, each allowed tool by its full name (others are denied) and optionally the phases.
+  Off by default; on repositories of 90 to 300 files a code graph did not lower the cost.
 - Lean Claude Code runs, on by default: each run loads only the tools of its phase, the project
   settings (with the guard hook) and no MCP server, instead of the plugins, skills, MCP servers and
   hooks of the user setup. The fixed part of each turn fell from about 30k to 9k tokens on a test
@@ -37,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A pipeline in `aiws report` (a row of boxes with a legend) and in `aiws status` (text): each phase
   done, running, waiting on you or stopped, with its runs, time, cost, review rounds, tasks done and
   who decided at a gate. The report also links the pull request when one was opened.
+
+### Changed
+
+- The default `runtime.yaml` runs the developer, test designer, planner and design reviewer on
+  Sonnet, and the knowledge update too; the analyst, architect and reviewer stay on Opus. Existing
+  workspaces keep their own `runtime.yaml`.
 
 ## [0.6.0] - 2026-10-13
 
