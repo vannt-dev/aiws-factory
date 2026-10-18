@@ -42,8 +42,9 @@ Without `npm link`, run `node aiws/adapters/cli/bin/aiws.js <command>` from the 
 ## 2. Getting started with a real project
 
 1. **Bring the code in** (any language, see section 2a).
-   - `source-fe/`, `source-be/`: the new target repositories. Git submodules are recommended; remove the placeholder first:
-     `git rm -q source-be/.gitkeep && git submodule add <url> source-be` (same for `source-fe`, `source-legacy`).
+   - `source-fe/`, `source-be/`: the new target repositories, as plain folders of the workspace repository (a copy, or
+     `git subtree add --prefix source-be <url> main --squash`; remove `source-be/.gitkeep` first). **Git submodules are not
+     supported yet** for the sides an agent writes: the commit of a task fails. `source-legacy/` is read-only and may be one.
      You can add more sides, for example `source-mobile/` or `source-worker/`.
    - `source-legacy/`: the old system, read-only.
 2. **Declare build/test commands**: run `aiws detect` to see the proposal, then `aiws detect --write` to merge it into `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Review the result. Commands run from the workspace root and may differ per OS: `{windows: ..., posix: ...}`.

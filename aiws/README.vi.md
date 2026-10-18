@@ -42,8 +42,9 @@ Không muốn `npm link` thì gọi `node aiws/adapters/cli/bin/aiws.js <lệnh>
 ## 2. Bắt đầu với dự án thật
 
 1. **Đưa code vào workspace** (ngôn ngữ nào cũng được, xem mục 2a)
-   - `source-fe/`, `source-be/`: repo mới (FE/BE đích). Nên dùng submodule; bỏ file giữ chỗ trước:
-     `git rm -q source-be/.gitkeep && git submodule add <url> source-be` (làm tương tự cho `source-fe`, `source-legacy`).
+   - `source-fe/`, `source-be/`: repo mới (FE/BE đích), là thư mục thường trong repo workspace (bản copy, hoặc
+     `git subtree add --prefix source-be <url> main --squash`; bỏ `source-be/.gitkeep` trước). **Chưa hỗ trợ git submodule**
+     cho các side mà agent ghi: commit của task sẽ lỗi. `source-legacy/` chỉ đọc nên có thể là submodule.
      Có thể thêm side khác, ví dụ `source-mobile/` hay `source-worker/`.
    - `source-legacy/`: hệ thống cũ, chỉ đọc.
 2. **Khai báo lệnh build/test**: chạy `aiws detect` để xem đề xuất, rồi `aiws detect --write` để ghi vào `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Kiểm tra lại. Lệnh chạy tại gốc workspace; có thể viết riêng cho từng OS: `{windows: ..., posix: ...}`.
