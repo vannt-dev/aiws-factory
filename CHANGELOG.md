@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `runs: 2` on the `unit_test` step of `workflow.yaml` runs every test suite twice. A suite that passes
   once and fails once fails the task as flaky, with both runs in the test evidence; the default stays
   one run.
+- `pull_request` in `runtime.yaml`: at the PR gate the orchestrator pushes the branch and runs a
+  command that opens a draft pull request (`gh pr create --draft` in the example), with a description
+  listing the tasks and documents. The URL is kept in the state. Off unless set; a failed push or
+  command is reported and the gate stays as it was.
 
 ## [0.6.0] - 2026-10-13
 
