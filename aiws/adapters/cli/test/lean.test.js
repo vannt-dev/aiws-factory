@@ -89,3 +89,19 @@ test('claude.mcp refuses a tool given by server name only, so no write tool of a
     /claude\.mcp\.tools.*full name.*not mcp__crg$/
   );
 });
+
+test('claude.settings goes to Claude Code as --settings, for example to keep long command output short', () => {
+  const root = makeWorkspace();
+  const file = path.join(root, 'aiws', 'config', 'runtime.yaml');
+  const rt = YAML.parse(fs.readFileSync(file, 'utf8'));
+  rt.claude.settings = { bashOutputMaxChars: 8000 };
+  fs.writeFileSync(file, YAML.stringify(rt));
+  const args = argsOf(new Workspace(root), { contract: { tools: ['read'] }, agent: { id: 'developer' }, phase: 'implementation' });
+  assert.deepEqual(JSON.parse(after(args, '--settings')), { bashOutputMaxChars: 8000 });
+  // without it no --settings is passed
+  assert.ok(
+    !argsOf(new Workspace(makeWorkspace()), { contract: { tools: ['read'] }, agent: { id: 'analyst' }, phase: 'analysis' }).includes(
+      '--settings'
+    )
+  );
+});

@@ -15,6 +15,10 @@ claude:
   # MCP server cho agent (tắt mặc định). Ghi ĐỦ tên từng tool (mcp__<server>__<tool>): server có thể có tool ghi
   # (code-review-graph có refactor), tool không liệt kê bị từ chối. phases bỏ trống = mọi phase. Thư mục dữ liệu
   # của server (.code-review-graph/) phải nằm trong .gitignore. Đo 18/10 trên repo 90-300 file: không rẻ hơn.
+  # Settings thêm cho mọi lần chạy (truyền vào --settings). Ví dụ log build/test dài: chỉ đưa 8000 ký tự vào ngữ
+  # cảnh, phần còn lại lưu ra file cho agent đọc khi cần (mặc định 30000; thử 18/10: 24k ký tự output, 41k -> 19k token).
+  # settings:
+  #   bashOutputMaxChars: 8000
   # mcp:
   #   servers:
   #     crg: {type: stdio, command: uvx, args: [code-review-graph@2.3.6, serve]}

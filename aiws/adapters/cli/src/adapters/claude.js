@@ -245,6 +245,8 @@ export function claudeArgs(ws, { contract, agent, phase }) {
   } else if (mcp.tools.length) {
     args.push('--mcp-config', JSON.stringify({ mcpServers: mcp.servers }));
   }
+  // extra Claude Code settings for every run, e.g. { bashOutputMaxChars: 8000 } to keep long build logs short
+  if (cfg.settings && typeof cfg.settings === 'object') args.push('--settings', JSON.stringify(cfg.settings));
   const model = modelFor(ws, agent, phase);
   if (model) args.push('--model', model);
   if (cfg.max_turns) args.push('--max-turns', String(cfg.max_turns));
