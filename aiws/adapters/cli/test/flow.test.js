@@ -574,7 +574,11 @@ test('init copies the kit into a fresh project and sync claude generates .claude
   const dev = readFile(dir, '.claude/agents/developer.md');
   assert.match(dev, /^---\nname: developer\n/);
   assert.match(dev, /tools: Read, Grep, Glob, Edit, MultiEdit, Write, Bash/);
-  assert.match(dev, /model: opus/);
+  // the default runtime.yaml runs the agents that did well on Sonnet in the demo there, and keeps Opus for the rest
+  assert.match(dev, /model: sonnet/);
+  for (const a of ['test-designer', 'planner', 'design-reviewer'])
+    assert.match(readFile(dir, `.claude/agents/${a}.md`), /\nmodel: sonnet\n/, a);
+  for (const a of ['analyst', 'architect', 'reviewer']) assert.match(readFile(dir, `.claude/agents/${a}.md`), /\nmodel: opus\n/, a);
   assert.ok(fs.existsSync(path.join(dir, '.claude/skills/be-conventions/SKILL.md')));
 
   // claude.agent_models overrides the model_hint mapping for one agent only

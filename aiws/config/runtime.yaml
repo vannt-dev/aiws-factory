@@ -19,13 +19,18 @@ claude:
     strong-reasoning: opus
     strong-coding: opus
     fast: sonnet
-  # Chọn model riêng cho từng agent (ưu tiên hơn model_hint). Ví dụ giảm chi phí implementation:
-  # agent_models:
-  #   developer: sonnet
+  # Chọn model riêng cho từng agent (ưu tiên hơn model_hint). Mặc định: các agent mà demo đã chạy tốt trên Sonnet
+  # (rẻ hơn Opus 2-4 lần, đều đạt ngay lần đầu, xem handbook mục 8). Analyst, architect, reviewer giữ Opus vì
+  # đó là nơi quyết định chất lượng. Muốn Opus ở mọi nơi thì xoá các dòng dưới.
+  agent_models:
+    developer: sonnet
+    test-designer: sonnet
+    planner: sonnet
+    design-reviewer: sonnet
   # Chọn model riêng cho một phase (ưu tiên hơn agent_models), áp dụng cho mọi agent của phase đó khi chạy
-  # `aiws run`. Ví dụ: agent discovery chạy model rẻ hơn khi cập nhật knowledge, nhưng `aiws discover` vẫn giữ nguyên:
-  # phase_models:
-  #   knowledge_update: sonnet
+  # `aiws run`. Agent discovery chạy Sonnet khi cập nhật knowledge, còn `aiws discover` vẫn giữ Opus:
+  phase_models:
+    knowledge_update: sonnet
   extra_args: []
 
 # Codex CLI (`codex exec`, headless) cho các phase không cần shell: review, analysis, design. Sandbox của Codex
