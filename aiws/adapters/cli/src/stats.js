@@ -259,7 +259,8 @@ export function estimateText(est) {
     return [
       'No finished requirement in aiws/work/ yet, so there is nothing to estimate from.',
       'For an order of magnitude: the six demo requirements of the handbook (3 to 7 tasks each) took 60 to 90 minutes',
-      'and 25 to 41 USD list-price equivalent, mostly on Opus. See aiws/docs/handbook.md, section 8.',
+      'and 25 to 41 USD list-price equivalent, mostly on Opus. Rerun with 0.7.0 and its default models, one of them',
+      'took 13 minutes and 4.31 USD up to the pull request gate. See aiws/docs/handbook.md, section 8.',
     ].join('\n');
   }
   const out = [`Based on ${est.based_on} finished requirement(s) of this workspace:`];

@@ -114,6 +114,7 @@ test('estimate says so when nothing is finished, and points at the handbook numb
   const r = ok(root, ['estimate']);
   assert.match(r.stdout, /No finished requirement/);
   assert.match(r.stdout, /25 to 41 USD/);
+  assert.match(r.stdout, /13 minutes and 4.31 USD up to the pull request gate/);
   assert.equal(aiws(root, ['stats']).stdout.trim(), 'No requirements in aiws/work/ yet.');
   assert.match(estimateText(null), /handbook/);
 });

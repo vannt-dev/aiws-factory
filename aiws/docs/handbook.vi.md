@@ -223,6 +223,8 @@ Mỗi lần đổi model đã cho kết quả gì trên demo:
 | Review | Opus: 4,1 đến 5,1 USD, 9 đến 15 phút | Fable: 3,4 đến 4,4 USD, 4 đến 6 phút | Hai lần chạy; chưa có cách biết nó có tìm được nhiều lỗi hơn không |
 | Knowledge update | Opus: 4,5 đến 5,1 USD, 10 đến 11 phút | Sonnet: 1,1 đến 2,1 USD, 3 đến 7 phút | Khớp với code ở mỗi lần đối chiếu chọn điểm |
 
+**Từ bản 0.7.0.** REQ-004 được chạy lại trên cùng workspace bằng 0.7.0 với model mặc định (Opus cho analyst, architect và reviewer, Sonnet cho phần còn lại), tới gate pull request: 4,31 USD và 13 phút AI chạy, so với 23,78 USD và khoảng một giờ trước đây. Analysis và design hết 2,84 USD thay vì 16,72, đã gồm design review. Tài liệu ngắn khoảng một nửa, vẫn 5 acceptance criteria, 12 test case thay vì 10, và 3 task đều đạt ngay lần đầu. Chạy gọn và model mặc định rẻ hơn tạo ra phần lớn khác biệt; một requirement chỉ là một mẫu, không phải dự báo.
+
 Một điều cần dè chừng, rút ra từ REQ-002: developer chạy model rẻ hơn từng làm đúng phương án mà design đã loại. Review đã bắt được, và vòng sửa tốn khoảng 7,5 USD, gấp khoảng hai lần sáu lần chạy developer trước đó cộng lại (3,55 USD). Từ bản 0.3.0, developer được đưa đúng các lệnh build và test và tự chạy chúng trước khi nộp task, và việc này chưa lặp lại.
 
 Hai công cụ kiểm soát được mô tả ở [mục 8](https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.vi.md#8-chi-phí) của hướng dẫn vận hành:
