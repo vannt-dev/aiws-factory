@@ -16,6 +16,12 @@ test('the row follows the workflow, without the side gate for questions', () => 
   assert.equal(steps[0].id, 'analysis');
   assert.equal(steps[0].status, 'running');
   assert.ok(steps.slice(1).every((s) => s.status === 'not_started'));
+  // a step that has not run has no review round yet, even with max_rounds
+  assert.equal(steps.find((s) => s.id === 'design_review').rounds, undefined);
+  assert.match(
+    pipelineText(steps).find((l) => l.includes('design_review')),
+    /^\[ \] design_review$/
+  );
 });
 
 test('a requirement at the design gate: earlier steps done with their runs, cost and time, the gate waits', () => {
@@ -32,7 +38,8 @@ test('a requirement at the design gate: earlier steps done with their runs, cost
   assert.equal(byId.design_approval.note, 'waiting for you');
   const lines = pipelineText(steps);
   assert.match(lines[1], /^\[x\] design\s+3 runs · 7 min · 2\.25 USD$/);
-  assert.match(lines[2], /^\[x\] design_review\s+round 1 of 3$/);
+  // no round in the history: nothing to count
+  assert.match(lines[2], /^\[x\] design_review$/);
   assert.match(lines[3], /^\[\?\] design_approval\s+waiting for you$/);
 });
 
