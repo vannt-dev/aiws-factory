@@ -120,7 +120,7 @@ Những câu nên tự hỏi khi đọc:
 - Có điều gì trong phần "ngoài phạm vi" của bạn quay trở lại không?
 - Có phần nào chỉ kiểm được bằng tay không? Trên demo, phần nối sự kiện trên trang không có unit test được liệt kê thành các bước chạy tay cho người review pull request.
 
-Sau đó bạn quyết định:
+Sau đó bạn quyết định. Nếu `aiws run` dừng trong terminal của bạn, menu đã mở sẵn: chọn "Approve the design", hoặc "Reject it" rồi gõ điều cần đổi. Để sau thì `aiws gate REQ-001` mở lại menu. Các lệnh làm đúng việc đó:
 
 ```bash
 aiws approve REQ-001 design

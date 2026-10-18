@@ -29,6 +29,7 @@ import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 import { notify, stopEvent } from './notify.js';
 import { buildReport, renderHtml } from './report.js';
 import { pipelineSteps, pipelineText } from './pipeline.js';
+import { gateMenu, interactive } from './gatemenu.js';
 import { checkApiContract } from './apicontract.js';
 import {
   MANIFEST_REL,
@@ -270,7 +271,17 @@ export async function run(req, opts) {
   }
   printStop(ws, st);
   await notifyStop(ws, st);
-  if (st.paused) process.exitCode = EXIT_TEMPFAIL; // lets a script tell "retry later" from "waits for a human"
+  if (st.paused)
+    process.exitCode = EXIT_TEMPFAIL; // lets a script tell "retry later" from "waits for a human"
+  // a person at the terminal can decide right away, without typing the command
+  else if (st.status === 'waiting_human' && opts.menu !== false && interactive()) await gate(req);
+}
+
+/** `aiws gate REQ`: the decision that waits, as a menu (approve, reject, answer, open the report, later). */
+export async function gate(req) {
+  assertReqId(req);
+  const ws = Workspace.open();
+  return gateMenu(ws, loadState(ws, req), { approve, reject, answer, redesign, report });
 }
 
 function waitInterval(ws, flag) {
@@ -682,6 +693,7 @@ export function report(req, { out } = {}) {
   const file = out ? path.resolve(out) : path.join(ws.workDir(req), 'report.html');
   writeText(file, html);
   log(`Report written: ${file}`);
+  return file;
 }
 
 export function trace(req, { write = true } = {}) {

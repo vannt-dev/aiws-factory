@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `aiws gate REQ-001`, also opened by `aiws run` when it stops at a gate in a terminal: a summary of
+  what waits and a menu to approve, reject, answer, open the report or decide later, picked with the
+  arrow keys. Choosing is the confirmation. It refuses inside an AI session and without a terminal;
+  `aiws run --no-menu` skips it.
 - `claude.settings` in `runtime.yaml` passes extra Claude Code settings to every run, for example
   `bashOutputMaxChars: 8000` to keep long build and test logs short. Off by default.
 - `claude.mcp` in `runtime.yaml` gives agents MCP servers, such as a code graph, in lean runs too:
