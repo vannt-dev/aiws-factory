@@ -269,12 +269,12 @@
       <div class="card feature">
         <span class="num">2</span>
         <h3 data-i18n="in.2.h">The AI works phase by phase</h3>
-        <p data-i18n="in.2">It turns the requirement into acceptance criteria, a design and a test specification, then writes the code in small tasks, each with its unit tests, and reviews the result. In each phase it may change only the files of that phase; any other change is reverted.</p>
+        <p data-i18n="in.2">It turns the requirement into acceptance criteria, a design and a test specification, then writes the code in small tasks, each with its unit tests, and reviews the result. In each phase it may change only the files of that phase; any other change is reverted. Before you see the design, an AI reviewer checks it and sends it back while a critical finding is open.</p>
       </div>
       <div class="card feature">
         <span class="num">3</span>
         <h3 data-i18n="in.3.h">You decide, twice</h3>
-        <p data-i18n="in.3">First you read the design and the test specification and approve them, or send them back with a note. Later you review and merge the pull request. The AI cannot run these two commands.</p>
+        <p data-i18n="in.3">First you read the design and the test specification and approve them, or send them back with a note. Later you review and merge the pull request. The AI cannot run these two commands. When a run stops at a gate in your terminal, a menu asks for the decision: pick it with the arrow keys.</p>
       </div>
       <div class="card feature">
         <span class="num">4</span>
@@ -307,18 +307,19 @@
 <section id="workflow">
   <div class="wrap">
     <p class="kicker" data-i18n="nav.workflow">Workflow</p>
-    <h2 data-i18n="wf.h2">One requirement, nine steps, two human gates</h2>
+    <h2 data-i18n="wf.h2">One requirement, ten steps, two human gates</h2>
     <p class="sub" data-i18n="wf.sub">A deterministic orchestrator decides which phase may run; the AI never changes state on its own. People step in at two gates only: approving the design and merging the PR.</p>
     <ol class="pipeline">
       <li class="step"><span class="n">00</span><b>Discover</b><span class="d" data-i18n="s0">Map the system from source and legacy code</span></li>
       <li class="step"><span class="n">01</span><b>Analysis</b><span class="d" data-i18n="s1">Acceptance criteria as Given/When/Then</span></li>
       <li class="step"><span class="n">02</span><b>Design + Test spec</b><span class="d" data-i18n="s2">Decisions, OpenAPI, test cases from the ACs</span></li>
+      <li class="step"><span class="n">03</span><b>Design review</b><span class="d" data-i18n="s2r">AI checks it against the requirement and the code; a critical finding sends it back, up to 3 rounds</span></li>
       <li class="step gate"><span class="n">GATE</span><b data-i18n="g1.b">Human approves design</b><span class="d" data-i18n="g1.d">Approval is bound to a content hash</span></li>
-      <li class="step"><span class="n">03</span><b>Planning</b><span class="d" data-i18n="s3">Small tasks, ≤ 10 files, each with its own tests</span></li>
-      <li class="step loop"><span class="n">04 · <span data-i18n="s4.loop">loop</span></span><b>Implementation</b><span class="d">Developer → build → unit test → commit</span></li>
-      <li class="step"><span class="n">05</span><b>Review</b><span class="d" data-i18n="s5">Checked against design, contract and standards</span></li>
+      <li class="step"><span class="n">04</span><b>Planning</b><span class="d" data-i18n="s3">Small tasks, ≤ 10 files, each with its own tests</span></li>
+      <li class="step loop"><span class="n">05 · <span data-i18n="s4.loop">loop</span></span><b>Implementation</b><span class="d">Developer → build → unit test → commit</span></li>
+      <li class="step"><span class="n">06</span><b>Review</b><span class="d" data-i18n="s5">Checked against design, contract and standards</span></li>
       <li class="step gate"><span class="n">GATE</span><b data-i18n="g2.b">Human merges PR</b><span class="d" data-i18n="g2.d">On GitHub or GitLab, as usual</span></li>
-      <li class="step"><span class="n">06</span><b>Knowledge update</b><span class="d" data-i18n="s6">Keeps the map current for the next requirement</span></li>
+      <li class="step"><span class="n">07</span><b>Knowledge update</b><span class="d" data-i18n="s6">Keeps the map current for the next requirement</span></li>
     </ol>
     <div class="legend">
       <span><i style="background:var(--surface);border:1px solid var(--border)"></i><span data-i18n="lg.ai">Done by AI</span></span>
@@ -336,7 +337,7 @@
       <div class="replay-grid">
         <div class="term">
           <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-<pre class="rp-log" id="rp-log" tabindex="0"><span class="rp-hint" data-i18n="rp.hint">Press Play to watch the run.</span><span class="ln you">$ aiws new REQ-003</span><span class="ln">REQ-003 created on branch aiws/REQ-003 (base demo @ 7a881fa). Next: aiws run REQ-003</span><span class="ln you">$ aiws run REQ-003</span><span class="ln run" data-step="1" data-min="7.19" data-usd="3.1602">[REQ-003] analysis / analyst (attempt 1/3)</span><span class="ln">  ok -&gt; design</span><span class="ln run" data-step="2" data-min="10.17" data-usd="4.2818">[REQ-003] design / architect (attempt 1/3)</span><span class="ln">  ok -&gt; design</span><span class="ln run" data-step="2" data-min="12.75" data-usd="5.0334">[REQ-003] design / test-designer (attempt 1/3)</span><span class="ln">  ok -&gt; design_approval (waiting_human)</span><span class="ln"></span><span class="ln">REQ-003: phase=design_approval status=waiting_human</span><span class="ln">  design ready for review: 02-design.md, 03-test-spec.md, api-contract.yaml. Then run `aiws approve REQ-003 design` or `aiws reject REQ-003 design -m "..."`</span><span class="ln you gate" data-step="3" data-gate="design">$ aiws approve REQ-003 design</span><span class="ln you">$ aiws run REQ-003</span><span class="ln run" data-step="4" data-min="5.37" data-usd="3.1005">[REQ-003] planning / planner (attempt 1/3)</span><span class="ln">  ok -&gt; implementation</span><span class="ln run" data-step="5" data-min="1.4" data-usd="0.7562" data-task="1">[REQ-003] implementation / T1 (attempt 1/3)</span><span class="ln">  T1 done (e1ba048)</span><span class="ln run" data-step="5" data-min="2.94" data-usd="0.9346" data-task="1">[REQ-003] implementation / T2 (attempt 1/3)</span><span class="ln">  T2 done (4806b5d)</span><span class="ln run" data-step="5" data-min="3.85" data-usd="1.1262" data-task="1">[REQ-003] implementation / T3 (attempt 1/3)</span><span class="ln">  T3 done (b16ba82)</span><span class="ln run" data-step="5" data-min="0.94" data-usd="0.5846" data-task="1">[REQ-003] implementation / T4 (attempt 1/3)</span><span class="ln">  T4 done (4529e7c)</span><span class="ln run" data-step="5" data-min="1.49" data-usd="0.6396" data-task="1">[REQ-003] implementation / T5 (attempt 1/3)</span><span class="ln">  T5 done (e3e496e)</span><span class="ln run" data-step="5" data-min="2.03" data-usd="1.2712" data-task="1">[REQ-003] implementation / T6 (attempt 1/3)</span><span class="ln">  T6 done (03dfd36)</span><span class="ln run" data-step="6" data-min="14.64" data-usd="4.2806">[REQ-003] review / reviewer (attempt 1/2)</span><span class="ln">  ok -&gt; pr_approval (waiting_human)</span><span class="ln"></span><span class="ln">REQ-003: phase=pr_approval status=waiting_human</span><span class="ln">  open a PR for the branch; after it is merged run `aiws approve REQ-003 pr` (or `aiws reject REQ-003 pr -m "..."`)</span><span class="ln you gate" data-step="7" data-gate="pr">$ aiws approve REQ-003 pr</span><span class="ln you">$ aiws run REQ-003</span><span class="ln run" data-step="8" data-min="6.5" data-usd="2.0516">[REQ-003] knowledge_update / discovery (attempt 1/2)</span><span class="ln">  ok -&gt; done (done)</span><span class="ln"></span><span class="ln">REQ-003: phase=done status=done</span></pre>
+<pre class="rp-log" id="rp-log" tabindex="0"><span class="rp-hint" data-i18n="rp.hint">Press Play to watch the run.</span><span class="ln you">$ aiws new REQ-003</span><span class="ln">REQ-003 created on branch aiws/REQ-003 (base demo @ 7a881fa). Next: aiws run REQ-003</span><span class="ln you">$ aiws run REQ-003</span><span class="ln run" data-step="1" data-min="7.19" data-usd="3.1602">[REQ-003] analysis / analyst (attempt 1/3)</span><span class="ln">  ok -&gt; design</span><span class="ln run" data-step="2" data-min="10.17" data-usd="4.2818">[REQ-003] design / architect (attempt 1/3)</span><span class="ln">  ok -&gt; design</span><span class="ln run" data-step="2" data-min="12.75" data-usd="5.0334">[REQ-003] design / test-designer (attempt 1/3)</span><span class="ln">  ok -&gt; design_approval (waiting_human)</span><span class="ln"></span><span class="ln">REQ-003: phase=design_approval status=waiting_human</span><span class="ln">  design ready for review: 02-design.md, 03-test-spec.md, api-contract.yaml. Then run `aiws approve REQ-003 design` or `aiws reject REQ-003 design -m "..."`</span><span class="ln you gate" data-step="4" data-gate="design">$ aiws approve REQ-003 design</span><span class="ln you">$ aiws run REQ-003</span><span class="ln run" data-step="5" data-min="5.37" data-usd="3.1005">[REQ-003] planning / planner (attempt 1/3)</span><span class="ln">  ok -&gt; implementation</span><span class="ln run" data-step="6" data-min="1.4" data-usd="0.7562" data-task="1">[REQ-003] implementation / T1 (attempt 1/3)</span><span class="ln">  T1 done (e1ba048)</span><span class="ln run" data-step="6" data-min="2.94" data-usd="0.9346" data-task="1">[REQ-003] implementation / T2 (attempt 1/3)</span><span class="ln">  T2 done (4806b5d)</span><span class="ln run" data-step="6" data-min="3.85" data-usd="1.1262" data-task="1">[REQ-003] implementation / T3 (attempt 1/3)</span><span class="ln">  T3 done (b16ba82)</span><span class="ln run" data-step="6" data-min="0.94" data-usd="0.5846" data-task="1">[REQ-003] implementation / T4 (attempt 1/3)</span><span class="ln">  T4 done (4529e7c)</span><span class="ln run" data-step="6" data-min="1.49" data-usd="0.6396" data-task="1">[REQ-003] implementation / T5 (attempt 1/3)</span><span class="ln">  T5 done (e3e496e)</span><span class="ln run" data-step="6" data-min="2.03" data-usd="1.2712" data-task="1">[REQ-003] implementation / T6 (attempt 1/3)</span><span class="ln">  T6 done (03dfd36)</span><span class="ln run" data-step="7" data-min="14.64" data-usd="4.2806">[REQ-003] review / reviewer (attempt 1/2)</span><span class="ln">  ok -&gt; pr_approval (waiting_human)</span><span class="ln"></span><span class="ln">REQ-003: phase=pr_approval status=waiting_human</span><span class="ln">  open a PR for the branch; after it is merged run `aiws approve REQ-003 pr` (or `aiws reject REQ-003 pr -m "..."`)</span><span class="ln you gate" data-step="8" data-gate="pr">$ aiws approve REQ-003 pr</span><span class="ln you">$ aiws run REQ-003</span><span class="ln run" data-step="9" data-min="6.5" data-usd="2.0516">[REQ-003] knowledge_update / discovery (attempt 1/2)</span><span class="ln">  ok -&gt; done (done)</span><span class="ln"></span><span class="ln">REQ-003: phase=done status=done</span></pre>
         </div>
         <div class="card rp-side">
           <div class="rp-now"><span data-i18n="rp.now">Current step</span><b id="rp-step" hidden></b><b id="rp-idle" data-i18n="rp.idle" hidden>Not started</b><b id="rp-done" data-i18n="rp.done">Done</b></div>
@@ -382,7 +383,7 @@
       <div class="card feature">
         <div class="icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
         <span class="tag">02</span><h3 data-i18n="en.2.h">Tool permissions</h3>
-        <p data-i18n="en.2">Each headless run gets only the tools it needs; shell access is derived from the project's own build and test commands.</p>
+        <p data-i18n="en.2">Each headless run gets only the tools it needs; shell access is derived from the project's own build and test commands. None of your own plugins, skills or MCP servers is loaded, which keeps each turn about 20k tokens smaller.</p>
       </div>
       <div class="card feature">
         <div class="icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></svg></div>
@@ -587,9 +588,9 @@ AIWS-Run: run-0005</pre>
       'hero.h1': 'Từ requirement tới <span class="grad">code đã test</span>, có kiểm soát.',
       'hero.lead': 'AIWS (AI Software Factory) điều phối AI đi qua các phase rõ ràng: phân tích, thiết kế kèm test spec, code từng task nhỏ kèm unit test, rồi review. Mỗi bước bị giới hạn phạm vi ghi, mọi output nằm trong git, và con người duyệt ở những điểm quan trọng.',
       'cta.start': 'Bắt đầu nhanh', 'cta.github': 'Mã nguồn trên GitHub', 'cta.guide': 'Hướng dẫn vận hành', 'cta.handbook': 'Sổ tay',
-      'wf.h2': 'Một requirement, chín bước, hai lần người duyệt',
+      'wf.h2': 'Một requirement, mười bước, hai lần người duyệt',
       'wf.sub': 'Orchestrator tất định quyết định phase nào được chạy; AI không tự chuyển trạng thái. Người chỉ can thiệp ở hai gate: duyệt design và merge PR.',
-      's0': 'Lập bản đồ hệ thống từ source và legacy', 's1': 'Acceptance criteria dạng Given/When/Then', 's2': 'Quyết định, OpenAPI, test case từ AC',
+      's0': 'Lập bản đồ hệ thống từ source và legacy', 's1': 'Acceptance criteria dạng Given/When/Then', 's2': 'Quyết định, OpenAPI, test case từ AC', 's2r': 'AI đối chiếu với requirement và code; finding critical đưa về sửa, tối đa 3 vòng',
       'g1.b': 'Người duyệt design', 'g1.d': 'Approval gắn hash, sửa file là mất hiệu lực', 's3': 'Task nhỏ ≤ 10 file, có test riêng', 's4.loop': 'lặp',
       's5': 'Đối chiếu design, contract, chuẩn code', 'g2.b': 'Người merge PR', 'g2.d': 'Trên GitHub/GitLab như bình thường', 's6': 'Cập nhật bản đồ cho REQ sau',
       'lg.ai': 'AI thực hiện', 'lg.gate': 'Human gate', 'lg.loop': 'Lặp theo task, retry ≤ 3 rồi <code>blocked</code>',
@@ -599,7 +600,7 @@ AIWS-Run: run-0005</pre>
       'ar.ad.s': 'làm bằng AI nào', 'ar.ad.p': '<code>claude</code> chạy Claude Code headless với quyền giới hạn; <code>scripted</code> chạy tất định để test không tốn token; <code>codex</code> có thể nhận phase review, để một model khác kiểm tra code. V2: Gemini.',
       'en.h2': 'Gate được chặn bằng cơ chế thật, không chỉ bằng prompt', 'en.sub': 'Bốn lớp độc lập. Một lớp bị vượt qua thì lớp sau vẫn chặn.',
       'en.1': 'Không gọi agent của phase bị khoá. Approval gắn hash nội dung, retry có giới hạn.', 'en.2.h': 'Quyền tool',
-      'en.2': 'Mỗi lần chạy headless chỉ cấp đúng tool cần. Lệnh shell được suy ra từ lệnh build/test của dự án.',
+      'en.2': 'Mỗi lần chạy headless chỉ cấp đúng tool cần. Lệnh shell được suy ra từ lệnh build/test của dự án. Không nạp plugin, skill hay MCP server của riêng bạn, nên mỗi lượt nhẹ hơn khoảng 20k token.',
       'en.3': 'PreToolUse chặn ghi ngoài phạm vi phase, chặn đọc bí mật, chặn AI tự <code>approve</code>, kể cả lệnh lồng.',
       'en.4': 'Sau mỗi lần chạy, mọi file bị sửa ngoài phạm vi đều bị revert và lần chạy bị đánh fail, dù được ghi bằng cách nào.',
       'la.k': 'Đa ngôn ngữ', 'la.h2': 'FE, BE, legacy viết bằng gì cũng được',
@@ -650,9 +651,9 @@ AIWS-Run: run-0005</pre>
       'in.ex.2': 'Ngừng hoạt động không làm đổi thông tin nào khác của khách hàng.',
       'in.ex.3': 'Không kích hoạt lại được khách hàng khi số điện thoại của họ đang được một khách hàng đang hoạt động khác dùng.',
       'in.2.h': 'AI làm việc theo từng phase',
-      'in.2': 'AI biến requirement thành acceptance criteria, bản design và test spec, rồi viết code theo từng task nhỏ kèm unit test, và review kết quả. Ở mỗi phase, AI chỉ được sửa các file của phase đó; mọi thay đổi khác đều bị revert.',
+      'in.2': 'AI biến requirement thành acceptance criteria, bản design và test spec, rồi viết code theo từng task nhỏ kèm unit test, và review kết quả. Ở mỗi phase, AI chỉ được sửa các file của phase đó; mọi thay đổi khác đều bị revert. Trước khi tới tay bạn, design được một AI reviewer kiểm tra và trả về sửa khi còn finding critical.',
       'in.3.h': 'Bạn quyết định, hai lần',
-      'in.3': 'Lần đầu, bạn đọc design và test spec rồi duyệt, hoặc trả lại kèm ghi chú. Lần sau, bạn review và merge pull request. AI không chạy được hai lệnh này.',
+      'in.3': 'Lần đầu, bạn đọc design và test spec rồi duyệt, hoặc trả lại kèm ghi chú. Lần sau, bạn review và merge pull request. AI không chạy được hai lệnh này. Khi lần chạy dừng ở gate trong terminal của bạn, một menu hỏi quyết định: chọn bằng phím mũi tên.',
       'in.4.h': 'Bạn nhận một pull request kiểm tra được',
       'in.4': 'Code có unit test chạy qua, một ma trận nối từng acceptance criterion với test, task và commit của nó, và bản ghi của mọi lần AI chạy: prompt, chi phí và các file đã đổi.',
       'in.num': 'Trên workspace demo, sáu requirement thật mỗi cái cần <b>3 đến 7 task</b>, <b>60 đến 90 phút</b> AI chạy và <b>25 đến 41 USD</b> theo bảng giá API.',
@@ -688,9 +689,9 @@ AIWS-Run: run-0005</pre>
       'hero.h1': '要件から<span class="grad">テスト済みのコード</span>へ、確実な管理のもとで。',
       'hero.lead': 'AIWS（AI Software Factory）は、AI エージェントを明確なフェーズに沿って動かします。分析、テスト仕様を含む設計、ユニットテスト付きの小さなタスク単位の実装、そしてレビュー。各ステップは書き込み範囲が制限され、すべての成果物は git に残り、重要な判断は人が承認します。',
       'cta.start': 'クイックスタート', 'cta.github': 'GitHub のソースコード', 'cta.guide': '運用ガイド', 'cta.handbook': 'ハンドブック',
-      'wf.h2': '1 つの要件、9 つのステップ、2 つの承認ゲート',
+      'wf.h2': '1 つの要件、10 のステップ、2 つの承認ゲート',
       'wf.sub': '決定的なオーケストレーターが、どのフェーズを実行できるかを判断します。AI が自ら状態を変えることはありません。人が関与するのは、設計の承認と PR のマージという 2 つのゲートだけです。',
-      's0': 'ソースとレガシーコードからシステムを把握', 's1': 'Given/When/Then 形式の受け入れ基準', 's2': '設計判断、OpenAPI、AC から導くテストケース',
+      's0': 'ソースとレガシーコードからシステムを把握', 's1': 'Given/When/Then 形式の受け入れ基準', 's2': '設計判断、OpenAPI、AC から導くテストケース', 's2r': 'AI が要件とコードに照らして確認。重大な指摘は差し戻し、最大 3 回',
       'g1.b': '人が設計を承認', 'g1.d': '承認は内容のハッシュに紐づく', 's3': '10 ファイル以下の小さなタスク、それぞれ専用のテスト付き', 's4.loop': 'ループ',
       's5': '設計・コントラクト・標準と照合', 'g2.b': '人が PR をマージ', 'g2.d': 'いつも通り GitHub や GitLab で', 's6': '次の要件のために地図を最新化',
       'lg.ai': 'AI が実行', 'lg.gate': '人による承認ゲート', 'lg.loop': 'タスクごとに繰り返し、再試行は 3 回まで、超えると <code>blocked</code>',
@@ -700,7 +701,7 @@ AIWS-Run: run-0005</pre>
       'ar.ad.s': 'どの AI が行うか', 'ar.ad.p': '<code>claude</code> は権限を絞った Claude Code をヘッドレスで実行し、<code>scripted</code> はトークンを使わないテスト用に決定的に動作します。<code>codex</code> はレビューを担当でき、別のモデルがコードを確認します。V2 では Gemini に対応予定です。',
       'en.h2': 'プロンプトだけでなく、実際の仕組みでゲートを強制', 'en.sub': '4 つの独立したレイヤー。1 つが突破されても、次のレイヤーが止めます。',
       'en.1': 'ロックされたフェーズのエージェントは呼び出されません。承認は内容のハッシュに紐づき、再試行には上限があります。', 'en.2.h': 'ツール権限',
-      'en.2': 'ヘッドレス実行ごとに必要なツールだけを付与し、シェルの許可はプロジェクト自身のビルド・テストコマンドから導出します。',
+      'en.2': 'ヘッドレス実行ごとに必要なツールだけを付与し、シェルの許可はプロジェクト自身のビルド・テストコマンドから導出します。 あなた自身のプラグイン、スキル、MCP サーバーは読み込まないため、各ターンが約 2 万トークン軽くなります。',
       'en.3': 'PreToolUse フックが、範囲外の書き込み、秘密情報の読み取り、AI による自己 <code>approve</code> を、ネストしたシェルも含めてブロックします。',
       'en.4': '毎回の実行後、範囲外で変更されたファイルは書き込み方法に関係なく元に戻され、その実行は失敗扱いになります。',
       'la.k': 'あらゆる言語', 'la.h2': 'フロントエンド、バックエンド、レガシーのどのスタックにも対応',
@@ -751,9 +752,9 @@ AIWS-Run: run-0005</pre>
       'in.ex.2': '無効化しても、顧客のほかの情報は変わらない。',
       'in.ex.3': '同じ電話番号を別の有効な顧客が使っている間は、その顧客を再有効化できない。',
       'in.2.h': 'AI がフェーズごとに作業する',
-      'in.2': 'AI は要件を受け入れ基準、設計、テスト仕様に落とし込み、小さなタスクごとにユニットテスト付きでコードを書き、結果をレビューします。各フェーズで変更できるのはそのフェーズのファイルだけで、それ以外の変更は取り消されます。',
+      'in.2': 'AI は要件を受け入れ基準、設計、テスト仕様に落とし込み、小さなタスクごとにユニットテスト付きでコードを書き、結果をレビューします。各フェーズで変更できるのはそのフェーズのファイルだけで、それ以外の変更は取り消されます。 設計があなたに届く前に、AI レビュアーが確認し、重大な指摘が残っていれば差し戻します。',
       'in.3.h': '人が 2 回判断する',
-      'in.3': '1 回目は、設計とテスト仕様を読んで承認するか、コメントを付けて差し戻します。2 回目は、プルリクエストをレビューしてマージします。この 2 つのコマンドを AI は実行できません。',
+      'in.3': '1 回目は、設計とテスト仕様を読んで承認するか、コメントを付けて差し戻します。2 回目は、プルリクエストをレビューしてマージします。この 2 つのコマンドを AI は実行できません。 実行がターミナルでゲートに止まると、メニューが判断を尋ねます。矢印キーで選ぶだけです。',
       'in.4.h': '確認できるプルリクエストが届く',
       'in.4': 'ユニットテストに合格したコード、各受け入れ基準をテスト・タスク・コミットに結び付けるマトリクス、そして AI の実行ごとの記録（プロンプト、コスト、変更ファイル）が得られます。',
       'in.num': 'デモワークスペースでは、6 件の実要件はそれぞれ <b>3〜7 タスク</b>、AI の実行時間 <b>60〜90 分</b>、API の定価で <b>25〜41 USD</b> でした。',
@@ -789,9 +790,9 @@ AIWS-Run: run-0005</pre>
       'hero.h1': '从需求到<span class="grad">经过测试的代码</span>，全程可控。',
       'hero.lead': 'AIWS（AI Software Factory）让 AI 智能体按明确的阶段工作：分析、附带测试规格的设计、按小任务逐个实现并编写单元测试，最后评审。每一步都限定写入范围，所有产出都保存在 git 中，关键决策由人来审批。',
       'cta.start': '快速开始', 'cta.github': 'GitHub 源代码', 'cta.guide': '操作指南', 'cta.handbook': '手册',
-      'wf.h2': '一个需求，九个步骤，两道人工关卡',
+      'wf.h2': '一个需求，十个步骤，两道人工关卡',
       'wf.sub': '由确定性的编排器决定哪个阶段可以运行，AI 不会自行改变状态。人只需在两道关卡介入：审批设计和合并 PR。',
-      's0': '从源代码和遗留系统绘制系统地图', 's1': '以 Given/When/Then 编写验收标准', 's2': '设计决策、OpenAPI、源自验收标准的测试用例',
+      's0': '从源代码和遗留系统绘制系统地图', 's1': '以 Given/When/Then 编写验收标准', 's2': '设计决策、OpenAPI、源自验收标准的测试用例', 's2r': 'AI 对照需求和代码检查；严重问题退回修改，最多 3 轮',
       'g1.b': '人工审批设计', 'g1.d': '审批与内容哈希绑定', 's3': '小任务，≤ 10 个文件，各自带测试', 's4.loop': '循环',
       's5': '对照设计、契约和标准检查', 'g2.b': '人工合并 PR', 'g2.d': '照常在 GitHub 或 GitLab 上操作', 's6': '为下一个需求更新系统地图',
       'lg.ai': '由 AI 完成', 'lg.gate': '人工关卡', 'lg.loop': '按任务循环，最多重试 3 次，之后标记为 <code>blocked</code>',
@@ -801,7 +802,7 @@ AIWS-Run: run-0005</pre>
       'ar.ad.s': '由哪个 AI 执行', 'ar.ad.p': '<code>claude</code> 以受限权限无头运行 Claude Code；<code>scripted</code> 以确定性方式运行，测试不消耗 token；<code>codex</code> 可以承担评审阶段，让另一个模型检查代码。V2 将支持 Gemini。',
       'en.h2': '用真实机制而非仅靠提示词来把守关卡', 'en.sub': '四个相互独立的层。即使一层被绕过，下一层仍会拦截。',
       'en.1': '被锁定阶段的智能体永远不会被调用。审批与内容哈希绑定，重试次数有上限。', 'en.2.h': '工具权限',
-      'en.2': '每次无头运行只授予所需的工具；shell 权限由项目自身的构建和测试命令推导而来。',
+      'en.2': '每次无头运行只授予所需的工具；shell 权限由项目自身的构建和测试命令推导而来。 不加载你自己的插件、技能或 MCP 服务器，每一轮因此少约 2 万个 token。',
       'en.3': 'PreToolUse 钩子会拦截越界写入、读取机密以及 AI 自行 <code>approve</code> 的任何尝试，包括嵌套的 shell。',
       'en.4': '每次运行后，无论以何种方式写入，范围外被修改的文件都会被还原，本次运行判定为失败。',
       'la.k': '任意语言', 'la.h2': '前端、后端和遗留系统，任何技术栈均可',
@@ -852,9 +853,9 @@ AIWS-Run: run-0005</pre>
       'in.ex.2': '停用不会改变客户的其他任何信息。',
       'in.ex.3': '如果另一位活跃客户正在使用同一电话号码，则不能重新启用该客户。',
       'in.2.h': 'AI 按阶段工作',
-      'in.2': 'AI 把需求转化为验收标准、设计和测试规格，然后按小任务编写代码并附带单元测试，最后评审结果。在每个阶段，它只能修改该阶段的文件，其他任何改动都会被回退。',
+      'in.2': 'AI 把需求转化为验收标准、设计和测试规格，然后按小任务编写代码并附带单元测试，最后评审结果。在每个阶段，它只能修改该阶段的文件，其他任何改动都会被回退。 设计送到你面前之前，AI 评审员会先检查，只要还有严重问题就退回修改。',
       'in.3.h': '你做两次决定',
-      'in.3': '第一次，你阅读设计和测试规格后批准，或附上意见退回。第二次，你评审并合并拉取请求。这两条命令 AI 无法执行。',
+      'in.3': '第一次，你阅读设计和测试规格后批准，或附上意见退回。第二次，你评审并合并拉取请求。这两条命令 AI 无法执行。 运行在你的终端里停在关卡时，会出现菜单询问决定：用方向键选择即可。',
       'in.4.h': '你得到一个可核查的拉取请求',
       'in.4': '包含通过单元测试的代码、把每条验收标准与其测试、任务和提交关联起来的矩阵，以及每次 AI 运行的记录：提示词、成本和改动的文件。',
       'in.num': '在演示工作区中，六个真实需求各自用了 <b>3 到 7 个任务</b>、<b>60 到 90 分钟</b>的 AI 运行时间，按 API 标价计为 <b>25 到 41 美元</b>。',
@@ -890,9 +891,9 @@ AIWS-Run: run-0005</pre>
       'hero.h1': '요구사항에서 <span class="grad">테스트된 코드</span>까지, 통제된 방식으로.',
       'hero.lead': 'AIWS(AI Software Factory)는 AI 에이전트가 명확한 단계를 차례로 거치도록 이끕니다. 분석, 테스트 명세를 포함한 설계, 단위 테스트를 동반한 작은 태스크 단위 구현, 그리고 리뷰. 각 단계는 쓰기 범위가 제한되고, 모든 산출물은 git에 남으며, 중요한 결정은 사람이 승인합니다.',
       'cta.start': '빠른 시작', 'cta.github': 'GitHub 소스 코드', 'cta.guide': '운영 가이드', 'cta.handbook': '핸드북',
-      'wf.h2': '하나의 요구사항, 9단계, 2개의 사람 승인 게이트',
+      'wf.h2': '하나의 요구사항, 10단계, 2개의 사람 승인 게이트',
       'wf.sub': '결정적(deterministic) 오케스트레이터가 어떤 단계를 실행할지 결정하며, AI가 스스로 상태를 바꾸지 않습니다. 사람은 설계 승인과 PR 병합, 두 게이트에서만 개입합니다.',
-      's0': '소스와 레거시 코드로 시스템 지도 작성', 's1': 'Given/When/Then 형식의 인수 기준', 's2': '설계 결정, OpenAPI, AC에서 도출한 테스트 케이스',
+      's0': '소스와 레거시 코드로 시스템 지도 작성', 's1': 'Given/When/Then 형식의 인수 기준', 's2': '설계 결정, OpenAPI, AC에서 도출한 테스트 케이스', 's2r': 'AI가 요구사항과 코드에 비추어 검토하고, 치명적 지적은 최대 3회까지 되돌려 수정',
       'g1.b': '사람이 설계 승인', 'g1.d': '승인은 내용 해시에 연결됨', 's3': '10개 이하 파일의 작은 태스크, 각각 자체 테스트 포함', 's4.loop': '반복',
       's5': '설계, 계약, 표준과 대조', 'g2.b': '사람이 PR 병합', 'g2.d': '평소처럼 GitHub 또는 GitLab에서', 's6': '다음 요구사항을 위해 지도 최신화',
       'lg.ai': 'AI가 수행', 'lg.gate': '사람 승인 게이트', 'lg.loop': '태스크마다 반복, 재시도 3회까지, 이후 <code>blocked</code>',
@@ -902,7 +903,7 @@ AIWS-Run: run-0005</pre>
       'ar.ad.s': '어떤 AI가 할지', 'ar.ad.p': '<code>claude</code>는 제한된 권한으로 Claude Code를 헤드리스로 실행하고, <code>scripted</code>는 토큰 없이 테스트할 수 있도록 결정적으로 동작합니다. <code>codex</code>가 리뷰 단계를 맡아 다른 모델이 코드를 검토할 수 있습니다. V2에서는 Gemini를 지원할 예정입니다.',
       'en.h2': '프롬프트만이 아닌 실제 메커니즘으로 게이트를 강제', 'en.sub': '4개의 독립된 레이어. 하나가 뚫려도 다음 레이어가 막습니다.',
       'en.1': '잠긴 단계의 에이전트는 호출되지 않습니다. 승인은 내용 해시에 연결되고 재시도 횟수는 제한됩니다.', 'en.2.h': '도구 권한',
-      'en.2': '헤드리스 실행마다 필요한 도구만 부여하며, 셸 권한은 프로젝트 자체의 빌드·테스트 명령에서 도출됩니다.',
+      'en.2': '헤드리스 실행마다 필요한 도구만 부여하며, 셸 권한은 프로젝트 자체의 빌드·테스트 명령에서 도출됩니다. 사용자 자신의 플러그인, 스킬, MCP 서버는 불러오지 않아 턴마다 약 2만 토큰이 줄어듭니다.',
       'en.3': 'PreToolUse 훅이 범위 밖 쓰기, 비밀 정보 읽기, AI의 자기 <code>approve</code> 시도를 중첩 셸까지 포함해 차단합니다.',
       'en.4': '매 실행 후 범위 밖에서 변경된 파일은 어떤 방식으로 쓰였든 되돌려지고, 해당 실행은 실패로 처리됩니다.',
       'la.k': '모든 언어', 'la.h2': '프론트엔드, 백엔드, 레거시 모두 어떤 스택이든 가능',
@@ -953,9 +954,9 @@ AIWS-Run: run-0005</pre>
       'in.ex.2': '비활성화해도 고객의 다른 정보는 바뀌지 않는다.',
       'in.ex.3': '같은 전화번호를 다른 활성 고객이 쓰고 있으면 그 고객을 다시 활성화할 수 없다.',
       'in.2.h': 'AI가 단계별로 작업합니다',
-      'in.2': 'AI는 요구사항을 인수 기준, 설계, 테스트 명세로 바꾸고, 작은 태스크 단위로 단위 테스트와 함께 코드를 작성한 뒤 결과를 리뷰합니다. 각 단계에서는 그 단계의 파일만 수정할 수 있으며, 그 밖의 변경은 되돌려집니다.',
+      'in.2': 'AI는 요구사항을 인수 기준, 설계, 테스트 명세로 바꾸고, 작은 태스크 단위로 단위 테스트와 함께 코드를 작성한 뒤 결과를 리뷰합니다. 각 단계에서는 그 단계의 파일만 수정할 수 있으며, 그 밖의 변경은 되돌려집니다. 설계가 당신에게 오기 전에 AI 리뷰어가 검토하고, 치명적 지적이 남아 있으면 되돌려 보냅니다.',
       'in.3.h': '사람이 두 번 결정합니다',
-      'in.3': '첫 번째로, 설계와 테스트 명세를 읽고 승인하거나 의견을 달아 돌려보냅니다. 두 번째로, 풀 리퀘스트를 리뷰하고 병합합니다. 이 두 명령은 AI가 실행할 수 없습니다.',
+      'in.3': '첫 번째로, 설계와 테스트 명세를 읽고 승인하거나 의견을 달아 돌려보냅니다. 두 번째로, 풀 리퀘스트를 리뷰하고 병합합니다. 이 두 명령은 AI가 실행할 수 없습니다. 실행이 터미널에서 게이트에 멈추면 메뉴가 결정을 묻습니다. 화살표 키로 고르면 됩니다.',
       'in.4.h': '확인할 수 있는 풀 리퀘스트를 받습니다',
       'in.4': '단위 테스트를 통과한 코드, 각 인수 기준을 테스트·태스크·커밋과 연결하는 매트릭스, 그리고 모든 AI 실행의 기록(프롬프트, 비용, 변경된 파일)을 받습니다.',
       'in.num': '데모 워크스페이스에서 실제 요구사항 6건은 각각 <b>태스크 3~7개</b>, AI 실행 시간 <b>60~90분</b>, API 정가 기준 <b>25~41 USD</b>가 들었습니다.',
