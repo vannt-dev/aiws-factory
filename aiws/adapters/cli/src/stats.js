@@ -28,15 +28,16 @@ export function runStats(ws, req) {
       stats.cost_usd = (stats.cost_usd ?? 0) + cost;
       stats.by_phase[phase] = (stats.by_phase[phase] ?? 0) + cost;
     }
-    const turns = ev.report?.num_turns;
-    if (typeof turns === 'number') {
-      stats.turns = (stats.turns ?? 0) + turns;
-      (stats.turns_by_phase ??= {})[phase] = (stats.turns_by_phase[phase] ?? 0) + turns;
-    }
     const t = tokenCounts(ev.report);
     if (t) {
       stats.tokens = addTokens(stats.tokens, t);
       (stats.tokens_by_phase ??= {})[phase] = addTokens(stats.tokens_by_phase[phase], t);
+      // turns are shown beside the tokens, so only the runs that report tokens count (older evidence has none)
+      const turns = ev.report?.num_turns;
+      if (typeof turns === 'number') {
+        stats.turns = (stats.turns ?? 0) + turns;
+        (stats.turns_by_phase ??= {})[phase] = (stats.turns_by_phase[phase] ?? 0) + turns;
+      }
     }
   }
   return stats;
