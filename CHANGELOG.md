@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- When a draft pull request was opened, the PR gate still said to open one; it now names the
+  pull request. The gate menu counts the open review findings by severity.
+
 ## [0.7.0] - 2026-10-18
 
 An AI review of the design before you read it, a menu to decide at a gate, and runs that

@@ -53,7 +53,10 @@ export function gateChoices(ws, st) {
     lines.push(`Tasks done: ${done} of ${(st.tasks ?? []).length}`);
     if (st.pr_url) lines.push(`Pull request: ${st.pr_url}`);
     const review = P.reviewFindings(read('05-review.md')).filter((f) => !f.resolved);
-    if (review.length) lines.push(`Review: ${review.map((f) => f.severity).join(', ')} finding(s) open`);
+    if (review.length) {
+      const count = (sev) => review.filter((f) => f.severity === sev).length;
+      lines.push(`Review: ${count('critical')} critical, ${count('major')} major, ${count('minor')} minor open`);
+    }
     lines.push('Approve only after the pull request is merged.');
     return {
       title: `${req}: the pull request waits for you`,

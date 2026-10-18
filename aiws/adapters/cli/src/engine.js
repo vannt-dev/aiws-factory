@@ -295,6 +295,7 @@ function openDraftPr(ws, st) {
   if (res.status !== 0) return failed(`the command exited ${res.status}: ${(res.stderr || res.stdout).trim()}`);
   const url = (res.stdout.match(/https?:\/\/\S+/g) ?? []).at(-1) ?? null;
   if (url) st.pr_url = url;
+  st.reason = `draft pull request opened${url ? `: ${url}` : ''}; after it is merged run \`aiws approve ${req} pr\` (or \`aiws reject ${req} pr -m "..."\`)`;
   addHistory(st, { phase: st.phase, result: 'draft_pr', url });
   commitWork(ws, st, `chore(${req}): draft pull request opened`);
   // the branch on the host carries the state that records the pull request, so the merged branch is this one

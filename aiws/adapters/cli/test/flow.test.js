@@ -719,6 +719,11 @@ test('pull_request in runtime.yaml: at the PR gate the branch is pushed and a dr
   const st = state(root);
   assert.equal(st.phase, 'pr_approval', st.reason);
   assert.equal(st.pr_url, 'https://example.test/acme/shop/pull/7');
+  // the stop message says the pull request is open, not that one must be opened
+  assert.match(
+    st.reason,
+    /^draft pull request opened: https:\/\/example\.test\/acme\/shop\/pull\/7; after it is merged run `aiws approve REQ-001 pr`/
+  );
   const [branch, base, title, bodyFile] = JSON.parse(fs.readFileSync(calls, 'utf8'));
   assert.deepEqual([branch, base], ['aiws/REQ-001', 'main']);
   assert.match(title, /^REQ-001/);
