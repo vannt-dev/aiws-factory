@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `claude.settings` in `runtime.yaml` passes extra Claude Code settings to every run, for example
+  `bashOutputMaxChars: 8000` to keep long build and test logs short. Off by default.
 - `claude.mcp` in `runtime.yaml` gives agents MCP servers, such as a code graph, in lean runs too:
   the servers, each allowed tool by its full name (others are denied) and optionally the phases.
   Off by default; on repositories of 90 to 300 files a code graph did not lower the cost.
