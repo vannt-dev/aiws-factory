@@ -9,6 +9,9 @@ claude:
   command: claude
   permission_mode: dontAsk      # headless: chỉ các tool trong --allowedTools được chạy
   timeout_minutes: 30
+  # Chạy gọn (mặc định bật): chỉ nạp tool của phase, settings của project (hook guard), không MCP server nào;
+  # bỏ plugin/skill/MCP/hook trong settings của user (~20k token mỗi lượt). Đặt false nếu cần apiKeyHelper/env của user.
+  # lean: true
   # Lệnh hook bảo vệ. Mặc định tự chọn: workspace có sẵn aiws/adapters/cli thì chạy
   # 'node "${CLAUDE_PROJECT_DIR}/aiws/adapters/cli/bin/aiws.js" guard', còn không thì 'aiws guard' (cần `aiws` trên PATH).
   # guard_command: 'aiws guard'

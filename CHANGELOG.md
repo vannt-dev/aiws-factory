@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Lean Claude Code runs, on by default: each run loads only the tools of its phase, the project
+  settings (with the guard hook) and no MCP server, instead of the plugins, skills, MCP servers and
+  hooks of the user setup. The fixed part of each turn fell from about 30k to 9k tokens on a test
+  machine. `claude.lean: false` in `runtime.yaml` restores the full setup.
 - The evidence of a Claude Code run keeps its token counts (new input, cache write, cache read,
   output) and its model. `aiws stats` adds a table of tokens and turns per phase, and `aiws status`
   the total, so you can see where the cost of a requirement goes.

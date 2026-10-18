@@ -208,17 +208,34 @@ function quoteArg(a) {
   return `"${String(a).replace(/"/g, '\\"')}"`;
 }
 
+/**
+ * The arguments of one headless run. By default (`claude.lean`, on unless set to false) the run loads only the
+ * tools the phase may use, the settings of the project (where `aiws sync claude` puts the guard hook) and no MCP
+ * server: the plugins, skills, MCP servers and hooks of the user's own setup would otherwise travel with every
+ * turn of every run, about 20k tokens that no agent of the workflow uses.
+ */
+export function claudeArgs(ws, { contract, agent, phase }) {
+  const cfg = ws.runtime.claude ?? {};
+  const args = ['-p', '--output-format', 'json', '--permission-mode', cfg.permission_mode ?? 'dontAsk'];
+  const tools = allowedTools(ws, contract);
+  args.push('--allowedTools', tools.join(','));
+  if (cfg.lean !== false) {
+    const names = [...new Set(tools.map((t) => t.replace(/\(.*$/, '')))];
+    args.push('--tools', names.join(','), '--setting-sources', 'project,local');
+    args.push('--strict-mcp-config', '--mcp-config', JSON.stringify({ mcpServers: {} }));
+  }
+  const model = modelFor(ws, agent, phase);
+  if (model) args.push('--model', model);
+  if (cfg.max_turns) args.push('--max-turns', String(cfg.max_turns));
+  for (const extra of cfg.extra_args ?? []) args.push(fill(extra, {}));
+  return { args, tools };
+}
+
 /** Runs `claude -p` headless. The prompt goes through stdin to avoid Windows command-line limits. */
 export function runAgent(ws, { prompt, env, contract, agent }) {
   const cfg = ws.runtime.claude ?? {};
   const bin = cfg.command ?? 'claude';
-  const args = ['-p', '--output-format', 'json', '--permission-mode', cfg.permission_mode ?? 'dontAsk'];
-  const tools = allowedTools(ws, contract);
-  args.push('--allowedTools', tools.join(','));
-  const model = modelFor(ws, agent, env.AIWS_PHASE);
-  if (model) args.push('--model', model);
-  if (cfg.max_turns) args.push('--max-turns', String(cfg.max_turns));
-  for (const extra of cfg.extra_args ?? []) args.push(fill(extra, {}));
+  const { args, tools } = claudeArgs(ws, { contract, agent, phase: env.AIWS_PHASE });
 
   const cmdline = [bin, ...args.map(quoteArg)].join(' ');
   const started = Date.now();
@@ -235,7 +252,10 @@ export function runAgent(ws, { prompt, env, contract, agent }) {
   const raw = res.stdout ?? '';
   const report = parse(raw);
   const ok = res.status === 0 && !report.is_error;
-  const stderr = (res.stderr ?? '') + (res.error ? String(res.error) : '');
+  let stderr = (res.stderr ?? '') + (res.error ? String(res.error) : '');
+  if (!ok && /unknown option.*--(tools|setting-sources|strict-mcp-config|mcp-config)/i.test(stderr)) {
+    stderr += '\naiws: this Claude Code is too old for a lean run. Update it, or set `claude.lean: false` in aiws/config/runtime.yaml.';
+  }
   return {
     ok,
     exitCode: res.status,
