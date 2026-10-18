@@ -51,9 +51,9 @@ export function pipelineSteps(workflow, st, stats) {
       if (tasks.length) step.note = `${tasks.filter((t) => t.status === 'done').length}/${tasks.length} tasks`;
     }
     if (p.on_critical) {
-      // a round ends in a pass or in findings that send the work back
-      const findings = ofPhase.filter((h) => h.result === 'critical').length;
-      const rounds = findings + (status === 'done' || status === 'running' ? 1 : 0);
+      // a round ends in a pass, in findings that send the work back, or in findings left for a human
+      const ended = ofPhase.filter((h) => ['ok', 'critical', 'critical_rounds_exhausted'].includes(h.result)).length;
+      const rounds = ended + (status === 'running' ? 1 : 0);
       if (rounds > 1 || p.max_rounds) step.rounds = { count: Math.max(rounds, 1), max: p.max_rounds ?? null };
     }
     return step;

@@ -90,6 +90,8 @@ aiws run REQ-001          # runs until the next point that needs you
 [REQ-003] design / architect (attempt 1/3)
   ok -> design
 [REQ-003] design / test-designer (attempt 1/3)
+  ok -> design_review
+[REQ-003] design_review / design-reviewer (attempt 1/2)
   ok -> design_approval (waiting_human)
 ```
 
@@ -105,6 +107,7 @@ The documents are in `aiws/work/REQ-001/`. Read them in this order:
 
 `aiws report REQ-001` puts the documents, the trace and the cost so far on one page, `aiws/work/REQ-001/report.html`, if you would rather read them in a browser.
 
+0. **`02-design-review.md`.** Before you see the design, an AI reviewer has checked it against the requirement, the test specification and the code. A `[critical]` finding sent the design back to be fixed, up to 3 rounds, so what you read has passed that review. Read the `[major]` and `[minor]` findings: they are left for you. If blocking findings are still open after 3 rounds, `aiws status` says so and lists them; decide whether to approve, or reject with a note.
 1. **`02-design.md`, the last section, "Quyết định cần duyệt" (decisions to approve).** The architect lists every choice that needs your judgement, with the alternatives it rejected. Statements it could not verify are marked `[CẦN XÁC NHẬN]` ("to be confirmed").
 2. **`01-analysis.md`.** Check that each acceptance criterion (`AC-1`, `AC-2`, ...) says what you meant, and read the assumptions under "Câu hỏi mở" (open questions).
 3. **`03-test-spec.md`, the last section, "Ma trận AC" (AC matrix).** Every acceptance criterion must have test cases. Read a few test cases in full: they should name concrete data and expected results.

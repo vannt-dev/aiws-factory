@@ -262,7 +262,8 @@ test('AI usage limit: the run pauses without counting an attempt or blocking, an
   assert.equal(st.paused, undefined);
   assert.equal(st.interrupted, undefined);
   runs = evidenceRuns(root);
-  const prompt = readFile(root, `aiws/work/REQ-001/evidence/runs/${runs.at(-1).prompt_file}`);
+  const resumed = runs.filter((ev) => ev.agent === 'test-designer').at(-1);
+  const prompt = readFile(root, `aiws/work/REQ-001/evidence/runs/${resumed.prompt_file}`);
   assert.match(prompt, /previous attempt was interrupted/);
   assert.match(prompt, /output files of this step may contain partial work/);
 });
@@ -737,4 +738,41 @@ test('pull_request: a failing command leaves the gate as it was and says so', ()
   assert.equal(st.pr_url, undefined);
   assert.match(r.out, /draft pull request not opened/);
   assert.equal(git(root, ['status', '--porcelain']), '');
+});
+
+test('design review: a blocking finding sends the design back with the finding, the next round passes', () => {
+  const root = makeWorkspace({ discover: true });
+  ok(root, ['new', 'REQ-001']);
+  ok(root, ['run', 'REQ-001'], { env: { AIWS_DESIGN_REVIEW_CRITICAL: '1' } });
+  const st = state(root);
+  assert.equal(st.phase, 'design_approval', st.reason);
+  const results = st.history.filter((h) => h.phase === 'design_review').map((h) => h.result);
+  assert.deepEqual(results, ['critical', 'ok']);
+  // the architect's second run was told what the review found
+  const runs = path.join(root, 'aiws/work/REQ-001/evidence/runs');
+  const architect = fs
+    .readdirSync(runs)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => JSON.parse(fs.readFileSync(path.join(runs, f), 'utf8')))
+    .filter((ev) => ev.agent === 'architect');
+  assert.equal(architect.length, 2);
+  const prompt = readFile(root, `aiws/work/REQ-001/evidence/runs/${architect[1].prompt_file}`);
+  assert.match(prompt, /nickname rỗng trả lỗi gì/);
+  // the review is part of what the human approves
+  assert.match(st.reason, /02-design-review\.md/);
+  ok(root, ['approve', 'REQ-001', 'design', '--yes']);
+});
+
+test('design review: after max_rounds with blocking findings the human decides at the gate', () => {
+  const root = makeWorkspace({ discover: true });
+  ok(root, ['new', 'REQ-001']);
+  ok(root, ['run', 'REQ-001'], { env: { AIWS_DESIGN_REVIEW_CRITICAL: '9' } });
+  const st = state(root);
+  assert.equal(st.phase, 'design_approval');
+  assert.equal(st.status, 'waiting_human');
+  const results = st.history.filter((h) => h.phase === 'design_review').map((h) => h.result);
+  assert.deepEqual(results, ['critical', 'critical', 'critical_rounds_exhausted']);
+  assert.match(st.reason, /design_review still has 1 blocking finding\(s\) after 3 rounds: .*nickname rỗng/);
+  assert.equal(st.rounds?.design_review, undefined);
+  assert.match(ok(root, ['status', 'REQ-001']).stdout, /\[x\] design_review\s+3 runs · .*round 3 of 3/);
 });

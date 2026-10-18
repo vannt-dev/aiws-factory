@@ -32,7 +32,8 @@ test('a requirement at the design gate: earlier steps done with their runs, cost
   assert.equal(byId.design_approval.note, 'waiting for you');
   const lines = pipelineText(steps);
   assert.match(lines[1], /^\[x\] design\s+3 runs · 7 min · 2\.25 USD$/);
-  assert.match(lines[2], /^\[\?\] design_approval\s+waiting for you$/);
+  assert.match(lines[2], /^\[x\] design_review\s+round 1 of 3$/);
+  assert.match(lines[3], /^\[\?\] design_approval\s+waiting for you$/);
 });
 
 test('review rounds count the findings that sent the work back; a gate names who decided', () => {

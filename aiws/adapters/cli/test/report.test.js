@@ -43,6 +43,7 @@ test('the report page carries the state, the trace, the tasks, the approvals, th
   assert.match(html, /all_tasks_done/);
   // documents are there, and markup inside them is inert
   assert.match(html, /<summary>02-design\.md<\/summary><pre>/);
+  assert.match(html, /<summary>02-design-review\.md<\/summary><pre>/);
   assert.match(html, /&lt;script&gt;alert\(&quot;x&quot;\)&lt;\/script&gt; &amp; &quot;quotes&quot;/);
   assert.doesNotMatch(html, /<script>alert/);
   assert.match(html, /<details open><summary>05-review\.md<\/summary>/);

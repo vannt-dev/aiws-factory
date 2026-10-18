@@ -83,6 +83,7 @@ phase_write_scope:
   analysis:         ["aiws/work/{req}/01-analysis.md", "aiws/work/{req}/questions.md"]
   design:           ["aiws/work/{req}/02-design.md", "aiws/work/{req}/03-test-spec.md",
                      "aiws/work/{req}/api-contract.yaml"]
+  design_review:    ["aiws/work/{req}/02-design-review.md"]
   planning:         ["aiws/work/{req}/04-plan.yaml"]
   implementation:   ["{task.allowed_files}", "aiws/work/{req}/questions.md"]
   unit_test:        ["aiws/work/{req}/evidence/**"]

@@ -68,7 +68,8 @@ test('stats without cost (scripted runs) still counts runs and time', () => {
   ok(root, ['new', 'REQ-001']);
   ok(root, ['run', 'REQ-001']);
   const r = ok(root, ['stats']);
-  assert.match(r.stdout, /REQ-001\s+waiting_human\s+design_approval\s+0\s+3\s+\d+\s+-\s+/);
+  // analyst, architect, test designer and design reviewer
+  assert.match(r.stdout, /REQ-001\s+waiting_human\s+design_approval\s+0\s+4\s+\d+\s+-\s+/);
   assert.doesNotMatch(r.stdout, /USD list-price/);
 });
 

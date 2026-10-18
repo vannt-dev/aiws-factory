@@ -9,7 +9,7 @@
 **Language:** English · [Tiếng Việt](README.vi.md)
 
 AIWS turns a requirement into tested code through controlled phases with human gates:
-analysis → design + test spec → **human approval** → per-task implementation with unit tests → review → **human PR merge** → knowledge update.
+analysis → design + test spec → AI design review → **human approval** → per-task implementation with unit tests → review → **human PR merge** → knowledge update.
 A deterministic orchestrator owns the state; AI agents only work inside the write scope of the current phase.
 V1 runs on Claude Code and works with any language in the frontend, backend or legacy code.
 

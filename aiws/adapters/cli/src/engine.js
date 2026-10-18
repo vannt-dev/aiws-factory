@@ -313,6 +313,7 @@ function prBody(st) {
     '',
     '## Documents',
     `- Design: \`${work}/02-design.md\`, test specification: \`${work}/03-test-spec.md\``,
+    `- Design review: \`${work}/02-design-review.md\``,
     `- Review: \`${work}/05-review.md\`, trace: \`${work}/trace.md\``,
     `- \`aiws report ${st.req_id}\` gathers everything into one page.`,
     '',
@@ -445,7 +446,25 @@ function stepAgentPhase(ws, st, def) {
     r.evidence.outcome = 'critical_findings';
     writeEvidence(ws, req, r.evidence);
     const target = def.on_critical ?? 'planning';
-    addFeedback(st, target, `${def.id} critical findings`, `Add fix tasks for: ${critical.map((c) => c.message).join(' | ')}`);
+    const listed = critical.map((c) => c.message).join(' | ');
+    // `max_rounds`: after that many rounds with blocking findings the work moves on, and the human at the
+    // next gate decides, with the open findings in front of them, instead of the loop running on
+    st.rounds ??= {};
+    const round = (st.rounds[def.id] ?? 0) + 1;
+    if (def.max_rounds && round >= def.max_rounds) {
+      delete st.rounds[def.id];
+      addHistory(st, { phase: def.id, agent: step.agent, result: 'critical_rounds_exhausted', run: r.runId, findings: critical.length });
+      enterPhase(ws, st, def.next);
+      st.reason =
+        `${def.id} still has ${critical.length} blocking finding(s) after ${round} rounds: ${listed}. ` +
+        `Read them before you decide. ${st.reason ?? ''}`.trim();
+      commitWork(ws, st, `chore(${req}): ${def.id} left ${critical.length} finding(s) for a human`, outputs, { 'AIWS-Run': r.runId });
+      log(`  ${critical.length} critical finding(s) after ${round} rounds -> ${st.phase} (a human decides)`);
+      return;
+    }
+    st.rounds[def.id] = round;
+    const ask = target === 'planning' ? 'Add fix tasks for' : `Fix what the ${def.id} found`;
+    addFeedback(st, target, `${def.id} critical findings`, `${ask}: ${listed}`);
     addHistory(st, { phase: def.id, agent: step.agent, result: 'critical', run: r.runId, findings: critical.length });
     enterPhase(ws, st, target);
     commitWork(ws, st, `chore(${req}): ${def.id} found ${critical.length} critical issue(s)`, outputs, { 'AIWS-Run': r.runId });
@@ -456,6 +475,7 @@ function stepAgentPhase(ws, st, def) {
   r.evidence.outcome = 'ok';
   writeEvidence(ws, req, r.evidence);
   addHistory(st, { phase: def.id, agent: step.agent, result: 'ok', run: r.runId });
+  if (st.rounds) delete st.rounds[def.id];
   if (def.id === 'planning' || contract.produces_plan) mergePlan(ws, st);
 
   if (idx + 1 < steps.length) {

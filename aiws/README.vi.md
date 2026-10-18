@@ -5,7 +5,7 @@
 AIWS biến một requirement thành code đã test qua các phase có kiểm soát và có human gate:
 
 ```
-discover (1 lần) ─► analysis ─► design + test spec ─► [NGƯỜI duyệt design] ─► planning
+discover (1 lần) ─► analysis ─► design + test spec ─► design review ─► [NGƯỜI duyệt design] ─► planning
    ─► implementation (từng task: developer → build → unit test → commit) ─► review ─► [NGƯỜI merge PR] ─► knowledge update ─► done
 ```
 
@@ -89,8 +89,8 @@ Mọi output của AI phải theo **chuẩn quốc tế thông dụng** và **kh
 
 ```bash
 aiws new REQ-001                 # tạo aiws/work/REQ-001 + nhánh aiws/REQ-001
-aiws run REQ-001                 # analysis → design → test spec, dừng ở gate duyệt design
-#   đọc 01-analysis.md, 02-design.md, 03-test-spec.md, api-contract.yaml
+aiws run REQ-001                 # analysis → design → test spec → design review, dừng ở gate duyệt design
+#   đọc 02-design-review.md, 01-analysis.md, 02-design.md, 03-test-spec.md, api-contract.yaml
 aiws approve REQ-001 design      # hoặc: aiws reject REQ-001 design -m "đổi X vì Y"
 aiws run REQ-001                 # planning → từng task → review, dừng ở gate PR
 git push -u origin aiws/REQ-001  # NGƯỜI push, mở PR, review, merge
@@ -108,6 +108,7 @@ Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lện
 | Developer ghi `questions.md` | `design_change_requested` | `aiws answer … -m` (giữ design) hoặc `aiws redesign … -m` (quay lại design, phải duyệt lại) |
 | Task fail 3 lần | `implementation / blocked` | sửa tay hoặc revert, rồi `aiws resume REQ-001`, rồi `aiws run` |
 | Review có `[critical]` | tự quay lại `planning` | không cần làm gì: planner thêm task sửa. Lần review sau đó là review tiếp nối: kiểm lại các finding cũ và chỉ đọc kỹ phần đã thay đổi từ lần trước |
+| Design review có `[critical]` | tự quay lại `design` | không cần làm gì: architect và test designer sửa, reviewer kiểm lại. Sau 3 vòng (`max_rounds`) vẫn còn finding chặn thì lần chạy dừng ở gate duyệt design, liệt kê các finding đó, và bạn quyết |
 | Sửa design sau khi đã duyệt | tự quay về `design_approval` | duyệt lại |
 | AI hết giới hạn sử dụng | giữ nguyên phase, vẫn `running` | không cần duyệt gì: chạy lại `aiws run REQ-001` khi giới hạn được đặt lại, hoặc `aiws run REQ-001 --wait` để tự chạy lại mỗi 15 phút |
 
