@@ -5,7 +5,7 @@
 AIWS turns a requirement into tested code through controlled phases with human gates:
 
 ```
-discover (once) ─► analysis ─► design + test spec ─► [HUMAN approves design] ─► planning
+discover (once) ─► analysis ─► design + test spec ─► design review ─► [HUMAN approves design] ─► planning
    ─► implementation (per task: developer → build → unit test → commit) ─► review ─► [HUMAN merges PR] ─► knowledge update ─► done
 ```
 
@@ -89,8 +89,8 @@ All AI output must follow **common international standards** and must **not brea
 
 ```bash
 aiws new REQ-001                 # creates aiws/work/REQ-001 and branch aiws/REQ-001
-aiws run REQ-001                 # analysis → design → test spec, stops at the design gate
-#   read 01-analysis.md, 02-design.md, 03-test-spec.md, api-contract.yaml
+aiws run REQ-001                 # analysis → design → test spec → design review, stops at the design gate
+#   read 02-design-review.md, 01-analysis.md, 02-design.md, 03-test-spec.md, api-contract.yaml
 aiws approve REQ-001 design      # or: aiws reject REQ-001 design -m "change X because Y"
 aiws run REQ-001                 # planning → every task → review, stops at the PR gate
 git push -u origin aiws/REQ-001  # a HUMAN pushes, opens the PR, reviews and merges
@@ -108,6 +108,7 @@ When the orchestrator stops, `aiws status REQ-001` tells you why and what to run
 | Developer wrote `questions.md` | `design_change_requested` | `aiws answer … -m` (keep the design) or `aiws redesign … -m` (back to design, needs a new approval) |
 | A task failed 3 times | `implementation / blocked` | fix or revert by hand, `aiws resume REQ-001`, then `aiws run` |
 | Review found a `[critical]` issue | back to `planning` automatically | nothing: the planner adds fix tasks. The review after them is a follow-up: it checks the earlier findings and reads in full only what changed since |
+| Design review found a `[critical]` issue | back to `design` automatically | nothing: the architect and test designer fix it and the reviewer checks again. After 3 rounds (`max_rounds`) with blocking findings left, the run stops at the design gate with them listed, and you decide |
 | The design changed after approval | back to `design_approval` automatically | approve again |
 | The AI usage limit is reached | same phase, still `running` | nothing to approve: `aiws run REQ-001` again once the limit resets, or `aiws run REQ-001 --wait` to have it retried every 15 minutes |
 

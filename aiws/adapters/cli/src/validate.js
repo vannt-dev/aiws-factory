@@ -105,6 +105,12 @@ export const RULES = {
       .filter((f) => f.severity === 'critical' && !f.resolved)
       .map((f) => ({ kind: 'critical', message: f.text }));
   },
+
+  design_review_no_open_critical({ work }) {
+    return P.reviewFindings(work('02-design-review.md'))
+      .filter((f) => f.severity === 'critical' && !f.resolved)
+      .map((f) => ({ kind: 'critical', message: f.text }));
+  },
 };
 
 // commitlint config-conventional types

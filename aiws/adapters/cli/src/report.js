@@ -10,7 +10,16 @@ import { pipelineSteps, pipelineHtml, PIPELINE_STYLE } from './pipeline.js';
  * One page per requirement: what a person reads at a gate, in one place instead of a dozen files.
  * Everything on it comes from files that agents or third-party tools wrote, so every string is escaped.
  */
-const DOCS = ['01-analysis.md', '02-design.md', '03-test-spec.md', 'api-contract.yaml', '04-plan.yaml', '05-review.md', 'questions.md'];
+const DOCS = [
+  '01-analysis.md',
+  '02-design.md',
+  '03-test-spec.md',
+  'api-contract.yaml',
+  '02-design-review.md',
+  '04-plan.yaml',
+  '05-review.md',
+  'questions.md',
+];
 
 export function buildReport(ws, st) {
   const req = st.req_id;

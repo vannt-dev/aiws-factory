@@ -26,12 +26,19 @@ phases:
         contract: contracts/design.yaml
       - agent: test-designer
         contract: contracts/test-spec.yaml
+    next: design_review
+
+  - id: design_review              # AI review thiết kế trước khi người duyệt
+    agent: design-reviewer
+    contract: contracts/design-review.yaml
+    on_critical: design            # finding [critical] -> architect + test-designer sửa, rồi review lại
+    max_rounds: 3                  # sau 3 vòng vẫn còn critical -> tới gate, người quyết
     next: design_approval
 
   - id: design_approval
     type: human_gate
     gate: design
-    artifacts: [02-design.md, 03-test-spec.md, api-contract.yaml]
+    artifacts: [02-design.md, 03-test-spec.md, api-contract.yaml, 02-design-review.md]
     on_approve: planning
     on_reject: design
 

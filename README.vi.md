@@ -8,7 +8,7 @@
 **Ngôn ngữ:** [English](README.md) · Tiếng Việt
 
 AIWS biến một requirement thành code đã test qua các phase có kiểm soát và có human gate:
-phân tích → design + test spec → **người duyệt** → code từng task kèm unit test → review → **người merge PR** → cập nhật knowledge.
+phân tích → design + test spec → AI review design → **người duyệt** → code từng task kèm unit test → review → **người merge PR** → cập nhật knowledge.
 Orchestrator tất định giữ trạng thái; AI chỉ được làm trong phạm vi ghi của phase hiện tại.
 V1 chạy trên Claude Code và không phụ thuộc ngôn ngữ của FE, BE hay legacy.
 

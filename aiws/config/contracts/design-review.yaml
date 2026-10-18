@@ -1,0 +1,18 @@
+phase: design_review
+agent: design-reviewer
+skills: [api-design, db-design, coding-standards, unit-testing]
+tools: [read, write]
+reads:
+  - aiws/work/{req}/01-analysis.md
+  - aiws/work/{req}/02-design.md
+  - aiws/work/{req}/03-test-spec.md
+  - aiws/work/{req}/api-contract.yaml
+  - aiws/knowledge/
+outputs:
+  - path: aiws/work/{req}/02-design-review.md
+    template: 02-design-review.md
+    required_headings: [Tóm tắt, Findings, Đối chiếu requirement, Đối chiếu test spec]
+    required_headings_en: [Summary, Findings, Against the requirement, Against the test specification]
+rules:
+  - design_review_no_open_critical   # còn [critical] chưa [resolved] -> quay lại design sửa
+max_attempts: 2
