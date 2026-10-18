@@ -120,7 +120,7 @@ Questions worth asking while you read:
 - Did anything from your "out of scope" list come back in?
 - Is something left to be checked by hand only? On the demo, page wiring without unit tests was listed as manual steps for the reviewer of the pull request.
 
-Then decide:
+Then decide. If `aiws run` stopped in your terminal, a menu is already open: pick "Approve the design", or "Reject it" and type what must change. Later, `aiws gate REQ-001` opens it again. The commands do the same:
 
 ```bash
 aiws approve REQ-001 design

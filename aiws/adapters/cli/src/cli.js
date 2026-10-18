@@ -45,6 +45,9 @@ Requirement lifecycle
                                        (default aiws/work/REQ-001/report.html)
 
 Human-only (refuse to run inside an AI session; confirm interactively or pass --yes)
+  aiws gate REQ-001                    the decision that waits, as a menu: approve, reject, answer, open the
+                                       report or decide later (also offered when \`aiws run\` stops at a gate in
+                                       a terminal; --no-menu on run skips it)
   aiws approve REQ-001 design|pr [-m NOTE] [--sign] [--no-merge-check]
   aiws reject  REQ-001 design|pr -m FEEDBACK [--sign]
   aiws answer  REQ-001 -m ANSWER       answer blocking questions / a developer question (design unchanged)
@@ -140,7 +143,7 @@ export async function main(argv) {
       C.newReq(a1, { worktree: flags.worktree, profile: flags.profile });
       return 0;
     case 'run':
-      await C.run(a1, { once: Boolean(flags.once), wait: flags.wait });
+      await C.run(a1, { once: Boolean(flags.once), wait: flags.wait, menu: !flags['no-menu'] });
       return process.exitCode ?? 0;
     case 'stop':
       C.stop(a1);
@@ -159,6 +162,9 @@ export async function main(argv) {
       return 0;
     case 'report':
       C.report(a1, { out: flags.out });
+      return 0;
+    case 'gate':
+      await C.gate(a1);
       return 0;
     case 'approve':
       await C.approve(a1, a2, { ...human, mergeCheck: !flags['no-merge-check'] });
