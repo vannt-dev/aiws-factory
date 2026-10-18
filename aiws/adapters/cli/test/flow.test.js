@@ -520,10 +520,11 @@ test('status shows the AI runs and the cumulative cost of a requirement', () => 
   writeFile(root, `${runs}/run-0003.json`, JSON.stringify({ phase: 'design', duration_ms: 60000, report: { cost_usd: 0.5 } }));
   writeFile(root, `${runs}/run-0004.json`, '{ "truncated": '); // interrupted run: ignored
   writeFile(root, `${runs}/run-0003.prompt.md`, 'prompt'); // not evidence
-  assert.match(
-    ok(root, ['status', 'REQ-001']).stdout,
-    /AI runs: 3 \(6 min\), cost 3\.75 USD list-price equivalent \(analysis 1\.25, design 2\.50\)/
-  );
+  const shown = ok(root, ['status', 'REQ-001']).stdout;
+  assert.match(shown, /AI runs: 3 \(6 min\), cost 3\.75 USD list-price equivalent \(analysis 1\.25, design 2\.50\)/);
+  // the pipeline row: each step with what it took
+  assert.match(shown, /pipeline:\n\s+\[>\] analysis\s+1 run · 2 min · 1\.25 USD\n\s+\[ \] design\s+2 runs · 4 min · 2\.50 USD\n/);
+  assert.match(shown, /\[ \] pr_approval/);
 
   // adapters that report no cost (scripted): runs and time only
   writeFile(root, `${runs}/run-0001.json`, JSON.stringify({ phase: 'analysis', duration_ms: 1000, report: {} }));
