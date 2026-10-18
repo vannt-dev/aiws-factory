@@ -269,13 +269,24 @@ export function usageLimit(text) {
 export function parse(raw) {
   try {
     const data = JSON.parse(raw.trim().split(/\r?\n/).filter(Boolean).at(-1) ?? '{}');
+    const u = data.usage;
+    const models = Object.keys(data.modelUsage ?? {});
     return {
       is_error: Boolean(data.is_error),
       result: data.result ?? '',
       num_turns: data.num_turns ?? null,
       cost_usd: data.total_cost_usd ?? data.cost_usd ?? null,
       session_id: data.session_id ?? null,
-      model: data.model ?? null,
+      model: data.model ?? (models.length ? models.join(', ') : null),
+      // where the tokens went: new input, written to the prompt cache, read back from it, and output
+      tokens: u
+        ? {
+            input: u.input_tokens ?? 0,
+            cache_write: u.cache_creation_input_tokens ?? 0,
+            cache_read: u.cache_read_input_tokens ?? 0,
+            output: u.output_tokens ?? 0,
+          }
+        : null,
     };
   } catch {
     return { is_error: true, result: raw.slice(0, 2000) };
