@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `aiws detect` recognises the `.slnx` solution format of .NET 9, and prefers it when a folder also
   has an old `.sln`.
+- The operations guide no longer recommends git submodules for `source-fe/` and `source-be/`: a task
+  commit fails in one. They are plain folders of the workspace for now; `source-legacy/` may still be one.
 
 ## [0.7.1] - 2026-10-19
 

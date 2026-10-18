@@ -6,7 +6,7 @@ Workspace này vận hành theo **AIWS (AI Software Factory)**: requirement -> a
 | Đường dẫn | Là gì | Ai ghi |
 | --- | --- | --- |
 | `requirements/` | Requirement đầu vào (`REQ-001-*.md`) | Người |
-| `source-fe/`, `source-be/` | Code đích (repo mới, có thể là git submodule) | AI, chỉ trong task được duyệt |
+| `source-fe/`, `source-be/` | Code đích (repo mới, thư mục thường trong workspace) | AI, chỉ trong task được duyệt |
 | `source-legacy/` | Hệ thống cũ | **Read-only vĩnh viễn** |
 | `aiws/config/` | workflow, policies, runtime, contracts | Người |
 | `aiws/agents/`, `aiws/skills/`, `aiws/templates/` | Vai trò, kiến thức, mẫu output | Người |
