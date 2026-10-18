@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { makeWorkspace, ok, aiws, state, cleanEnv, scenario, FIXTURES } from './helpers.js';
@@ -104,8 +105,11 @@ test('gate menu at the PR gate: tasks, review and the reminder to merge first', 
   const root = atDesignGate();
   ok(root, ['approve', 'REQ-001', 'design', '--yes']);
   ok(root, ['run', 'REQ-001']);
+  const findings = ['## Findings', '- [minor] a', '- [minor] b', '- [major] c', '- [critical] [resolved] d', ''];
+  fs.writeFileSync(path.join(root, 'aiws/work/REQ-001/05-review.md'), findings.join('\n'));
   const r = drive(root, ['ESC']);
   assert.match(r.out, /the pull request waits for you/);
+  assert.match(r.out, /Review: 0 critical, 1 major, 2 minor open/);
   assert.match(r.out, /Tasks done: 2 of 2/);
   assert.match(r.out, /Approve only after the pull request is merged/);
   assert.match(r.out, /The pull request is merged: approve/);
