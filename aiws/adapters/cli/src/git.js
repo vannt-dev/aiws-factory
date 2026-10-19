@@ -86,6 +86,25 @@ export function remoteDefaultBranch(root, remote = 'origin') {
   return res.status === 0 ? res.stdout.trim().replace(`${remote}/`, '') : null;
 }
 
+/** The `branch` that .gitmodules sets for the submodule at `sub` (its path), or null ("." is not a branch). */
+export function gitmodulesBranch(root, sub) {
+  const res = git(root, ['config', '-f', '.gitmodules', '--get-regexp', '^submodule\\..*\\.path$'], { allowFail: true });
+  const line = res.stdout.split(/\r?\n/).find((l) => l.slice(l.indexOf(' ') + 1).trim() === sub);
+  if (!line) return null;
+  const name = line.slice('submodule.'.length, line.indexOf(' ') - '.path'.length);
+  const branch = git(root, ['config', '-f', '.gitmodules', `submodule.${name}.branch`], { allowFail: true }).stdout.trim();
+  return branch && branch !== '.' ? branch : null;
+}
+
+/** Ignores `pattern` in this clone only (.git/info/exclude): nothing in the repository changes. */
+export function excludeLocally(root, pattern) {
+  const file = path.resolve(root, git(root, ['rev-parse', '--git-path', 'info/exclude']).stdout.trim());
+  const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  if (text.split(/\r?\n/).includes(pattern)) return;
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.appendFileSync(file, `${text && !text.endsWith('\n') ? '\n' : ''}${pattern}\n`);
+}
+
 /** `rev` when it is a commit the submodule has (fetched), else null. */
 function known(subAbs, rev) {
   return rev && revParse(subAbs, `${rev}^{commit}`) ? rev : null;

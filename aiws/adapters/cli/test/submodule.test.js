@@ -154,6 +154,8 @@ test('submodule: the PR gate waits for the submodule merge, then the knowledge u
   assert.equal(st.submodules['source-be'].done, true);
   assert.equal(st.submodules['source-be'].merge, 'merge commit');
   assert.equal(git(be, ['rev-parse', 'HEAD']), git(root, ['rev-parse', 'HEAD:source-be']));
+  // detached, as after `git submodule update`: the next requirement must not start from aiws/REQ-001
+  assert.equal(git(be, ['branch', '--show-current']), '');
 
   ok(root, ['run', 'REQ-001']);
   st = state(root);
@@ -237,4 +239,20 @@ test('submodule: when the workspace refuses the task commit, the commit already 
   assert.match(git(be, ['log', '-1', '--format=%B', '--grep=Task: T1', '-F']), new RegExp(`AIWS-Run: ${done.run}\\b`));
   assert.equal(git(root, ['rev-parse', 'HEAD:source-be']), git(be, ['rev-parse', 'HEAD']));
   assert.equal(git(root, ['status', '--porcelain', '--ignore-submodules=none']), '');
+});
+
+test('submodule: the base branch is never a branch left by an earlier requirement', () => {
+  const { root } = makeSubmoduleWorkspace(['source-be']);
+  const be = path.join(root, 'source-be');
+  // left on the branch of a finished requirement (e.g. the workspace pulled without `git submodule update`)
+  git(be, ['switch', '-q', '-c', 'aiws/REQ-000']);
+  ok(root, ['new', 'REQ-001']);
+  assert.equal(state(root).submodules['source-be'].base_branch, 'main', 'the default branch of its origin');
+
+  // .gitmodules names the branch the project follows: that one wins
+  const ws2 = makeSubmoduleWorkspace(['source-be']).root;
+  git(ws2, ['config', '-f', '.gitmodules', 'submodule.source-be.branch', 'develop']);
+  git(ws2, ['commit', '-q', '-am', 'follow develop']);
+  ok(ws2, ['new', 'REQ-001']);
+  assert.equal(state(ws2).submodules['source-be'].base_branch, 'develop');
 });

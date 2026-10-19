@@ -29,7 +29,8 @@ function installHooks(root, hooks) {
 test('a git hook that refuses the task commit fails the attempt; the developer gets its output and fixes it', () => {
   const root = makeWorkspace({ discover: true });
   installHooks(root, {
-    'pre-commit': 'if git diff --cached -- source-be | grep -q FORBIDDEN; then echo "lint: FORBIDDEN is not allowed" >&2; exit 1; fi',
+    'pre-commit':
+      'if git diff --cached -- source-be | grep -q FORBIDDEN; then printf "\\033[31mlint: FORBIDDEN is not allowed\\033[0m\\n" >&2; exit 1; fi',
   });
   const t1 = new URL('./fixtures/scripted/developer-T1.js', import.meta.url).href;
   const env = scenario({
@@ -60,6 +61,7 @@ test('a git hook that refuses the task commit fails the attempt; the developer g
   const prompt = readFile(root, `aiws/work/REQ-001/evidence/runs/${run2}.prompt.md`);
   assert.match(prompt, /a git hook of the workspace refused the commit/);
   assert.match(prompt, /lint: FORBIDDEN is not allowed/);
+  assert.ok(!prompt.includes('\u001b['), 'without terminal colour codes');
   // one commit for T1, without the marker, with the subject and trailers
   const commits = git(root, ['log', '--format=%s', '--grep=Task: T1', '-F', 'main..HEAD']).split('\n');
   assert.deepEqual(commits, [

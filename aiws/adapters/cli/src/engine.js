@@ -842,7 +842,9 @@ function stepLoop(ws, st, def) {
     // a hook of the repository (lint, format, commit message rules) refused the commit: the code stays
     // as it is and the next attempt gets what the hook said, like a failing test
     const where = e.repo ? `submodule ${e.repo}` : 'the workspace';
-    const said = e.output.length > 3000 ? `...${e.output.slice(-3000)}` : e.output;
+    // eslint-disable-next-line no-control-regex -- ANSI escape codes
+    const plain = e.output.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, ''); // colours of lint tools mean nothing to an agent
+    const said = plain.length > 3000 ? `...${plain.slice(-3000)}` : plain;
     task.last_failure = [
       `- a git hook of ${where} refused the commit of this task. Fix what it reports:\n${indent(said)}`,
       '- if the hook refuses the commit message rather than the code, the task cannot fix that: a person' +

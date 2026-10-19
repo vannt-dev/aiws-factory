@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { makeWorkspace, ok, scenario, readFile, mergeToMain, tempDir } from './helpers.js';
+import { makeWorkspace, ok, scenario, readFile, mergeToMain, tempDir, git } from './helpers.js';
 import { esc, renderHtml } from '../src/report.js';
 
 test('the report page carries the state, the trace, the tasks, the approvals, the runs and the documents', () => {
@@ -95,4 +95,19 @@ test('renderHtml escapes every field and copes with an empty requirement', () =>
   assert.match(html, /Problems: No acceptance criteria found/);
   assert.match(html, /generated 2026-10-11T00:00:00Z/);
   assert.equal((html.match(/<p class="muted">none<\/p>/g) ?? []).length, 6);
+});
+
+test('the report in the work folder does not block the PR gate, and is never committed', () => {
+  const root = makeWorkspace({ discover: true });
+  ok(root, ['new', 'REQ-001']);
+  ok(root, ['run', 'REQ-001']);
+  ok(root, ['approve', 'REQ-001', 'design', '--yes']);
+  ok(root, ['run', 'REQ-001']);
+  ok(root, ['report', 'REQ-001']); // the gate menu offers it, at the default place
+  assert.ok(fs.existsSync(path.join(root, 'aiws/work/REQ-001/report.html')));
+  mergeToMain(root);
+  ok(root, ['approve', 'REQ-001', 'pr', '--yes']);
+  ok(root, ['run', 'REQ-001']);
+  assert.equal(git(root, ['status', '--porcelain']), '');
+  assert.equal(git(root, ['log', '--all', '--format=', '--name-only', '--', 'aiws/work/REQ-001/report.html']), '');
 });

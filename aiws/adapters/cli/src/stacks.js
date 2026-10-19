@@ -127,8 +127,9 @@ export function languageSummary(dir, top = 6) {
       if (e.isDirectory()) {
         if (!SKIP.has(e.name) && !e.name.startsWith('.')) walk(path.join(d, e.name));
       } else {
+        if (e.name.startsWith('.')) continue; // .git of a submodule, .gitignore, .editorconfig: not a language
         const ext = path.extname(e.name).toLowerCase() || e.name;
-        if (['.gitkeep', '.md', '.txt', '.lock', '.log'].includes(ext)) continue;
+        if (['.md', '.txt', '.lock', '.log'].includes(ext)) continue;
         counts.set(ext, (counts.get(ext) ?? 0) + 1);
       }
     }

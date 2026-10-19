@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `source-fe/` and `source-be/` may be git submodules. `aiws new` creates the requirement branch inside each one;
-  a task is committed in the submodule first, then the moved pointer in the workspace, with the same trailers. Scope
+- `source-fe/` and `source-be/` may be git submodules. `aiws new` creates the requirement branch inside each one
+  (its base: the branch it is on, else the `branch` of `.gitmodules`, else its origin's default branch); a task is committed in the submodule first, then the moved pointer in the workspace, with the same trailers. Scope
   checks and reverts work on the files inside the submodule. The draft pull request opens in the submodule
   repository first, and `aiws approve REQ pr` waits until it is merged too. `--worktree` and nested submodules are
   refused with a clear message.
@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A git hook that refuses a task commit (lint-staged, commitlint...) no longer stops `aiws run` with the
   requirement stuck in `running`: the attempt fails, the developer gets the hook's output on the next one,
   and the task is blocked after the last attempt, like a failing test.
+- `aiws report` no longer blocks `aiws approve REQ pr` and `aiws new` with "Working tree is not clean":
+  the page in the work folder is ignored in this clone (`.git/info/exclude`) and never committed.
+- `aiws approve REQ pr` sees a pull request merged on the host: it fast-forwards the local base branch
+  from the remote first (a base with local commits of its own is left alone), as it already did for submodules.
+- `aiws detect --write` names the commands it kept instead of always saying it kept some.
+- `aiws detect` no longer counts dotfiles (`.git`, `.gitignore`, `.editorconfig`) among a folder's languages.
 
 ## [0.7.1] - 2026-10-19
 

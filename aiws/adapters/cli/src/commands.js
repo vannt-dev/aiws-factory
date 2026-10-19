@@ -266,9 +266,16 @@ function submodulesToBranch(ws, branch, { worktree }) {
       throw new AiwsError(`submodule ${sub} has submodules of its own (${nested.join(', ')}); aiws supports one level only.`);
     }
     if (G.branchExists(abs, branch)) throw new AiwsError(`Branch ${branch} already exists in submodule ${sub}.`);
+    // the branch it is on, unless an earlier requirement left it there; then the branch .gitmodules
+    // names; then the default branch of its origin
+    const current = G.currentBranch(abs);
     out[sub] = {
       branch,
-      base_branch: G.currentBranch(abs) ?? G.remoteDefaultBranch(abs) ?? 'main',
+      base_branch:
+        (current && !current.startsWith('aiws/') ? current : null) ??
+        G.gitmodulesBranch(ws.root, sub) ??
+        G.remoteDefaultBranch(abs) ??
+        'main',
       base_commit: G.head(abs),
     };
   }
@@ -525,11 +532,19 @@ function approvePr(req, opts) {
   const branchHead = G.revParse(ws.root, st.branch);
   const base = st.base_branch ?? ws.baseBranch();
   if (!branchHead) throw new AiwsError(`Branch ${st.branch} not found.`);
+  if (opts.mergeCheck !== false) {
+    // the pull request was merged on the host: bring the local base up to it when that is a fast-forward
+    // (a base with local commits of its own is left alone, as are submodules, which are fetched below)
+    const remote = ws.runtime.pull_request?.remote ?? 'origin';
+    if (G.git(ws.root, ['remote', 'get-url', remote], { allowFail: true }).status === 0) {
+      G.git(ws.root, ['fetch', '-q', remote, `${base}:${base}`], { allowFail: true });
+    }
+  }
   const merged = opts.mergeCheck === false ? 'not checked' : mergedInto(ws.root, branchHead, base, st.base_commit);
   if (!merged) {
     throw new AiwsError(
       `${st.branch} is not merged into ${base} yet: it is not an ancestor of ${base}, and the files it changed differ on ${base}. ` +
-        `Merge the PR and update your local ${base} first (or pass --no-merge-check).`
+        `Merge the PR first (or pass --no-merge-check); a local ${base} with commits of its own is not updated.`
     );
   }
   const subMerges = opts.mergeCheck === false ? {} : submodulesMerged(ws, st);
@@ -631,7 +646,9 @@ function ensureGitlinkCommit(ws, sub, rev) {
 function checkoutGitlink(ws, sub) {
   const abs = path.join(ws.root, sub);
   const want = G.gitlinkAt(ws.root, 'HEAD', sub);
-  if (!want || !fs.existsSync(path.join(abs, '.git')) || G.head(abs) === want) return;
+  if (!want || !fs.existsSync(path.join(abs, '.git'))) return;
+  if (G.head(abs) === want && !G.currentBranch(abs)) return;
+  // detached, as `git submodule update` leaves it: the next requirement must not start on aiws/REQ-xxx
   G.git(abs, ['checkout', '-q', '--detach', want]);
 }
 
@@ -798,6 +815,8 @@ export function report(req, { out } = {}) {
   const st = loadState(ws, req);
   const html = renderHtml(buildReport(ws, st));
   const file = out ? path.resolve(out) : path.join(ws.workDir(req), 'report.html');
+  // a generated view: kept out of commits and of the clean-tree checks of the gates
+  if (!out) G.excludeLocally(ws.root, '/aiws/work/*/report.html');
   writeText(file, html);
   log(`Report written: ${file}`);
   return file;
@@ -963,8 +982,10 @@ export function detect({ write = false, force = false } = {}) {
     sides: { ...(current.sides ?? {}), ...sides },
     commands: { ...(current.commands ?? {}) },
   };
+  const kept = [];
   for (const [k, v] of Object.entries(commands)) {
     if (merged.commands[k] === undefined || force) merged.commands[k] = v;
+    else if (merged.commands[k] !== v) kept.push(k);
   }
 
   // Rewrite only the blocks that really change; the rest of the file keeps its comments and layout.
@@ -981,7 +1002,7 @@ export function detect({ write = false, force = false } = {}) {
   }
   fs.writeFileSync(file, text);
   log(
-    `\nUpdated ${changed.join(', ')} in aiws/config/policies.yaml${force ? '' : ' (kept existing commands; --force to overwrite)'}. ` +
+    `\nUpdated ${changed.join(', ')} in aiws/config/policies.yaml${kept.length ? ` (kept your ${kept.join(', ')}; --force to overwrite)` : ''}. ` +
       'Review it, then `aiws sync claude`.'
   );
 }
