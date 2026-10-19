@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-19
+
+Git submodules in `source-fe/` and `source-be/`, and what real runs on four projects showed: an optional
+lint step, commits that pass commitlint, the language of commits, and fixes at the hooks and the PR gate.
+
 ### Added
 
 - `source-fe/` and `source-be/` may be git submodules. `aiws new` creates the requirement branch inside each one
@@ -437,7 +442,8 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/vannt-dev/aiws-factory/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.5.0...v0.6.0
