@@ -15,11 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   repository first, and `aiws approve REQ pr` waits until it is merged too. `--worktree` and nested submodules are
   refused with a clear message.
 
+### Changed
+
+- A task commit is titled `feat(REQ-001): be - add the nickname (T1)`: the task id goes last, a capitalised
+  first word starts lower case, no full stop, at most 100 characters. `feat(REQ-001): T1 ...` was refused by
+  the common commitlint preset (`@commitlint/config-conventional`) of the projects that use one.
+
 ### Fixed
 
 - `aiws detect` recognises the `.slnx` solution format of .NET 9, and prefers it when a folder also
   has an old `.sln`.
 - A submodule in `source-fe/` or `source-be/` no longer stops `aiws run` at the first task.
+- A git hook that refuses a task commit (lint-staged, commitlint...) no longer stops `aiws run` with the
+  requirement stuck in `running`: the attempt fails, the developer gets the hook's output on the next one,
+  and the task is blocked after the last attempt, like a failing test.
 
 ## [0.7.1] - 2026-10-19
 

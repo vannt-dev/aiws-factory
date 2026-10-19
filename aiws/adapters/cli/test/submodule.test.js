@@ -50,7 +50,7 @@ test('submodule: tasks commit inside the submodule on its own branch, then the g
   // T1 is a commit of the submodule, with the trailers, on the submodule's requirement branch
   const t1 = st.tasks.find((t) => t.id === 'T1');
   const subLog = git(be, ['log', '--format=%s%n%b', '-1', '--grep=Task: T1', '-F']);
-  assert.match(subLog, /^feat\(REQ-001\): T1/);
+  assert.match(subLog, /^feat\(REQ-001\): .* \(T1\)\n/);
   assert.match(subLog, /REQ-ID: REQ-001/);
   assert.match(git(be, ['show', '--name-only', '--format=', 'HEAD~0']) + git(be, ['log', '--name-only', '--format=']), /src\/users\.js/);
   // the workspace commit of T1 moves the gitlink and carries the same trailers
@@ -210,4 +210,31 @@ test('submodule: --worktree and nested submodules are refused before anything is
   assert.notEqual(nested.status, 0);
   assert.match(nested.out, /submodule source-be has submodules of its own \(vendor\/inner\)/);
   assert.equal(git(be, ['branch', '--list', 'aiws/*']), '');
+});
+
+test('submodule: when the workspace refuses the task commit, the commit already made in the submodule is undone', () => {
+  const { root } = makeSubmoduleWorkspace(['source-be']);
+  const be = path.join(root, 'source-be');
+  // the workspace refuses the first T1 commit by its message (a commit-msg hook), once
+  const hooks = tempDir('aiws-hooks-');
+  fs.writeFileSync(
+    path.join(hooks, 'commit-msg'),
+    '#!/bin/sh\nif grep -q "^Task: T1" "$1" && [ ! -f "$(git rev-parse --git-dir)/refused-once" ]; then\n' +
+      '  touch "$(git rev-parse --git-dir)/refused-once"; echo "commit-msg: not this time" >&2; exit 1\nfi\n'
+  );
+  fs.chmodSync(path.join(hooks, 'commit-msg'), 0o755);
+  git(root, ['config', 'core.hooksPath', hooks.replaceAll('\\', '/')]);
+
+  const st = toPrGate(root);
+  assert.deepEqual(
+    st.history.filter((h) => h.task === 'T1').map((h) => h.result),
+    ['fail', 'done']
+  );
+  // one T1 commit in the submodule, and the workspace points at it
+  assert.equal(git(be, ['log', '--format=%h', '--grep=Task: T1', '-F']).split('\n').length, 1);
+  // ...made by the attempt that succeeded, not left over from the refused one
+  const done = st.history.find((h) => h.task === 'T1' && h.result === 'done');
+  assert.match(git(be, ['log', '-1', '--format=%B', '--grep=Task: T1', '-F']), new RegExp(`AIWS-Run: ${done.run}\\b`));
+  assert.equal(git(root, ['rev-parse', 'HEAD:source-be']), git(be, ['rev-parse', 'HEAD']));
+  assert.equal(git(root, ['status', '--porcelain', '--ignore-submodules=none']), '');
 });

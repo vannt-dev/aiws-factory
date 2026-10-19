@@ -192,19 +192,40 @@ function ownRestore(root, rev, files) {
  * Paths inside a submodule are committed there first, with the same message; the workspace commit then
  * takes the moved gitlink.
  */
-export function commit(root, message, paths = null, { sign = false } = {}) {
-  if (paths) {
-    const own = [];
-    for (const [sub, rels] of byRepo(root, [...new Set(paths)])) {
-      if (!sub) own.push(...rels);
-      else if (ownCommit(path.join(root, sub), message, rels, { sign })) own.push(sub);
-    }
-    paths = own;
+/** A git hook (pre-commit, commit-msg...) refused the commit. `repo` is the submodule, '' for the workspace. */
+export class CommitRejected extends AiwsError {
+  constructor(repo, output) {
+    super(`git commit failed${repo ? ` in ${repo}` : ''}:\n${output}`);
+    this.repo = repo;
+    this.output = output;
   }
-  return ownCommit(root, message, paths, { sign });
 }
 
-function ownCommit(root, message, paths, { sign }) {
+export function commit(root, message, paths = null, { sign = false } = {}) {
+  if (!paths) return ownCommit(root, message, null, { sign });
+  const own = [];
+  const committed = []; // [submodule dir, its HEAD before]
+  try {
+    for (const [sub, rels] of byRepo(root, [...new Set(paths)])) {
+      if (!sub) {
+        own.push(...rels);
+        continue;
+      }
+      const abs = path.join(root, sub);
+      const before = head(abs);
+      if (ownCommit(abs, message, rels, { sign, repo: sub })) committed.push([abs, before]);
+      own.push(sub); // the gitlink: staged only when it moved
+    }
+    return ownCommit(root, message, own, { sign });
+  } catch (e) {
+    // one change is one commit in each repository: a refused commit undoes those already made in
+    // submodules, and their changes stay staged for the next try
+    for (const [abs, before] of committed) git(abs, ['reset', '-q', '--soft', before]);
+    throw e;
+  }
+}
+
+function ownCommit(root, message, paths, { sign, repo = '' }) {
   if (paths) {
     // pathspecs that neither exist nor are tracked make `git add` fail
     paths = [...new Set(paths)].filter((p) => fs.existsSync(path.join(root, p)) || isTracked(root, p));
@@ -214,7 +235,7 @@ function ownCommit(root, message, paths, { sign }) {
   const staged = git(root, ['diff', '--cached', '--name-only']).stdout.trim();
   if (!staged) return null;
   const res = run('git', ['commit', '-q', ...(sign ? ['-S'] : []), '-F', '-'], { cwd: root, input: message });
-  if (res.status !== 0) throw new AiwsError(`git commit failed:\n${res.stderr.trim() || res.stdout.trim()}`);
+  if (res.status !== 0) throw new CommitRejected(repo, [res.stderr.trim(), res.stdout.trim()].filter(Boolean).join('\n'));
   return head(root);
 }
 

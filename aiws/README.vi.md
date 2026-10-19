@@ -87,7 +87,7 @@ Mọi output của AI phải theo **chuẩn quốc tế thông dụng** và **kh
 | Code | Convention của dự án, sau đó tới style guide chính thống của ngôn ngữ (Google Java Style, .NET conventions, PEP 8, Effective Go, PSR-12, Effective Dart...) |
 | API | OpenAPI 3.x, HTTP semantics RFC 9110; lỗi RFC 9457 nếu dự án chưa có format; thời gian ISO 8601/RFC 3339 |
 | Bảo mật | OWASP Top 10 / ASVS |
-| Commit | Conventional Commits (`feat(REQ-001): T1 …`, `fix(REQ-001): …`, `chore(REQ-001): …`) + git trailer |
+| Commit | Conventional Commits (`feat(REQ-001): be - … (T1)`, `fix(REQ-001): …`, `chore(REQ-001): …`) + git trailer |
 | Cấu trúc | Không đổi tên, di chuyển, xoá hay reformat file, thư mục, public API ngoài design đã duyệt; test đặt đúng vị trí chuẩn của ecosystem. Reviewer coi vi phạm là finding `major`/`critical`. |
 
 ## 3. Vòng đời một requirement

@@ -88,7 +88,7 @@ All AI output must follow **common international standards** and must **not brea
 | Code | The project's own conventions first, then the language's official style guide (Google Java Style, .NET conventions, PEP 8, Effective Go, PSR-12, Effective Dart...) |
 | API | OpenAPI 3.x, HTTP semantics per RFC 9110; RFC 9457 problem details when the project has no error format; ISO 8601 / RFC 3339 timestamps |
 | Security | OWASP Top 10 / ASVS |
-| Commits | Conventional Commits (`feat(REQ-001): T1 …`, `fix(REQ-001): …`, `chore(REQ-001): …`) plus git trailers |
+| Commits | Conventional Commits (`feat(REQ-001): be - … (T1)`, `fix(REQ-001): …`, `chore(REQ-001): …`) plus git trailers |
 | Structure | No renaming, moving, deleting or reformatting of files, folders or public APIs outside the approved design; tests live where the ecosystem expects them. The reviewer reports violations as `major` or `critical`. |
 
 ## 3. Lifecycle of a requirement

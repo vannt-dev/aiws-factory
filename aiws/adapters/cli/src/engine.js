@@ -827,20 +827,70 @@ function stepLoop(ws, st, def) {
   delete task.last_failure;
   saveState(ws, st);
   const message = [
-    `${task.type ?? 'feat'}(${req}): ${task.id} ${task.title ?? ''}`.trim(),
+    taskSubject(req, task),
     '',
     `REQ-ID: ${req}`,
     `Task: ${task.id}`,
     `Tests: ${(task.tests ?? []).join(', ') || '-'}`,
     `AIWS-Run: ${r.runId}`,
   ].join('\n');
-  const sha = G.commit(ws.root, message + '\n', [...codeFiles, ws.workRel(req)]);
+  let sha;
+  try {
+    sha = G.commit(ws.root, message + '\n', [...codeFiles, ws.workRel(req)]);
+  } catch (e) {
+    if (!(e instanceof G.CommitRejected)) throw e;
+    // a hook of the repository (lint, format, commit message rules) refused the commit: the code stays
+    // as it is and the next attempt gets what the hook said, like a failing test
+    const where = e.repo ? `submodule ${e.repo}` : 'the workspace';
+    const said = e.output.length > 3000 ? `...${e.output.slice(-3000)}` : e.output;
+    task.last_failure = [
+      `- a git hook of ${where} refused the commit of this task. Fix what it reports:\n${indent(said)}`,
+      '- if the hook refuses the commit message rather than the code, the task cannot fix that: a person' +
+        ` changes the hook or commits by hand, then runs \`aiws resume ${req}\``,
+    ].join('\n');
+    r.evidence.outcome = 'failed';
+    r.evidence.validation = [{ kind: 'invalid', message: `commit refused by a git hook of ${where}` }];
+    writeEvidence(ws, req, r.evidence);
+    addHistory(st, { phase: def.id, task: task.id, result: 'fail', run: r.runId, attempt, reason: 'commit refused' });
+    log(`  failed:\n${indent(task.last_failure)}`);
+    if (attempt >= maxAttempts) {
+      task.status = 'blocked';
+      setPhase(
+        st,
+        def.id,
+        'blocked',
+        `${task.id}: a git hook refused the commit ${attempt} times; fix it by hand then \`aiws resume ${req}\``
+      );
+    }
+    saveState(ws, st);
+    return;
+  }
   task.status = 'done';
   task.commit = sha;
   delete task.base;
   addHistory(st, { phase: def.id, task: task.id, result: 'done', run: r.runId, commit: sha?.slice(0, 7) });
   commitWork(ws, st, `chore(${req}): ${task.id} done`);
   log(`  ${task.id} done (${sha?.slice(0, 7)})`);
+}
+
+/**
+ * The subject of a task commit, in the shape of the common Conventional Commits lint rules
+ * (@commitlint/config-conventional): `feat(REQ-001): be - add the nickname (T1)`. It does not start with
+ * a capital letter, ends without a full stop and stays within 100 characters; the task id goes last.
+ */
+export function taskSubject(req, task) {
+  const head = `${task.type ?? 'feat'}(${req}): `;
+  const tail = ` (${task.id})`;
+  let title = String(task.title ?? '')
+    .replace(/\s+/g, ' ')
+    .replace(/[.\s]+$/, '')
+    .trim();
+  // "Add ..." -> "add ...", but an acronym such as "API" is left as written
+  title = title.replace(/^(\p{Lu})(\p{Ll}*)(?=[\s,:;.!?-]|$)/u, (_, a, b) => a.toLowerCase() + b);
+  if (!title) title = 'task';
+  const room = 100 - head.length - tail.length;
+  if (title.length > room) title = `${title.slice(0, room - 1).trimEnd()}…`;
+  return head + title + tail;
 }
 
 /**
