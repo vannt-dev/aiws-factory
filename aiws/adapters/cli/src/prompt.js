@@ -26,6 +26,7 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
       `- Knowledge base: aiws/knowledge/`,
       `- This run is non-interactive. Nobody will answer questions during the run; follow the rules below for questions.`,
       LANGUAGE_LINE[ws.language],
+      ...(phase === 'planning' ? [TITLE_LINE[ws.gitLanguage]] : []),
     ].join('\n')
   );
 
@@ -138,6 +139,12 @@ function shellCommands(ws, phase, contract, task) {
   }
   return out;
 }
+
+// Task titles become commit subjects in the source repositories (`feat(REQ-001): <title> (T1)`).
+const TITLE_LINE = {
+  vi: '- Commits: write each task `title` in Vietnamese, short, starting with a lower-case word as in the template (`be - ...`); it becomes the commit subject.',
+  en: '- Commits: write each task `title` in English, short, starting with a lower-case word as in the template (`be - add ...`); it becomes the commit subject.',
+};
 
 // The documents come out in the workspace language whatever language the prompt and the skills are in.
 const LANGUAGE_LINE = {

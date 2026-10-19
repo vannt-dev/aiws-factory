@@ -333,10 +333,9 @@ function openDraftPr(ws, st) {
  * no quotes, backticks, `$`, `%`, `!` or backslashes (cmd.exe and POSIX shells).
  */
 export function prTitle(st) {
-  return `${st.req_id}: ${st.title ?? st.req_id}`
-    .replace(/[`"$%!\\]+/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const type = st.tasks?.length && st.tasks.every((x) => x.type === 'fix') ? 'fix' : 'feat';
+  const safe = String(st.title ?? '').replace(/[`"$%!\\]+/g, '');
+  return conventionalSubject(type, st.req_id, safe, '', `requirement ${st.req_id}`);
 }
 
 /** Terminal colour codes out: they mean nothing in a prompt or a log line. */
@@ -928,15 +927,19 @@ function stepLoop(ws, st, def) {
  * a capital letter, ends without a full stop and stays within 100 characters; the task id goes last.
  */
 export function taskSubject(req, task) {
-  const head = `${task.type ?? 'feat'}(${req}): `;
-  const tail = ` (${task.id})`;
-  let title = String(task.title ?? '')
+  return conventionalSubject(task.type ?? 'feat', req, task.title, ` (${task.id})`, 'task');
+}
+
+/** type(scope): title + tail, within 100 characters, no capital first word, no full stop. */
+function conventionalSubject(type, scope, rawTitle, tail = '', fallback = '') {
+  const head = `${type}(${scope}): `;
+  let title = String(rawTitle ?? '')
     .replace(/\s+/g, ' ')
     .replace(/[.\s]+$/, '')
     .trim();
   // "Add ..." -> "add ...", but an acronym such as "API" is left as written
   title = title.replace(/^(\p{Lu})(\p{Ll}*)(?=[\s,:;.!?-]|$)/u, (_, a, b) => a.toLowerCase() + b);
-  if (!title) title = 'task';
+  if (!title) title = fallback;
   const room = 100 - head.length - tail.length;
   if (title.length > room) title = `${title.slice(0, room - 1).trimEnd()}…`;
   return head + title + tail;

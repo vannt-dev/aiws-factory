@@ -72,7 +72,12 @@ const DETECTORS = [
   (d, rel) => (has(d, 'go.mod') ? { stack: 'go', build: `go -C ${rel} build ./...`, test: `go -C ${rel} test ./...` } : null),
   (d, rel) =>
     has(d, 'Cargo.toml')
-      ? { stack: 'rust', build: `cargo build --manifest-path ${rel}/Cargo.toml`, test: `cargo test --manifest-path ${rel}/Cargo.toml` }
+      ? {
+          stack: 'rust',
+          build: `cargo build --manifest-path ${rel}/Cargo.toml`,
+          test: `cargo test --manifest-path ${rel}/Cargo.toml`,
+          lint: `cargo fmt --manifest-path ${rel}/Cargo.toml --check`,
+        }
       : null,
   (d, rel) => {
     if (!has(d, 'pubspec.yaml')) return null;
@@ -93,19 +98,25 @@ const DETECTORS = [
           : script === 'test'
             ? `npm test --prefix ${rel}`
             : `npm run ${script} --prefix ${rel}`;
+    // what the project's own CI usually checks besides build and test
+    const lintScripts = ['lint', ['format:check', 'format-check', 'prettier:check'].find((s) => scripts[s])].filter((s) => s && scripts[s]);
     return {
       stack: `node-${pm}`,
       build: scripts.build ? runIn('build') : null,
       test: scripts.test ? runIn('test') : null,
+      lint: lintScripts.length ? lintScripts.map(runIn).join(' && ') : null,
       note: scripts.test ? null : 'package.json has no "test" script',
     };
   },
   (d, rel) => {
     if (!has(d, 'pyproject.toml') && !has(d, 'requirements.txt') && !has(d, 'setup.py')) return null;
+    const pyproject = has(d, 'pyproject.toml') ? fs.readFileSync(path.join(d, 'pyproject.toml'), 'utf8') : '';
+    const ruff = /\[tool\.ruff\b/.test(pyproject) || has(d, 'ruff.toml') || has(d, '.ruff.toml');
     return {
       stack: 'python',
       build: `python -m compileall -q -x "[.]venv|[.]tox|site-packages" ${rel}`,
       test: `python -m pytest -q ${rel}`,
+      lint: ruff ? `ruff check ${rel} && ruff format --check ${rel}` : null,
     };
   },
   (d, rel) =>
@@ -192,6 +203,7 @@ export function detectStacks(root) {
     const hit = detectDir(abs, name);
     if (hit?.build) commands[`${side}_build`] = hit.build;
     if (hit?.test) commands[`${side}_test`] = hit.test;
+    if (hit?.lint) commands[`${side}_lint`] = hit.lint;
     report.push({ dir: name, side, stack: hit?.stack ?? (languages.length ? 'unknown' : 'empty'), languages, note: hit?.note ?? null });
   }
   return { sides, commands, report };

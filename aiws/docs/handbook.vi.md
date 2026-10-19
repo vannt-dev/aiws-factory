@@ -128,6 +128,8 @@ aiws approve REQ-001 design
 aiws reject REQ-001 design -m "Dùng phương án C cho bấm đúp, và trả 409 khi trùng"
 ```
 
+`aiws approve REQ-001 design -m "..."` duyệt kèm điều kiện: ghi chú được đưa cho planner, developer và reviewer như feedback phải làm theo, bên trên design. Muốn đổi chính design thì reject, để design được viết lại.
+
 Bạn cũng có thể sửa tay các tài liệu trước khi duyệt. Approval ghi lại hash của design, test spec và API contract. Nếu sau đó một trong các file này thay đổi, approval mất hiệu lực và requirement quay về gate này.
 
 Đôi khi design yêu cầu bạn chọn. Ở REQ-005, design nêu ba cách xử lý bấm đúp khi đang lọc và được viết theo cách thứ nhất; duyệt nguyên trạng là chấp nhận lựa chọn mặc định đó, còn trả lại kèm ghi chú thì chọn được cách khác.

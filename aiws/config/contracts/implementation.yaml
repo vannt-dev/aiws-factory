@@ -4,7 +4,7 @@ skills: [coding-standards, fe-conventions, be-conventions, unit-testing]
 tools: [read, edit, write, bash]
 # Lệnh Bash được phép khi chạy headless: suy ra từ policies.commands ({side} = mọi side), cộng policies.bash_allow_extra.
 # Không phụ thuộc ngôn ngữ: dự án .NET sẽ được phép `dotnet test`, dự án Go được `go`, v.v.
-bash_allow: ["{side}_build", "{side}_test"]
+bash_allow: ["{side}_build", "{side}_test", "{side}_lint"]
 reads:
   - aiws/work/{req}/02-design.md
   - aiws/work/{req}/03-test-spec.md
@@ -14,4 +14,5 @@ reads:
 # Orchestrator tự chạy sau developer (diff-scope luôn chạy trước). {side} = các side mà task chạm tới.
 checks:
   - {command: "{side}_build", optional: true}
+  - {command: "{side}_lint", optional: true}    # lint/format của dự án (detect đề xuất nếu dự án có)
 max_attempts: 3

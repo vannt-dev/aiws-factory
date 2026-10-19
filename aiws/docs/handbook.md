@@ -128,6 +128,8 @@ aiws approve REQ-001 design
 aiws reject REQ-001 design -m "Use option C for the double click, and return 409 for a duplicate"
 ```
 
+`aiws approve REQ-001 design -m "..."` approves with a condition: the note goes to the planner, the developer and the reviewer as feedback they must follow on top of the design. For a change to the design itself, reject instead, so the design is written again.
+
 You may also correct the documents by hand before you approve. The approval records a hash of the design, the test specification and the API contract. If one of them changes afterwards, the approval is no longer valid and the requirement returns to this gate.
 
 Sometimes the design asks you to choose. In REQ-005 the design listed three ways to handle a double click while a filter is on, and was written for the first; approving it as it stood accepted that default, and a reject with a note would have selected another.

@@ -6,6 +6,9 @@ base_branch: main
 # Ngôn ngữ của tài liệu đầu ra (analysis, design, test spec, review, knowledge): vi hoặc en.
 # en dùng template trong aiws/templates/en/ và heading tiếng Anh (required_headings_en trong contracts).
 language: vi
+# Ngôn ngữ của những gì vào repo code: tiêu đề commit (title của task) và pull request. Mặc định theo language.
+# Repo code viết bằng tiếng Anh: đặt en, tài liệu vẫn tiếng Việt.
+# git_language: en
 
 prerequisites:
   - aiws/knowledge/system-map.md   # phải chạy `aiws discover` trước

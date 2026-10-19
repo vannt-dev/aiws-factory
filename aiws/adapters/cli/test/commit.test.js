@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import YAML from 'yaml';
 import { makeWorkspace, ok, state, git, scenario, tempDir, readFile } from './helpers.js';
 import { taskSubject } from '../src/engine.js';
 
@@ -71,4 +72,47 @@ test('a git hook that refuses the task commit fails the attempt; the developer g
     ),
   ]);
   assert.doesNotMatch(readFile(root, 'source-be/src/users.js'), /FORBIDDEN/);
+});
+
+test('a configured <side>_lint runs after each task: a failure is a failed attempt, and the developer may run it', () => {
+  const root = makeWorkspace({ discover: true });
+  const polFile = path.join(root, 'aiws/config/policies.yaml');
+  const pol = YAML.parse(fs.readFileSync(polFile, 'utf8'));
+  // a lint that refuses the marker the first developer attempt leaves behind
+  const lint = path.join(tempDir('aiws-lint-'), 'lint.cjs');
+  fs.writeFileSync(
+    lint,
+    "const s = require('fs').readFileSync('source-be/src/users.js', 'utf8');\n" +
+      "if (s.includes('FORBIDDEN')) { console.log('lint: FORBIDDEN in users.js'); process.exit(1); }\n"
+  );
+  pol.commands.be_lint = `node "${lint.replaceAll('\\', '/')}"`;
+  fs.writeFileSync(polFile, YAML.stringify(pol));
+  git(root, ['commit', '-qam', 'lint the backend']);
+  const t1 = new URL('./fixtures/scripted/developer-T1.js', import.meta.url).href;
+  const env = scenario({
+    'developer-T1-1.js': `
+      import { write, read } from './_lib.js';
+      await import(${JSON.stringify(t1)});
+      write('source-be/src/users.js', read('source-be/src/users.js') + '// FORBIDDEN\\n');
+    `,
+    'developer-T1-2.js': `
+      import { write, read } from './_lib.js';
+      write('source-be/src/users.js', read('source-be/src/users.js').replace('// FORBIDDEN\\n', ''));
+    `,
+  });
+  ok(root, ['new', 'REQ-001']);
+  ok(root, ['run', 'REQ-001'], { env });
+  ok(root, ['approve', 'REQ-001', 'design', '--yes']);
+  ok(root, ['run', 'REQ-001'], { env });
+  const st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+  assert.deepEqual(
+    st.history.filter((h) => h.task === 'T1').map((h) => h.result),
+    ['fail', 'done']
+  );
+  const run2 = st.history.find((h) => h.task === 'T1' && h.result === 'done').run;
+  const prompt = readFile(root, `aiws/work/REQ-001/evidence/runs/${run2}.prompt.md`);
+  assert.match(prompt, /check 'be_lint' failed[\s\S]*lint: FORBIDDEN in users\.js/);
+  assert.match(prompt, /- be_lint: `node /, 'the developer is allowed to run the lint');
+  assert.match(ok(root, ['check', 'build']).out, /> be_lint: node /);
 });

@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { makeWorkspace, ok, aiws, state, git, tempDir, scenario } from './helpers.js';
-import { prTitle } from '../src/engine.js';
 
 /**
  * A workspace whose `side` folders are git submodules. Each one is its own repository (with a bare
@@ -289,9 +288,4 @@ test('submodule: a hook that turns the submodule repository bare is undone and n
   assert.match(r.out, /tests: 4 failed/);
   assert.match(r.out, /core\.bare/);
   assert.equal(git(be, ['rev-parse', '--is-inside-work-tree']), 'true');
-});
-
-test('the pull request title cannot run anything in the shell of the command', () => {
-  const title = prTitle({ req_id: 'REQ-001', title: 'list `rm -rf x` and $(id) "quoted" %PATH% !x!\nnext' });
-  assert.equal(title, 'REQ-001: list rm -rf x and (id) quoted PATH x next');
 });

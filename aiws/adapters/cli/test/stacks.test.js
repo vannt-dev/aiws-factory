@@ -187,3 +187,22 @@ test('detectStacks reads the .slnx solution format of .NET 9, and prefers it bes
   assert.equal(commands.be_test, 'dotnet test source-be/Demo.slnx');
   assert.equal(commands.api_test, 'dotnet test source-api/Api.slnx');
 });
+
+test('detectStacks proposes a lint command where the project has one, and none elsewhere', () => {
+  const root = tempDir('aiws-stk-');
+  tree(root, {
+    'source-fe/package.json': JSON.stringify({
+      scripts: { build: 'tsc', test: 'vitest run', lint: 'eslint .', 'format:check': 'prettier --check .' },
+    }),
+    'source-be/pyproject.toml': '[project]\n[tool.ruff]\nline-length = 100\n',
+    'source-rs/Cargo.toml': '[package]',
+    'source-go/go.mod': 'module x',
+    'source-web/package.json': JSON.stringify({ scripts: { test: 'jest' } }),
+  });
+  const { commands } = detectStacks(root);
+  assert.equal(commands.fe_lint, 'npm run lint --prefix source-fe && npm run format:check --prefix source-fe');
+  assert.equal(commands.be_lint, 'ruff check source-be && ruff format --check source-be');
+  assert.equal(commands.rs_lint, 'cargo fmt --manifest-path source-rs/Cargo.toml --check');
+  assert.equal(commands.go_lint, undefined);
+  assert.equal(commands.web_lint, undefined);
+});
