@@ -56,7 +56,10 @@ export function acceptanceCriteria(md) {
 export function blockingQuestions(md) {
   return stripComments(md)
     .split(/\r?\n/)
-    .filter((l) => /\[blocking\]/i.test(l) && !/\[(answered|resolved)\]/i.test(l))
+    .filter((l) => {
+      const text = l.replace(/`[^`]*`/g, ''); // "no `[blocking]` question" names the marker, it is not one
+      return /\[blocking\]/i.test(text) && !/\[(answered|resolved)\]/i.test(text);
+    })
     .map((l) => l.trim());
 }
 

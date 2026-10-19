@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `aiws detect` recognises the `.slnx` solution format of .NET 9, and prefers it when a folder also
   has an old `.sln`.
+- An analysis that writes "no `[blocking]` question" no longer stops at a blocking question that is
+  not there: the marker inside inline code is a mention, not a question.
 - A submodule in `source-fe/` or `source-be/` no longer stops `aiws run` at the first task.
 - A git hook that refuses a task commit (lint-staged, commitlint...) no longer stops `aiws run` with the
   requirement stuck in `running`: the attempt fails, the developer gets the hook's output on the next one,
