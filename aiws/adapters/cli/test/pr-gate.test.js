@@ -26,6 +26,11 @@ test('PR gate: a pull request merged on the host is seen without updating the lo
   ok(root, ['approve', 'REQ-001', 'pr', '--yes']);
   assert.equal(state(root).phase, 'knowledge_update');
   assert.equal(git(root, ['rev-parse', 'main']), git(clone, ['rev-parse', 'HEAD']), 'local main fast-forwarded');
+
+  // done: the run says what to do with the knowledge branch
+  const done = ok(root, ['run', 'REQ-001']);
+  assert.equal(state(root).status, 'done');
+  assert.match(done.out, /knowledge updated on aiws\/REQ-001-knowledge: push it and merge it into main/);
 });
 
 test('the pull request title is a Conventional Commits subject that no shell reads', () => {

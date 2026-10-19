@@ -124,7 +124,9 @@ export function workspaceStats(ws) {
     });
   }
   const seen = new Set(rows.flatMap((r) => Object.keys(r.runs_by_phase)));
-  return { rows, phases: phaseOrder(ws, [...seen]) };
+  // `aiws discover` runs outside any requirement; its cost is shown apart so the medians stay per requirement
+  const discovery = fs.existsSync(path.join(dir, '_discover')) ? runStats(ws, '_discover') : null;
+  return { rows, phases: phaseOrder(ws, [...seen]), discovery: discovery?.runs ? discovery : null };
 }
 
 function modelsUsed(ws, req) {
@@ -216,6 +218,14 @@ export function statsText(summary) {
     `${rows.length} requirement(s), ${totalRuns} AI run(s), ${mins(totalMs)} min` +
       (withCost.length ? `, ${money(totalCost)} USD list-price equivalent` : '')
   );
+  const d = summary.discovery;
+  if (d) {
+    out.push(
+      `Knowledge discovery (aiws discover): ${d.runs} run(s), ${mins(d.duration_ms)} min` +
+        (typeof d.cost_usd === 'number' ? `, ${money(d.cost_usd)} USD` : '') +
+        ', not counted in the requirements above'
+    );
+  }
   const used = phases.filter((p) => rows.some((r) => r.runs_by_phase[p]));
   if (used.length && withCost.length) {
     out.push('', 'Per phase, across these requirements:');

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The handbook (en, vi) has a section on code in git submodules: adding one, the project's hooks in each
+  clone, `git_language`, the merge order at the PR gate, and what is not supported.
+- `aiws stats` shows the cost of `aiws discover` on a line of its own, apart from the requirements.
+
+### Changed
+
+- At `done`, the run says to push the knowledge branch and merge it into the base, so the next
+  requirement starts from it.
+- An agent's prompt lists only its own outputs in the write scope: the architect is no longer shown the
+  test designer's `03-test-spec.md` (what is enforced is still the phase's scope).
+- Before a run, aiws says so when the guard hook would run another aiws version from PATH.
+
 ## [0.8.0] - 2026-10-19
 
 Git submodules in `source-fe/` and `source-be/`, and what real runs on four projects showed: an optional
