@@ -42,9 +42,14 @@ Without `npm link`, run `node aiws/adapters/cli/bin/aiws.js <command>` from the 
 ## 2. Getting started with a real project
 
 1. **Bring the code in** (any language, see section 2a).
-   - `source-fe/`, `source-be/`: the new target repositories, as plain folders of the workspace repository (a copy, or
-     `git subtree add --prefix source-be <url> main --squash`; remove `source-be/.gitkeep` first). **Git submodules are not
-     supported yet** for the sides an agent writes: the commit of a task fails. `source-legacy/` is read-only and may be one.
+   - `source-fe/`, `source-be/`: the new target repositories, as plain folders of the workspace repository or as git
+     submodules (remove the placeholder first: `git rm -q source-be/.gitkeep && git submodule add <url> source-be`).
+     With a submodule, `aiws new` also creates the branch `aiws/REQ-xxx` inside it; each task is committed in the
+     submodule first, then the moved submodule pointer in the workspace, with the same trailers. With
+     `pull_request` set, the draft pull request opens in the submodule repository first: merge that one first, with a
+     merge commit (not squash), then the workspace one; `aiws approve REQ pr` checks both. Not supported: `--worktree`
+     and a submodule that has submodules of its own (`aiws new` refuses both), and a submodule added after `aiws new`.
+     `source-legacy/` may be a submodule too.
      You can add more sides, for example `source-mobile/` or `source-worker/`.
    - `source-legacy/`: the old system, read-only.
 2. **Declare build/test commands**: run `aiws detect` to see the proposal, then `aiws detect --write` to merge it into `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Review the result. Commands run from the workspace root and may differ per OS: `{windows: ..., posix: ...}`.
@@ -69,7 +74,7 @@ AIWS does **not** depend on the language of the frontend, backend or legacy code
 
 1. **Build/test commands** for each side in `policies.yaml` that exit non-zero on failure. `aiws detect` recognises Java (Maven/Gradle), .NET, Node.js (npm/pnpm/yarn), Python, Go, PHP, Ruby, Rust and Dart/Flutter; declare anything else by hand.
 2. **The folder of each side** (`sides`). Any number of sides is supported. The `{side}_build` check and the headless Bash permissions are derived from them (a .NET project may run `dotnet test`, a Go project `go`, and so on).
-3. **Test case ids in tests**: the orchestrator recognises `TC-3`, `TC_3` and `tc3` in display names, tags, traits, markers or comments, the way each framework attaches metadata.
+3. **Test case ids in tests**: the orchestrator recognises `TC-3`, `TC_3`, `tc3` and `test_tc_3` in display names, tags, traits, markers or comments, the way each framework attaches metadata.
 
 Discovery receives the detected stacks (including a file-extension summary of legacy code such as `.cbl` or `.frm`) and describes every folder in terms of its own technology (skill `legacy-analysis`).
 
@@ -83,7 +88,7 @@ All AI output must follow **common international standards** and must **not brea
 | Code | The project's own conventions first, then the language's official style guide (Google Java Style, .NET conventions, PEP 8, Effective Go, PSR-12, Effective Dart...) |
 | API | OpenAPI 3.x, HTTP semantics per RFC 9110; RFC 9457 problem details when the project has no error format; ISO 8601 / RFC 3339 timestamps |
 | Security | OWASP Top 10 / ASVS |
-| Commits | Conventional Commits (`feat(REQ-001): T1 …`, `fix(REQ-001): …`, `chore(REQ-001): …`) plus git trailers |
+| Commits | Conventional Commits (`feat(REQ-001): be - … (T1)`, `fix(REQ-001): …`, `chore(REQ-001): …`) plus git trailers |
 | Structure | No renaming, moving, deleting or reformatting of files, folders or public APIs outside the approved design; tests live where the ecosystem expects them. The reviewer reports violations as `major` or `critical`. |
 
 ## 3. Lifecycle of a requirement

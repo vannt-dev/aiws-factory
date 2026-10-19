@@ -28,7 +28,7 @@ Kỹ thuật thiết kế test nên dùng: phân vùng tương đương, giá tr
 ## Unit test trong code
 - Cấu trúc **Arrange-Act-Assert** (hoặc Given-When-Then). Một hành vi mỗi test; dữ liệu cụ thể.
 - **Tên test theo quy ước của ngôn ngữ/framework**, mô tả hành vi, ví dụ `shouldReturn404WhenUserNotFound`, `test_returns_404_when_user_missing`, `TestGetUser_NotFound`, `GetUser_UnknownId_Returns404`.
-- **Gắn mã TC qua metadata chuẩn của framework**, không bóp méo tên hàm. Orchestrator tìm `TC-3` (hoặc `TC_3`, `tc3`) trong file test mà task sửa; thiếu là task fail.
+- **Gắn mã TC qua metadata chuẩn của framework**, không bóp méo tên hàm. Orchestrator tìm `TC-3` (hoặc `TC_3`, `tc3`, `test_tc_3`) trong file test mà task sửa; thiếu là task fail. Quy tắc này áp dụng cho MỌI dự án, kể cả khi test hiện có của dự án chưa gắn mã TC: test mới vẫn phải có.
 
 | Framework | Cách gắn mã TC (chuẩn) |
 | --- | --- |
@@ -38,6 +38,7 @@ Kỹ thuật thiết kế test nên dùng: phân vùng tương đương, giá tr
 | NUnit / MSTest | `[Test, Property("TestCase", "TC-3")]` / `[TestMethod, TestProperty("TestCase", "TC-3")]` |
 | Jest / Vitest / Mocha / node:test | `it('TC-3: returns 404 when user not found', ...)` |
 | pytest | `@pytest.mark.tc("TC-3")` (khai báo marker trong cấu hình pytest) hoặc docstring `"""TC-3: ..."""` |
+| unittest (Python) | docstring `"""TC-3: ..."""` hoặc tên `test_tc_3_returns_404` |
 | Go testing | subtest `t.Run("TC-3 returns 404", ...)` hoặc comment `// TC-3` ngay trên hàm |
 | PHPUnit | `#[TestDox('TC-3: ...')]` hoặc `@testdox TC-3: ...` |
 | RSpec | `it 'returns 404 (TC-3)', tc: 'TC-3' do` |

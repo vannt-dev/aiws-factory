@@ -7,14 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `source-fe/` and `source-be/` may be git submodules. `aiws new` creates the requirement branch inside each one
+  (its base: the branch it is on, else the `branch` of `.gitmodules`, else its origin's default branch); a task is committed in the submodule first, then the moved pointer in the workspace, with the same trailers. Scope
+  checks and reverts work on the files inside the submodule. The draft pull request opens in the submodule
+  repository first, and `aiws approve REQ pr` waits until it is merged too. `--worktree` and nested submodules are
+  refused with a clear message.
+
+### Changed
+
+- A task commit is titled `feat(REQ-001): be - add the nickname (T1)`: the task id goes last, a capitalised
+  first word starts lower case, no full stop, at most 100 characters. `feat(REQ-001): T1 ...` was refused by
+  the common commitlint preset (`@commitlint/config-conventional`) of the projects that use one.
+
 ### Fixed
 
 - `aiws detect` recognises the `.slnx` solution format of .NET 9, and prefers it when a folder also
   has an old `.sln`.
 - An analysis that writes "no `[blocking]` question" no longer stops at a blocking question that is
   not there: the marker inside inline code is a mention, not a question.
-- The operations guide no longer recommends git submodules for `source-fe/` and `source-be/`: a task
-  commit fails in one. They are plain folders of the workspace for now; `source-legacy/` may still be one.
+- A submodule in `source-fe/` or `source-be/` no longer stops `aiws run` at the first task.
+- A git hook that refuses a task commit (lint-staged, commitlint...) no longer stops `aiws run` with the
+  requirement stuck in `running`: the attempt fails, the developer gets the hook's output on the next one,
+  and the task is blocked after the last attempt, like a failing test.
+- `aiws report` no longer blocks `aiws approve REQ pr` and `aiws new` with "Working tree is not clean":
+  the page in the work folder is ignored in this clone (`.git/info/exclude`) and never committed.
+- `aiws approve REQ pr` sees a pull request merged on the host: it fast-forwards the local base branch
+  from the remote first (a base with local commits of its own is left alone), as it already did for submodules.
+- The pull request title can no longer run anything in the shell of the `pull_request` command: quotes,
+  backticks, `$`, `%`, `!` and backslashes of the requirement title are left out.
+- A failed push at the PR gate reports what the hooks printed (lefthook writes to stdout), not only git's
+  last line. When a hook of a submodule turned its repository bare (`core.bare = true`, for example tests
+  that run `git init` with the `GIT_DIR` git gives hooks), aiws sets it back and says so.
+- The pull request of a submodule has its own description: its commits and the workspace pull request it
+  belongs to, without the workspace's commits and paths.
+- The Python build that `aiws detect` proposes no longer compiles virtual environments (`.venv`, `.tox`,
+  `site-packages`) inside the folder.
+- The unit-testing skill and AGENTS.md list `test_tc_3` and a unittest row, and say new tests carry TC ids
+  even when the project's existing tests have none.
+- `aiws detect --write` names the commands it kept instead of always saying it kept some.
+- `aiws detect` no longer counts dotfiles (`.git`, `.gitignore`, `.editorconfig`) among a folder's languages.
 
 ## [0.7.1] - 2026-10-19
 

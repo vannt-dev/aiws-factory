@@ -52,6 +52,9 @@ export function gateChoices(ws, st) {
     const done = (st.tasks ?? []).filter((t) => t.status === 'done').length;
     lines.push(`Tasks done: ${done} of ${(st.tasks ?? []).length}`);
     if (st.pr_url) lines.push(`Pull request: ${st.pr_url}`);
+    for (const [sub, s] of Object.entries(st.submodules ?? {})) {
+      if (s.pr_url && !s.done) lines.push(`Pull request of submodule ${sub} (merge it first): ${s.pr_url}`);
+    }
     const review = P.reviewFindings(read('05-review.md')).filter((f) => !f.resolved);
     if (review.length) {
       const count = (sev) => review.filter((f) => f.severity === sev).length;

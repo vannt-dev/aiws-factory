@@ -287,9 +287,34 @@ function openDraftPr(ws, st) {
     addHistory(st, { phase: st.phase, result: 'draft_pr_failed', reason: what.slice(0, 300) });
     commitWork(ws, st, `chore(${req}): draft pull request not opened`);
   };
+  const title = prTitle(st);
+  // the submodules first: the workspace pull request points at their commits, which must be on their hosts
+  for (const [sub, s] of Object.entries(st.submodules ?? {})) {
+    const abs = path.join(ws.root, sub);
+    if (s.pr_url || G.head(abs) === s.base_commit) continue; // already open, or nothing to merge there
+    const subPush = G.git(abs, ['push', '-u', remote, s.branch], { allowFail: true });
+    const repaired = G.repairBareSubmodule(abs)
+      ? '\n(a hook of the submodule set core.bare = true in its repository - for example tests that run git with the ' +
+        'GIT_DIR git gives hooks; aiws set it back to false)'
+      : '';
+    if (subPush.status !== 0) {
+      return failed(`git push ${remote} ${s.branch} in submodule ${sub} failed:\n${commandOutput(subPush)}${repaired}`);
+    }
+    if (repaired) warn(repaired.trim());
+    const subBodyRel = ws.workRel(req, `pr-body-${sub.replaceAll('/', '-')}.md`);
+    writeText(ws.abs(subBodyRel), subPrBody(ws, st, sub, s));
+    const bodyFromSub = path.relative(abs, ws.abs(subBodyRel)).replaceAll('\\', '/');
+    const subLine = fill(command, { branch: s.branch, base: s.base_branch, title, body_file: bodyFromSub, req });
+    const subRes = runShell(subLine, { cwd: abs, env: cleanEnv({}), timeout: 2 * 60 * 1000 });
+    if (subRes.status !== 0)
+      return failed(`the command exited ${subRes.status} in submodule ${sub}: ${(subRes.stderr || subRes.stdout).trim()}`);
+    s.pr_url = (subRes.stdout.match(/https?:\/\/\S+/g) ?? []).at(-1) ?? null;
+    addHistory(st, { phase: st.phase, result: 'draft_pr', submodule: sub, url: s.pr_url });
+    saveState(ws, st);
+    log(`  draft pull request opened in submodule ${sub}${s.pr_url ? `: ${s.pr_url}` : ''}`);
+  }
   const push = G.git(ws.root, ['push', '-u', remote, st.branch], { allowFail: true });
-  if (push.status !== 0) return failed(`git push ${remote} ${st.branch} failed: ${(push.stderr || push.stdout).trim()}`);
-  const title = `${req}: ${st.title ?? req}`.replace(/["\r\n]+/g, ' ');
+  if (push.status !== 0) return failed(`git push ${remote} ${st.branch} failed:\n${commandOutput(push)}`);
   const line = fill(command, { branch: st.branch, base, title, body_file: bodyRel, req });
   const res = runShell(line, { cwd: ws.root, env: cleanEnv({}), timeout: 2 * 60 * 1000 });
   if (res.status !== 0) return failed(`the command exited ${res.status}: ${(res.stderr || res.stdout).trim()}`);
@@ -303,9 +328,51 @@ function openDraftPr(ws, st) {
   log(`  draft pull request opened${url ? `: ${url}` : ''}`);
 }
 
+/**
+ * The pull request title. It is filled into a shell command line, so nothing in it may be read by a shell:
+ * no quotes, backticks, `$`, `%`, `!` or backslashes (cmd.exe and POSIX shells).
+ */
+export function prTitle(st) {
+  return `${st.req_id}: ${st.title ?? st.req_id}`
+    .replace(/[`"$%!\\]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Terminal colour codes out: they mean nothing in a prompt or a log line. */
+function stripAnsi(s) {
+  // eslint-disable-next-line no-control-regex -- ANSI escape codes
+  return s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '');
+}
+
+/** What git printed, both streams (hooks such as lefthook write to stdout), the end of it when long. */
+function commandOutput(res) {
+  const out = [res.stderr, res.stdout]
+    .map((s) => stripAnsi(s ?? '').trim())
+    .filter(Boolean)
+    .join('\n');
+  return out.length > 2000 ? `...${out.slice(-2000)}` : out;
+}
+
+/** The pull request of a submodule: its own commits, and the workspace pull request it belongs to. */
+function subPrBody(ws, st, sub, s) {
+  const tasks = st.tasks.filter((t) => t.commit && G.gitlinkAt(ws.root, t.commit, sub) !== G.gitlinkAt(ws.root, `${t.commit}^`, sub));
+  return [
+    `Part of requirement ${st.req_id}${st.title ? `: ${st.title}` : ''}. The pull request of the workspace follows; it ` +
+      `points at the commits of this one.`,
+    '',
+    '## Tasks',
+    ...tasks.map((t) => `- ${t.id} ${t.title ?? ''} (${String(G.gitlinkAt(ws.root, t.commit, sub)).slice(0, 7)})`),
+    '',
+    `Merge this pull request first, with a merge commit (not squash), into \`${s.base_branch}\`; then the one of the workspace.`,
+    '',
+  ].join('\n');
+}
+
 /** What the draft pull request says: the tasks with their commits, and where the documents are. */
 function prBody(st) {
   const work = `aiws/work/${st.req_id}`;
+  const subs = Object.entries(st.submodules ?? {}).filter(([, s]) => !s.done);
   return [
     `Requirement ${st.req_id}${st.title ? `: ${st.title}` : ''} (\`${st.requirement ?? ''}\`).`,
     '',
@@ -318,6 +385,16 @@ function prBody(st) {
     `- Review: \`${work}/05-review.md\`, trace: \`${work}/trace.md\``,
     `- \`aiws report ${st.req_id}\` gathers everything into one page.`,
     '',
+    ...(subs.length
+      ? [
+          '## Submodules',
+          ...subs.map(([sub, s]) => `- \`${sub}\`: branch \`${s.branch}\` into \`${s.base_branch}\``),
+          '',
+          'Merge the pull request of each submodule first, with a merge commit (not squash), so the commits this ' +
+            'workspace points at stay on the base branch. Then merge this one.',
+          '',
+        ]
+      : []),
     `After the merge, run \`aiws approve ${st.req_id} pr\`.`,
     '',
   ].join('\n');
@@ -329,6 +406,17 @@ function assertOnBranch(ws, st) {
     throw new AiwsError(
       `${st.req_id} runs on branch ${st.branch} but you are on ${cur}. Run \`git switch ${st.branch}\` (or use its worktree).`
     );
+  }
+  for (const [sub, s] of Object.entries(st.submodules ?? {})) {
+    if (s.done) continue; // after the PR gate the submodule is back on what the workspace records
+    const abs = path.join(ws.root, sub);
+    const at = fs.existsSync(path.join(abs, '.git')) ? G.currentBranch(abs) : null;
+    if (at !== s.branch) {
+      throw new AiwsError(
+        `${st.req_id} works in submodule ${sub} on its branch ${s.branch}, but ${sub} is ${at ? `on ${at}` : 'not on a branch'}. ` +
+          `Run \`git -C ${sub} switch ${s.branch}\`.`
+      );
+    }
   }
 }
 
@@ -510,9 +598,7 @@ function phaseExtra(ws, st, def) {
   }
   if (def.id === 'review') {
     const isSource = matcher(ws.policies.source_paths ?? ['**']);
-    const files = G.git(ws.root, ['diff', '--name-only', st.base_commit, 'HEAD'], { allowFail: true })
-      .stdout.split(/\r?\n/)
-      .filter((f) => f && isSource(f));
+    const files = G.diffNames(ws.root, st.base_commit, 'HEAD').filter((f) => isSource(f));
     const logOut = G.git(ws.root, ['log', '--format=%h %s', `--grep=REQ-ID: ${st.req_id}`, '-F', `${st.base_commit}..HEAD`], {
       allowFail: true,
     }).stdout.trim();
@@ -534,7 +620,7 @@ function phaseExtra(ws, st, def) {
   if (def.mode === 'incremental') {
     const from = st.base_commit;
     const to = st.code_head ?? 'HEAD';
-    const files = G.git(ws.root, ['diff', '--name-only', from, to], { allowFail: true }).stdout.trim();
+    const files = G.diffNames(ws.root, from, to).join('\n');
     const logOut = G.git(ws.root, ['log', '--oneline', `${from}..${to}`], { allowFail: true }).stdout.trim();
     return [
       '## Incremental mode',
@@ -566,9 +652,7 @@ function reviewFollowUp(ws, st, isSource) {
   const prev = st.last_review;
   if (!prev?.head || prev.approval !== latestDesignApproval(ws, st.req_id)) return null;
   if (!G.isAncestor(ws.root, prev.head, 'HEAD')) return null;
-  const files = G.git(ws.root, ['diff', '--name-only', prev.head, 'HEAD'], { allowFail: true })
-    .stdout.split(/\r?\n/)
-    .filter((f) => f && isSource(f));
+  const files = G.diffNames(ws.root, prev.head, 'HEAD').filter((f) => isSource(f));
   const logOut = G.git(ws.root, ['log', '--format=%h %s', `--grep=REQ-ID: ${st.req_id}`, '-F', `${prev.head}..HEAD`], {
     allowFail: true,
   }).stdout.trim();
@@ -791,20 +875,71 @@ function stepLoop(ws, st, def) {
   delete task.last_failure;
   saveState(ws, st);
   const message = [
-    `${task.type ?? 'feat'}(${req}): ${task.id} ${task.title ?? ''}`.trim(),
+    taskSubject(req, task),
     '',
     `REQ-ID: ${req}`,
     `Task: ${task.id}`,
     `Tests: ${(task.tests ?? []).join(', ') || '-'}`,
     `AIWS-Run: ${r.runId}`,
   ].join('\n');
-  const sha = G.commit(ws.root, message + '\n', [...codeFiles, ws.workRel(req)]);
+  let sha;
+  try {
+    sha = G.commit(ws.root, message + '\n', [...codeFiles, ws.workRel(req)]);
+  } catch (e) {
+    if (!(e instanceof G.CommitRejected)) throw e;
+    // a hook of the repository (lint, format, commit message rules) refused the commit: the code stays
+    // as it is and the next attempt gets what the hook said, like a failing test
+    const where = e.repo ? `submodule ${e.repo}` : 'the workspace';
+    const plain = stripAnsi(e.output);
+    const said = plain.length > 3000 ? `...${plain.slice(-3000)}` : plain;
+    task.last_failure = [
+      `- a git hook of ${where} refused the commit of this task. Fix what it reports:\n${indent(said)}`,
+      '- if the hook refuses the commit message rather than the code, the task cannot fix that: a person' +
+        ` changes the hook or commits by hand, then runs \`aiws resume ${req}\``,
+    ].join('\n');
+    r.evidence.outcome = 'failed';
+    r.evidence.validation = [{ kind: 'invalid', message: `commit refused by a git hook of ${where}` }];
+    writeEvidence(ws, req, r.evidence);
+    addHistory(st, { phase: def.id, task: task.id, result: 'fail', run: r.runId, attempt, reason: 'commit refused' });
+    log(`  failed:\n${indent(task.last_failure)}`);
+    if (attempt >= maxAttempts) {
+      task.status = 'blocked';
+      setPhase(
+        st,
+        def.id,
+        'blocked',
+        `${task.id}: a git hook refused the commit ${attempt} times; fix it by hand then \`aiws resume ${req}\``
+      );
+    }
+    saveState(ws, st);
+    return;
+  }
   task.status = 'done';
   task.commit = sha;
   delete task.base;
   addHistory(st, { phase: def.id, task: task.id, result: 'done', run: r.runId, commit: sha?.slice(0, 7) });
   commitWork(ws, st, `chore(${req}): ${task.id} done`);
   log(`  ${task.id} done (${sha?.slice(0, 7)})`);
+}
+
+/**
+ * The subject of a task commit, in the shape of the common Conventional Commits lint rules
+ * (@commitlint/config-conventional): `feat(REQ-001): be - add the nickname (T1)`. It does not start with
+ * a capital letter, ends without a full stop and stays within 100 characters; the task id goes last.
+ */
+export function taskSubject(req, task) {
+  const head = `${task.type ?? 'feat'}(${req}): `;
+  const tail = ` (${task.id})`;
+  let title = String(task.title ?? '')
+    .replace(/\s+/g, ' ')
+    .replace(/[.\s]+$/, '')
+    .trim();
+  // "Add ..." -> "add ...", but an acronym such as "API" is left as written
+  title = title.replace(/^(\p{Lu})(\p{Ll}*)(?=[\s,:;.!?-]|$)/u, (_, a, b) => a.toLowerCase() + b);
+  if (!title) title = 'task';
+  const room = 100 - head.length - tail.length;
+  if (title.length > room) title = `${title.slice(0, room - 1).trimEnd()}…`;
+  return head + title + tail;
 }
 
 /**
@@ -904,9 +1039,7 @@ export function changesSince(ws, since) {
     rev = G.revParse(ws.root, String(since));
     if (!rev) throw new AiwsError(`--since: unknown revision '${since}'.`);
   }
-  const files = G.git(ws.root, ['diff', '--name-only', rev, 'HEAD'], { allowFail: true })
-    .stdout.split(/\r?\n/)
-    .filter((f) => /^source-[^/]+\//.test(f));
+  const files = G.diffNames(ws.root, rev, 'HEAD').filter((f) => /^source-[^/]+\//.test(f));
   const logOut = G.git(ws.root, ['log', '--format=%h %s', `${rev}..HEAD`, '--', 'source-fe', 'source-be', 'source-legacy'], {
     allowFail: true,
   }).stdout.trim();

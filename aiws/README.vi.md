@@ -42,9 +42,13 @@ Không muốn `npm link` thì gọi `node aiws/adapters/cli/bin/aiws.js <lệnh>
 ## 2. Bắt đầu với dự án thật
 
 1. **Đưa code vào workspace** (ngôn ngữ nào cũng được, xem mục 2a)
-   - `source-fe/`, `source-be/`: repo mới (FE/BE đích), là thư mục thường trong repo workspace (bản copy, hoặc
-     `git subtree add --prefix source-be <url> main --squash`; bỏ `source-be/.gitkeep` trước). **Chưa hỗ trợ git submodule**
-     cho các side mà agent ghi: commit của task sẽ lỗi. `source-legacy/` chỉ đọc nên có thể là submodule.
+   - `source-fe/`, `source-be/`: repo mới (FE/BE đích), là thư mục thường trong repo workspace hoặc git submodule
+     (bỏ placeholder trước: `git rm -q source-be/.gitkeep && git submodule add <url> source-be`).
+     Với submodule, `aiws new` tạo thêm nhánh `aiws/REQ-xxx` bên trong nó; mỗi task commit trong submodule trước,
+     rồi commit con trỏ submodule ở workspace, cùng trailer. Khi đặt `pull_request`, draft pull request mở ở repo của
+     submodule trước: merge PR đó trước, bằng merge commit (không squash), rồi tới PR của workspace;
+     `aiws approve REQ pr` kiểm tra cả hai. Chưa hỗ trợ: `--worktree` và submodule có submodule con (`aiws new` từ chối
+     cả hai), và submodule thêm vào sau `aiws new`. `source-legacy/` cũng có thể là submodule.
      Có thể thêm side khác, ví dụ `source-mobile/` hay `source-worker/`.
    - `source-legacy/`: hệ thống cũ, chỉ đọc.
 2. **Khai báo lệnh build/test**: chạy `aiws detect` để xem đề xuất, rồi `aiws detect --write` để ghi vào `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Kiểm tra lại. Lệnh chạy tại gốc workspace; có thể viết riêng cho từng OS: `{windows: ..., posix: ...}`.
@@ -69,7 +73,7 @@ AIWS **không phụ thuộc ngôn ngữ** của FE, BE hay legacy. Orchestrator 
 
 1. **Lệnh build/test** của từng side trong `policies.yaml`, trả exit code khác 0 khi lỗi. `aiws detect` nhận ra Java (Maven/Gradle), .NET, Node (npm/pnpm/yarn), Python, Go, PHP, Ruby, Rust và Dart/Flutter. Stack khác thì khai báo tay.
 2. **Thư mục của từng side** (`sides`). Có bao nhiêu side cũng được; check `{side}_build` và quyền Bash headless được suy ra từ đó (dự án .NET được phép `dotnet test`, dự án Go được phép `go`...).
-3. **Mã TC trong test**: orchestrator nhận `TC-3`, `TC_3`, `tc3` (display name, tag, trait, marker, comment), đúng với cách từng framework gắn metadata.
+3. **Mã TC trong test**: orchestrator nhận `TC-3`, `TC_3`, `tc3`, `test_tc_3` (display name, tag, trait, marker, comment), đúng với cách từng framework gắn metadata.
 
 Discovery nhận danh sách stack tự nhận diện (kể cả thống kê đuôi file của legacy như `.cbl`, `.frm`) và mô tả mỗi thư mục theo đúng công nghệ của nó (skill `legacy-analysis`).
 
@@ -83,7 +87,7 @@ Mọi output của AI phải theo **chuẩn quốc tế thông dụng** và **kh
 | Code | Convention của dự án, sau đó tới style guide chính thống của ngôn ngữ (Google Java Style, .NET conventions, PEP 8, Effective Go, PSR-12, Effective Dart...) |
 | API | OpenAPI 3.x, HTTP semantics RFC 9110; lỗi RFC 9457 nếu dự án chưa có format; thời gian ISO 8601/RFC 3339 |
 | Bảo mật | OWASP Top 10 / ASVS |
-| Commit | Conventional Commits (`feat(REQ-001): T1 …`, `fix(REQ-001): …`, `chore(REQ-001): …`) + git trailer |
+| Commit | Conventional Commits (`feat(REQ-001): be - … (T1)`, `fix(REQ-001): …`, `chore(REQ-001): …`) + git trailer |
 | Cấu trúc | Không đổi tên, di chuyển, xoá hay reformat file, thư mục, public API ngoài design đã duyệt; test đặt đúng vị trí chuẩn của ecosystem. Reviewer coi vi phạm là finding `major`/`critical`. |
 
 ## 3. Vòng đời một requirement

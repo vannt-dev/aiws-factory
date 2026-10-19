@@ -42,6 +42,11 @@ test('detectStacks recognises many languages and treats legacy as read-only', ()
   assert.equal(commands.api_test, 'dotnet test source-api/Api.sln');
   assert.equal(commands.worker_test, 'go -C source-worker test ./...');
   assert.equal(commands.ml_test, 'python -m pytest -q source-ml');
+  assert.equal(
+    commands.ml_build,
+    'python -m compileall -q -x "[.]venv|[.]tox|site-packages" source-ml',
+    'virtual environments are not compiled'
+  );
   assert.equal(commands.fe_test, 'pnpm --dir source-fe test');
   assert.equal(commands.mobile_test, 'cd source-mobile && flutter test');
   assert.ok(commands.portal_test.posix.includes('phpunit'));

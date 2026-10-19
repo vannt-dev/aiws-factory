@@ -189,7 +189,7 @@ test('review critical finding goes back to planning, adds a fix task, keeps done
   // T1 was not redone
   assert.equal(st.history.filter((h) => h.task === 'T1' && h.result === 'done').length, 1);
   // every commit subject on the branch follows Conventional Commits; the fix task is typed 'fix'
-  assert.match(git(root, ['log', '-1', '--format=%s', byId.T3.commit]), /^fix\(REQ-001\): T3 /);
+  assert.match(git(root, ['log', '-1', '--format=%s', byId.T3.commit]), /^fix\(REQ-001\): .* \(T3\)$/);
   const subjects = git(root, ['log', '--format=%s', 'main..HEAD']).split('\n');
   for (const s of subjects) assert.match(s, /^(feat|fix|refactor|perf|test|docs|style|build|ci|chore|revert)\(REQ-001\): /, s);
 
@@ -203,6 +203,6 @@ test('review critical finding goes back to planning, adds a fix task, keeps done
   const since = second.split('Source files changed since that review:')[1].split('Commits since that review:');
   assert.match(since[0], /source-be\/src\/users\.js/);
   assert.doesNotMatch(since[0], /source-fe\//, 'the frontend did not change after the first review');
-  assert.match(since[1], /fix\(REQ-001\): T3 /);
+  assert.match(since[1], /fix\(REQ-001\): .* \(T3\)/);
   assert.equal(st.last_review.run, runs[1]);
 });
