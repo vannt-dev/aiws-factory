@@ -287,16 +287,23 @@ function openDraftPr(ws, st) {
     addHistory(st, { phase: st.phase, result: 'draft_pr_failed', reason: what.slice(0, 300) });
     commitWork(ws, st, `chore(${req}): draft pull request not opened`);
   };
-  const title = `${req}: ${st.title ?? req}`.replace(/["\r\n]+/g, ' ');
+  const title = prTitle(st);
   // the submodules first: the workspace pull request points at their commits, which must be on their hosts
   for (const [sub, s] of Object.entries(st.submodules ?? {})) {
     const abs = path.join(ws.root, sub);
     if (s.pr_url || G.head(abs) === s.base_commit) continue; // already open, or nothing to merge there
     const subPush = G.git(abs, ['push', '-u', remote, s.branch], { allowFail: true });
+    const repaired = G.repairBareSubmodule(abs)
+      ? '\n(a hook of the submodule set core.bare = true in its repository - for example tests that run git with the ' +
+        'GIT_DIR git gives hooks; aiws set it back to false)'
+      : '';
     if (subPush.status !== 0) {
-      return failed(`git push ${remote} ${s.branch} in submodule ${sub} failed: ${(subPush.stderr || subPush.stdout).trim()}`);
+      return failed(`git push ${remote} ${s.branch} in submodule ${sub} failed:\n${commandOutput(subPush)}${repaired}`);
     }
-    const bodyFromSub = path.relative(abs, ws.abs(bodyRel)).replaceAll('\\', '/');
+    if (repaired) warn(repaired.trim());
+    const subBodyRel = ws.workRel(req, `pr-body-${sub.replaceAll('/', '-')}.md`);
+    writeText(ws.abs(subBodyRel), subPrBody(ws, st, sub, s));
+    const bodyFromSub = path.relative(abs, ws.abs(subBodyRel)).replaceAll('\\', '/');
     const subLine = fill(command, { branch: s.branch, base: s.base_branch, title, body_file: bodyFromSub, req });
     const subRes = runShell(subLine, { cwd: abs, env: cleanEnv({}), timeout: 2 * 60 * 1000 });
     if (subRes.status !== 0)
@@ -307,7 +314,7 @@ function openDraftPr(ws, st) {
     log(`  draft pull request opened in submodule ${sub}${s.pr_url ? `: ${s.pr_url}` : ''}`);
   }
   const push = G.git(ws.root, ['push', '-u', remote, st.branch], { allowFail: true });
-  if (push.status !== 0) return failed(`git push ${remote} ${st.branch} failed: ${(push.stderr || push.stdout).trim()}`);
+  if (push.status !== 0) return failed(`git push ${remote} ${st.branch} failed:\n${commandOutput(push)}`);
   const line = fill(command, { branch: st.branch, base, title, body_file: bodyRel, req });
   const res = runShell(line, { cwd: ws.root, env: cleanEnv({}), timeout: 2 * 60 * 1000 });
   if (res.status !== 0) return failed(`the command exited ${res.status}: ${(res.stderr || res.stdout).trim()}`);
@@ -319,6 +326,47 @@ function openDraftPr(ws, st) {
   // the branch on the host carries the state that records the pull request, so the merged branch is this one
   G.git(ws.root, ['push', remote, st.branch], { allowFail: true });
   log(`  draft pull request opened${url ? `: ${url}` : ''}`);
+}
+
+/**
+ * The pull request title. It is filled into a shell command line, so nothing in it may be read by a shell:
+ * no quotes, backticks, `$`, `%`, `!` or backslashes (cmd.exe and POSIX shells).
+ */
+export function prTitle(st) {
+  return `${st.req_id}: ${st.title ?? st.req_id}`
+    .replace(/[`"$%!\\]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Terminal colour codes out: they mean nothing in a prompt or a log line. */
+function stripAnsi(s) {
+  // eslint-disable-next-line no-control-regex -- ANSI escape codes
+  return s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '');
+}
+
+/** What git printed, both streams (hooks such as lefthook write to stdout), the end of it when long. */
+function commandOutput(res) {
+  const out = [res.stderr, res.stdout]
+    .map((s) => stripAnsi(s ?? '').trim())
+    .filter(Boolean)
+    .join('\n');
+  return out.length > 2000 ? `...${out.slice(-2000)}` : out;
+}
+
+/** The pull request of a submodule: its own commits, and the workspace pull request it belongs to. */
+function subPrBody(ws, st, sub, s) {
+  const tasks = st.tasks.filter((t) => t.commit && G.gitlinkAt(ws.root, t.commit, sub) !== G.gitlinkAt(ws.root, `${t.commit}^`, sub));
+  return [
+    `Part of requirement ${st.req_id}${st.title ? `: ${st.title}` : ''}. The pull request of the workspace follows; it ` +
+      `points at the commits of this one.`,
+    '',
+    '## Tasks',
+    ...tasks.map((t) => `- ${t.id} ${t.title ?? ''} (${String(G.gitlinkAt(ws.root, t.commit, sub)).slice(0, 7)})`),
+    '',
+    `Merge this pull request first, with a merge commit (not squash), into \`${s.base_branch}\`; then the one of the workspace.`,
+    '',
+  ].join('\n');
 }
 
 /** What the draft pull request says: the tasks with their commits, and where the documents are. */
@@ -842,8 +890,7 @@ function stepLoop(ws, st, def) {
     // a hook of the repository (lint, format, commit message rules) refused the commit: the code stays
     // as it is and the next attempt gets what the hook said, like a failing test
     const where = e.repo ? `submodule ${e.repo}` : 'the workspace';
-    // eslint-disable-next-line no-control-regex -- ANSI escape codes
-    const plain = e.output.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, ''); // colours of lint tools mean nothing to an agent
+    const plain = stripAnsi(e.output);
     const said = plain.length > 3000 ? `...${plain.slice(-3000)}` : plain;
     task.last_failure = [
       `- a git hook of ${where} refused the commit of this task. Fix what it reports:\n${indent(said)}`,

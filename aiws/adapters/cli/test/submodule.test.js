@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { makeWorkspace, ok, aiws, state, git, tempDir, scenario } from './helpers.js';
+import { prTitle } from '../src/engine.js';
 
 /**
  * A workspace whose `side` folders are git submodules. Each one is its own repository (with a bare
@@ -124,7 +125,12 @@ test('submodule: the draft pull request opens in the submodule repository first,
   assert.equal(made.length, 2);
   assert.equal(fs.realpathSync(made[0].cwd), fs.realpathSync(path.join(root, 'source-be')));
   assert.deepEqual(made[0].args.slice(0, 2), ['aiws/REQ-001', 'main']);
-  assert.match(made[0].body, /## Submodules[\s\S]*source-be/);
+  // the submodule's own description: its commits, not the workspace's, and no workspace paths
+  const subT1 = git(path.join(root, 'source-be'), ['log', '-1', '--format=%h', '--grep=Task: T1', '-F']);
+  assert.match(made[0].body, new RegExp(`T1 .*\\(${subT1.slice(0, 7)}\\)`));
+  assert.match(made[0].body, /pull request of the workspace/);
+  assert.doesNotMatch(made[0].body, /aiws\/work\//);
+  assert.match(made[1].body, /## Submodules[\s\S]*source-be/);
   assert.equal(fs.realpathSync(made[1].cwd), fs.realpathSync(root));
   const after = state(root);
   assert.equal(after.submodules['source-be'].pr_url, 'https://example.test/pull/1');
@@ -255,4 +261,37 @@ test('submodule: the base branch is never a branch left by an earlier requiremen
   git(ws2, ['commit', '-q', '-am', 'follow develop']);
   ok(ws2, ['new', 'REQ-001']);
   assert.equal(state(ws2).submodules['source-be'].base_branch, 'develop');
+});
+
+test('submodule: a hook that turns the submodule repository bare is undone and named', () => {
+  const { root } = makeSubmoduleWorkspace(['source-be']);
+  const be = path.join(root, 'source-be');
+  const remote = tempDir('aiws-remote-');
+  git(remote, ['init', '-q', '--bare']);
+  git(root, ['remote', 'add', 'origin', remote]);
+  const rtFile = path.join(root, 'aiws/config/runtime.yaml');
+  const rt = YAML.parse(fs.readFileSync(rtFile, 'utf8'));
+  rt.pull_request = { command: 'node -e "console.log(1)"' };
+  fs.writeFileSync(rtFile, YAML.stringify(rt));
+  git(root, ['commit', '-qam', 'open draft pull requests']);
+  // a pre-push hook whose tests run git with the GIT_DIR that git gives the hooks of a submodule
+  const hooks = tempDir('aiws-hooks-');
+  fs.writeFileSync(path.join(hooks, 'pre-push'), '#!/bin/sh\ngit config core.bare true\necho "tests: 4 failed"\nexit 1\n');
+  fs.chmodSync(path.join(hooks, 'pre-push'), 0o755);
+  git(be, ['config', 'core.hooksPath', hooks.replaceAll('\\', '/')]);
+
+  ok(root, ['new', 'REQ-001']);
+  ok(root, ['run', 'REQ-001']);
+  ok(root, ['approve', 'REQ-001', 'design', '--yes']);
+  const r = ok(root, ['run', 'REQ-001']);
+  // the push failed: the reason shows what the hook printed, and the repository works again
+  assert.match(r.out, /git push origin aiws\/REQ-001 in submodule source-be failed/);
+  assert.match(r.out, /tests: 4 failed/);
+  assert.match(r.out, /core\.bare/);
+  assert.equal(git(be, ['rev-parse', '--is-inside-work-tree']), 'true');
+});
+
+test('the pull request title cannot run anything in the shell of the command', () => {
+  const title = prTitle({ req_id: 'REQ-001', title: 'list `rm -rf x` and $(id) "quoted" %PATH% !x!\nnext' });
+  assert.equal(title, 'REQ-001: list rm -rf x and (id) quoted PATH x next');
 });

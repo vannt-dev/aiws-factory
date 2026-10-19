@@ -73,7 +73,7 @@ AIWS **không phụ thuộc ngôn ngữ** của FE, BE hay legacy. Orchestrator 
 
 1. **Lệnh build/test** của từng side trong `policies.yaml`, trả exit code khác 0 khi lỗi. `aiws detect` nhận ra Java (Maven/Gradle), .NET, Node (npm/pnpm/yarn), Python, Go, PHP, Ruby, Rust và Dart/Flutter. Stack khác thì khai báo tay.
 2. **Thư mục của từng side** (`sides`). Có bao nhiêu side cũng được; check `{side}_build` và quyền Bash headless được suy ra từ đó (dự án .NET được phép `dotnet test`, dự án Go được phép `go`...).
-3. **Mã TC trong test**: orchestrator nhận `TC-3`, `TC_3`, `tc3` (display name, tag, trait, marker, comment), đúng với cách từng framework gắn metadata.
+3. **Mã TC trong test**: orchestrator nhận `TC-3`, `TC_3`, `tc3`, `test_tc_3` (display name, tag, trait, marker, comment), đúng với cách từng framework gắn metadata.
 
 Discovery nhận danh sách stack tự nhận diện (kể cả thống kê đuôi file của legacy như `.cbl`, `.frm`) và mô tả mỗi thư mục theo đúng công nghệ của nó (skill `legacy-analysis`).
 

@@ -74,7 +74,7 @@ AIWS does **not** depend on the language of the frontend, backend or legacy code
 
 1. **Build/test commands** for each side in `policies.yaml` that exit non-zero on failure. `aiws detect` recognises Java (Maven/Gradle), .NET, Node.js (npm/pnpm/yarn), Python, Go, PHP, Ruby, Rust and Dart/Flutter; declare anything else by hand.
 2. **The folder of each side** (`sides`). Any number of sides is supported. The `{side}_build` check and the headless Bash permissions are derived from them (a .NET project may run `dotnet test`, a Go project `go`, and so on).
-3. **Test case ids in tests**: the orchestrator recognises `TC-3`, `TC_3` and `tc3` in display names, tags, traits, markers or comments, the way each framework attaches metadata.
+3. **Test case ids in tests**: the orchestrator recognises `TC-3`, `TC_3`, `tc3` and `test_tc_3` in display names, tags, traits, markers or comments, the way each framework attaches metadata.
 
 Discovery receives the detected stacks (including a file-extension summary of legacy code such as `.cbl` or `.frm`) and describes every folder in terms of its own technology (skill `legacy-analysis`).
 

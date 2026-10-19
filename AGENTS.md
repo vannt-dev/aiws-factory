@@ -25,7 +25,7 @@ Workspace này vận hành theo **AIWS (AI Software Factory)**: requirement -> a
 5. **Không đọc bí mật**: `.env*`, `*.pem`, `*.key`, `secrets/`.
 6. **Không chạy** `git push/commit/reset/checkout/switch/rebase/merge/stash/clean`, `curl`, `wget`, `rm -rf`. Orchestrator commit kèm trailer `REQ-ID`, `Task`, `Tests`, `AIWS-Run`.
 7. Mọi khẳng định về hệ thống phải dẫn chiếu file thật; không chắc -> ghi `[CẦN XÁC NHẬN]`.
-8. Tên test chứa mã test case (`TC-3`, `TC_3`, `tc3` tuỳ ngôn ngữ) để truy vết AC -> TC -> task -> commit.
+8. Tên test chứa mã test case (`TC-3`, `TC_3`, `tc3`, `test_tc_3` tuỳ ngôn ngữ; kể cả dự án Python chạy unittest) để truy vết AC -> TC -> task -> commit.
 9. **Chuẩn quốc tế, không phá cấu trúc** (`aiws/skills/coding-standards`): code theo convention của dự án rồi tới style guide chuẩn của ngôn ngữ; test spec theo ISO/IEC/IEEE 29119-3, unit test theo Arrange-Act-Assert; API theo OpenAPI 3, lỗi theo RFC 9457 nếu dự án chưa có format; thời gian theo ISO 8601; commit theo Conventional Commits. Không đổi tên, di chuyển, xoá hay reformat file, thư mục, public API ngoài design đã duyệt.
 10. Workspace không giả định ngôn ngữ: mỗi `source-*` có thể là một stack khác. Luôn dùng đúng ngôn ngữ, framework, lệnh build/test đang có của thư mục đó (`aiws/knowledge/conventions.md`, `aiws/config/policies.yaml -> commands`).
 

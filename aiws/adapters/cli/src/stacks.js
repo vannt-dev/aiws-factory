@@ -102,7 +102,11 @@ const DETECTORS = [
   },
   (d, rel) => {
     if (!has(d, 'pyproject.toml') && !has(d, 'requirements.txt') && !has(d, 'setup.py')) return null;
-    return { stack: 'python', build: `python -m compileall -q ${rel}`, test: `python -m pytest -q ${rel}` };
+    return {
+      stack: 'python',
+      build: `python -m compileall -q -x "[.]venv|[.]tox|site-packages" ${rel}`,
+      test: `python -m pytest -q ${rel}`,
+    };
   },
   (d, rel) =>
     has(d, 'composer.json')

@@ -33,6 +33,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the page in the work folder is ignored in this clone (`.git/info/exclude`) and never committed.
 - `aiws approve REQ pr` sees a pull request merged on the host: it fast-forwards the local base branch
   from the remote first (a base with local commits of its own is left alone), as it already did for submodules.
+- The pull request title can no longer run anything in the shell of the `pull_request` command: quotes,
+  backticks, `$`, `%`, `!` and backslashes of the requirement title are left out.
+- A failed push at the PR gate reports what the hooks printed (lefthook writes to stdout), not only git's
+  last line. When a hook of a submodule turned its repository bare (`core.bare = true`, for example tests
+  that run `git init` with the `GIT_DIR` git gives hooks), aiws sets it back and says so.
+- The pull request of a submodule has its own description: its commits and the workspace pull request it
+  belongs to, without the workspace's commits and paths.
+- The Python build that `aiws detect` proposes no longer compiles virtual environments (`.venv`, `.tox`,
+  `site-packages`) inside the folder.
+- The unit-testing skill and AGENTS.md list `test_tc_3` and a unittest row, and say new tests carry TC ids
+  even when the project's existing tests have none.
 - `aiws detect --write` names the commands it kept instead of always saying it kept some.
 - `aiws detect` no longer counts dotfiles (`.git`, `.gitignore`, `.editorconfig`) among a folder's languages.
 

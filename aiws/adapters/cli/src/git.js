@@ -96,6 +96,22 @@ export function gitmodulesBranch(root, sub) {
   return branch && branch !== '.' ? branch : null;
 }
 
+/**
+ * A hook of a submodule runs with GIT_DIR set; a hook (or the tests it runs) that calls `git init` or
+ * `git config` then writes into the submodule's own repository, and `core.bare = true` there breaks every
+ * later command in it. Sets it back; true when it had to.
+ */
+export function repairBareSubmodule(subAbs) {
+  const dotGit = path.join(subAbs, '.git');
+  if (!fs.existsSync(dotGit) || !fs.statSync(dotGit).isFile()) return false;
+  const m = /^gitdir:\s*(.+)$/m.exec(fs.readFileSync(dotGit, 'utf8'));
+  if (!m) return false;
+  const config = path.join(path.resolve(subAbs, m[1].trim()), 'config');
+  if (run('git', ['config', '-f', config, '--bool', 'core.bare']).stdout.trim() !== 'true') return false;
+  run('git', ['config', '-f', config, 'core.bare', 'false']);
+  return true;
+}
+
 /** Ignores `pattern` in this clone only (.git/info/exclude): nothing in the repository changes. */
 export function excludeLocally(root, pattern) {
   const file = path.resolve(root, git(root, ['rev-parse', '--git-path', 'info/exclude']).stdout.trim());
