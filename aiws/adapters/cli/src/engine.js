@@ -287,9 +287,27 @@ function openDraftPr(ws, st) {
     addHistory(st, { phase: st.phase, result: 'draft_pr_failed', reason: what.slice(0, 300) });
     commitWork(ws, st, `chore(${req}): draft pull request not opened`);
   };
+  const title = `${req}: ${st.title ?? req}`.replace(/["\r\n]+/g, ' ');
+  // the submodules first: the workspace pull request points at their commits, which must be on their hosts
+  for (const [sub, s] of Object.entries(st.submodules ?? {})) {
+    const abs = path.join(ws.root, sub);
+    if (s.pr_url || G.head(abs) === s.base_commit) continue; // already open, or nothing to merge there
+    const subPush = G.git(abs, ['push', '-u', remote, s.branch], { allowFail: true });
+    if (subPush.status !== 0) {
+      return failed(`git push ${remote} ${s.branch} in submodule ${sub} failed: ${(subPush.stderr || subPush.stdout).trim()}`);
+    }
+    const bodyFromSub = path.relative(abs, ws.abs(bodyRel)).replaceAll('\\', '/');
+    const subLine = fill(command, { branch: s.branch, base: s.base_branch, title, body_file: bodyFromSub, req });
+    const subRes = runShell(subLine, { cwd: abs, env: cleanEnv({}), timeout: 2 * 60 * 1000 });
+    if (subRes.status !== 0)
+      return failed(`the command exited ${subRes.status} in submodule ${sub}: ${(subRes.stderr || subRes.stdout).trim()}`);
+    s.pr_url = (subRes.stdout.match(/https?:\/\/\S+/g) ?? []).at(-1) ?? null;
+    addHistory(st, { phase: st.phase, result: 'draft_pr', submodule: sub, url: s.pr_url });
+    saveState(ws, st);
+    log(`  draft pull request opened in submodule ${sub}${s.pr_url ? `: ${s.pr_url}` : ''}`);
+  }
   const push = G.git(ws.root, ['push', '-u', remote, st.branch], { allowFail: true });
   if (push.status !== 0) return failed(`git push ${remote} ${st.branch} failed: ${(push.stderr || push.stdout).trim()}`);
-  const title = `${req}: ${st.title ?? req}`.replace(/["\r\n]+/g, ' ');
   const line = fill(command, { branch: st.branch, base, title, body_file: bodyRel, req });
   const res = runShell(line, { cwd: ws.root, env: cleanEnv({}), timeout: 2 * 60 * 1000 });
   if (res.status !== 0) return failed(`the command exited ${res.status}: ${(res.stderr || res.stdout).trim()}`);
@@ -306,6 +324,7 @@ function openDraftPr(ws, st) {
 /** What the draft pull request says: the tasks with their commits, and where the documents are. */
 function prBody(st) {
   const work = `aiws/work/${st.req_id}`;
+  const subs = Object.entries(st.submodules ?? {}).filter(([, s]) => !s.done);
   return [
     `Requirement ${st.req_id}${st.title ? `: ${st.title}` : ''} (\`${st.requirement ?? ''}\`).`,
     '',
@@ -318,6 +337,16 @@ function prBody(st) {
     `- Review: \`${work}/05-review.md\`, trace: \`${work}/trace.md\``,
     `- \`aiws report ${st.req_id}\` gathers everything into one page.`,
     '',
+    ...(subs.length
+      ? [
+          '## Submodules',
+          ...subs.map(([sub, s]) => `- \`${sub}\`: branch \`${s.branch}\` into \`${s.base_branch}\``),
+          '',
+          'Merge the pull request of each submodule first, with a merge commit (not squash), so the commits this ' +
+            'workspace points at stay on the base branch. Then merge this one.',
+          '',
+        ]
+      : []),
     `After the merge, run \`aiws approve ${st.req_id} pr\`.`,
     '',
   ].join('\n');
@@ -329,6 +358,17 @@ function assertOnBranch(ws, st) {
     throw new AiwsError(
       `${st.req_id} runs on branch ${st.branch} but you are on ${cur}. Run \`git switch ${st.branch}\` (or use its worktree).`
     );
+  }
+  for (const [sub, s] of Object.entries(st.submodules ?? {})) {
+    if (s.done) continue; // after the PR gate the submodule is back on what the workspace records
+    const abs = path.join(ws.root, sub);
+    const at = fs.existsSync(path.join(abs, '.git')) ? G.currentBranch(abs) : null;
+    if (at !== s.branch) {
+      throw new AiwsError(
+        `${st.req_id} works in submodule ${sub} on its branch ${s.branch}, but ${sub} is ${at ? `on ${at}` : 'not on a branch'}. ` +
+          `Run \`git -C ${sub} switch ${s.branch}\`.`
+      );
+    }
   }
 }
 
@@ -510,9 +550,7 @@ function phaseExtra(ws, st, def) {
   }
   if (def.id === 'review') {
     const isSource = matcher(ws.policies.source_paths ?? ['**']);
-    const files = G.git(ws.root, ['diff', '--name-only', st.base_commit, 'HEAD'], { allowFail: true })
-      .stdout.split(/\r?\n/)
-      .filter((f) => f && isSource(f));
+    const files = G.diffNames(ws.root, st.base_commit, 'HEAD').filter((f) => isSource(f));
     const logOut = G.git(ws.root, ['log', '--format=%h %s', `--grep=REQ-ID: ${st.req_id}`, '-F', `${st.base_commit}..HEAD`], {
       allowFail: true,
     }).stdout.trim();
@@ -534,7 +572,7 @@ function phaseExtra(ws, st, def) {
   if (def.mode === 'incremental') {
     const from = st.base_commit;
     const to = st.code_head ?? 'HEAD';
-    const files = G.git(ws.root, ['diff', '--name-only', from, to], { allowFail: true }).stdout.trim();
+    const files = G.diffNames(ws.root, from, to).join('\n');
     const logOut = G.git(ws.root, ['log', '--oneline', `${from}..${to}`], { allowFail: true }).stdout.trim();
     return [
       '## Incremental mode',
@@ -566,9 +604,7 @@ function reviewFollowUp(ws, st, isSource) {
   const prev = st.last_review;
   if (!prev?.head || prev.approval !== latestDesignApproval(ws, st.req_id)) return null;
   if (!G.isAncestor(ws.root, prev.head, 'HEAD')) return null;
-  const files = G.git(ws.root, ['diff', '--name-only', prev.head, 'HEAD'], { allowFail: true })
-    .stdout.split(/\r?\n/)
-    .filter((f) => f && isSource(f));
+  const files = G.diffNames(ws.root, prev.head, 'HEAD').filter((f) => isSource(f));
   const logOut = G.git(ws.root, ['log', '--format=%h %s', `--grep=REQ-ID: ${st.req_id}`, '-F', `${prev.head}..HEAD`], {
     allowFail: true,
   }).stdout.trim();
@@ -904,9 +940,7 @@ export function changesSince(ws, since) {
     rev = G.revParse(ws.root, String(since));
     if (!rev) throw new AiwsError(`--since: unknown revision '${since}'.`);
   }
-  const files = G.git(ws.root, ['diff', '--name-only', rev, 'HEAD'], { allowFail: true })
-    .stdout.split(/\r?\n/)
-    .filter((f) => /^source-[^/]+\//.test(f));
+  const files = G.diffNames(ws.root, rev, 'HEAD').filter((f) => /^source-[^/]+\//.test(f));
   const logOut = G.git(ws.root, ['log', '--format=%h %s', `${rev}..HEAD`, '--', 'source-fe', 'source-be', 'source-legacy'], {
     allowFail: true,
   }).stdout.trim();

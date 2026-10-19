@@ -42,9 +42,13 @@ Không muốn `npm link` thì gọi `node aiws/adapters/cli/bin/aiws.js <lệnh>
 ## 2. Bắt đầu với dự án thật
 
 1. **Đưa code vào workspace** (ngôn ngữ nào cũng được, xem mục 2a)
-   - `source-fe/`, `source-be/`: repo mới (FE/BE đích), là thư mục thường trong repo workspace (bản copy, hoặc
-     `git subtree add --prefix source-be <url> main --squash`; bỏ `source-be/.gitkeep` trước). **Chưa hỗ trợ git submodule**
-     cho các side mà agent ghi: commit của task sẽ lỗi. `source-legacy/` chỉ đọc nên có thể là submodule.
+   - `source-fe/`, `source-be/`: repo mới (FE/BE đích), là thư mục thường trong repo workspace hoặc git submodule
+     (bỏ placeholder trước: `git rm -q source-be/.gitkeep && git submodule add <url> source-be`).
+     Với submodule, `aiws new` tạo thêm nhánh `aiws/REQ-xxx` bên trong nó; mỗi task commit trong submodule trước,
+     rồi commit con trỏ submodule ở workspace, cùng trailer. Khi đặt `pull_request`, draft pull request mở ở repo của
+     submodule trước: merge PR đó trước, bằng merge commit (không squash), rồi tới PR của workspace;
+     `aiws approve REQ pr` kiểm tra cả hai. Chưa hỗ trợ: `--worktree` và submodule có submodule con (`aiws new` từ chối
+     cả hai). `source-legacy/` cũng có thể là submodule.
      Có thể thêm side khác, ví dụ `source-mobile/` hay `source-worker/`.
    - `source-legacy/`: hệ thống cũ, chỉ đọc.
 2. **Khai báo lệnh build/test**: chạy `aiws detect` để xem đề xuất, rồi `aiws detect --write` để ghi vào `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Kiểm tra lại. Lệnh chạy tại gốc workspace; có thể viết riêng cho từng OS: `{windows: ..., posix: ...}`.

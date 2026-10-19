@@ -1,0 +1,196 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import YAML from 'yaml';
+import { makeWorkspace, ok, aiws, state, git, tempDir, scenario } from './helpers.js';
+
+/**
+ * A workspace whose `side` folders are git submodules. Each one is its own repository (with a bare
+ * "origin"), added back with `git submodule add`. Returns { root, subs: { side: { origin } } }.
+ */
+function makeSubmoduleWorkspace(sides = ['source-be']) {
+  const root = makeWorkspace();
+  const subs = {};
+  for (const side of sides) {
+    const origin = tempDir('aiws-sub-origin-');
+    git(origin, ['init', '-q', '--bare', '-b', 'main']);
+    const seed = tempDir('aiws-sub-seed-');
+    fs.cpSync(path.join(root, side), seed, { recursive: true });
+    git(seed, ['init', '-q', '-b', 'main']);
+    git(seed, ['config', 'core.autocrlf', 'false']);
+    git(seed, ['add', '-A']);
+    git(seed, ['commit', '-q', '-m', `initial ${side}`]);
+    git(seed, ['push', '-q', origin, 'main']);
+    git(root, ['rm', '-q', '-r', '--cached', side]);
+    fs.rmSync(path.join(root, side), { recursive: true, force: true });
+    git(root, ['-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', origin, side]);
+    git(path.join(root, side), ['config', 'core.autocrlf', 'false']);
+    git(path.join(root, side), ['reset', '-q', '--hard']); // line endings as committed, like the workspace
+    subs[side] = { origin };
+  }
+  git(root, ['commit', '-q', '-m', `submodules ${sides.join(' ')}`]);
+  const r = aiws(root, ['discover']);
+  if (r.status !== 0) throw new Error(`discover failed: ${r.out}`);
+  return { root, subs };
+}
+
+test('submodule: tasks commit inside the submodule on its own branch, then the gitlink in the workspace', () => {
+  const { root } = makeSubmoduleWorkspace(['source-be']);
+  const be = path.join(root, 'source-be');
+  ok(root, ['new', 'REQ-001']);
+  assert.equal(git(be, ['branch', '--show-current']), 'aiws/REQ-001');
+  ok(root, ['run', 'REQ-001']);
+  ok(root, ['approve', 'REQ-001', 'design', '--yes']);
+  ok(root, ['run', 'REQ-001']);
+  const st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+
+  // T1 is a commit of the submodule, with the trailers, on the submodule's requirement branch
+  const t1 = st.tasks.find((t) => t.id === 'T1');
+  const subLog = git(be, ['log', '--format=%s%n%b', '-1', '--grep=Task: T1', '-F']);
+  assert.match(subLog, /^feat\(REQ-001\): T1/);
+  assert.match(subLog, /REQ-ID: REQ-001/);
+  assert.match(git(be, ['show', '--name-only', '--format=', 'HEAD~0']) + git(be, ['log', '--name-only', '--format=']), /src\/users\.js/);
+  // the workspace commit of T1 moves the gitlink and carries the same trailers
+  assert.match(git(root, ['show', '--format=%B', '--name-only', t1.commit]), /Task: T1[\s\S]*source-be/);
+  // the gitlink of the workspace is the head of the submodule branch, and nothing is left dirty
+  assert.equal(git(root, ['rev-parse', 'HEAD:source-be']), git(be, ['rev-parse', 'HEAD']));
+  assert.equal(git(root, ['status', '--porcelain', '--ignore-submodules=none']), '');
+  assert.equal(git(be, ['status', '--porcelain']), '');
+  assert.deepEqual(Object.keys(st.submodules), ['source-be']);
+  assert.equal(st.submodules['source-be'].branch, 'aiws/REQ-001');
+  assert.equal(st.submodules['source-be'].base_branch, 'main');
+});
+
+function toPrGate(root, env) {
+  ok(root, ['new', 'REQ-001']);
+  ok(root, ['run', 'REQ-001'], { env });
+  ok(root, ['approve', 'REQ-001', 'design', '--yes']);
+  ok(root, ['run', 'REQ-001'], { env });
+  const st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+  return st;
+}
+
+/** Merges the submodule's requirement branch on its host (a clone pushes the merge commit to origin). */
+function mergeSubmodulePr(origin, branch = 'aiws/REQ-001') {
+  const clone = tempDir('aiws-sub-clone-');
+  git(clone, ['clone', '-q', origin, '.']);
+  git(clone, ['merge', '-q', '--no-ff', '-m', `Merge ${branch}`, `origin/${branch}`]);
+  git(clone, ['push', '-q', 'origin', 'main']);
+}
+
+test('submodule: the draft pull request opens in the submodule repository first, then in the workspace', () => {
+  const { root, subs } = makeSubmoduleWorkspace(['source-be']);
+  const remote = tempDir('aiws-remote-');
+  git(remote, ['init', '-q', '--bare']);
+  git(root, ['remote', 'add', 'origin', remote]);
+  const script = path.join(tempDir('aiws-pr-'), 'create-pr.cjs');
+  const calls = `${script}.calls`;
+  fs.writeFileSync(
+    script,
+    `const fs = require('fs');\n` +
+      `const n = fs.existsSync(${JSON.stringify(calls)}) ? JSON.parse(fs.readFileSync(${JSON.stringify(calls)}, 'utf8')) : [];\n` +
+      `n.push({ cwd: process.cwd(), args: process.argv.slice(2), body: fs.readFileSync(process.argv[5], 'utf8') });\n` +
+      `fs.writeFileSync(${JSON.stringify(calls)}, JSON.stringify(n));\n` +
+      `console.log('https://example.test/pull/' + n.length);\n`
+  );
+  const rtFile = path.join(root, 'aiws/config/runtime.yaml');
+  const rt = YAML.parse(fs.readFileSync(rtFile, 'utf8'));
+  rt.pull_request = { command: `node "${script}" "{branch}" "{base}" "{title}" "{body_file}"` };
+  fs.writeFileSync(rtFile, YAML.stringify(rt));
+  git(root, ['commit', '-qam', 'open draft pull requests']);
+
+  const st = toPrGate(root);
+  const made = JSON.parse(fs.readFileSync(calls, 'utf8'));
+  assert.equal(made.length, 2);
+  assert.equal(fs.realpathSync(made[0].cwd), fs.realpathSync(path.join(root, 'source-be')));
+  assert.deepEqual(made[0].args.slice(0, 2), ['aiws/REQ-001', 'main']);
+  assert.match(made[0].body, /## Submodules[\s\S]*source-be/);
+  assert.equal(fs.realpathSync(made[1].cwd), fs.realpathSync(root));
+  const after = state(root);
+  assert.equal(after.submodules['source-be'].pr_url, 'https://example.test/pull/1');
+  assert.equal(after.pr_url, 'https://example.test/pull/2');
+  assert.ok(st);
+  assert.match(ok(root, ['status']).out, /submodule source-be: branch aiws\/REQ-001, pull request: https:\/\/example\.test\/pull\/1/);
+  // the submodule host has the commit the workspace gitlink points at
+  assert.equal(git(subs['source-be'].origin, ['rev-parse', 'aiws/REQ-001']), git(root, ['rev-parse', 'aiws/REQ-001:source-be']));
+});
+
+test('submodule: the PR gate waits for the submodule merge, then the knowledge update runs on the merged commit', () => {
+  const { root, subs } = makeSubmoduleWorkspace(['source-be']);
+  const be = path.join(root, 'source-be');
+  toPrGate(root);
+  git(be, ['push', '-q', 'origin', 'aiws/REQ-001']);
+  git(root, ['switch', '-q', 'main']);
+  git(root, ['merge', '-q', '--no-ff', '-m', 'Merge aiws/REQ-001', 'aiws/REQ-001']);
+
+  // the workspace is merged, the submodule is not
+  const refused = aiws(root, ['approve', 'REQ-001', 'pr', '--yes']);
+  assert.notEqual(refused.status, 0);
+  assert.match(refused.out, /submodule source-be: aiws\/REQ-001 is not merged into main/);
+
+  mergeSubmodulePr(subs['source-be'].origin);
+  ok(root, ['approve', 'REQ-001', 'pr', '--yes']);
+  let st = state(root);
+  assert.equal(st.submodules['source-be'].done, true);
+  assert.equal(st.submodules['source-be'].merge, 'merge commit');
+  assert.equal(git(be, ['rev-parse', 'HEAD']), git(root, ['rev-parse', 'HEAD:source-be']));
+
+  ok(root, ['run', 'REQ-001']);
+  st = state(root);
+  assert.equal(st.status, 'done', st.reason);
+  // the incremental knowledge update was given the files changed inside the submodule
+  const runs = path.join(root, 'aiws/work/REQ-001/evidence/runs');
+  const last = fs
+    .readdirSync(runs)
+    .filter((f) => f.endsWith('.prompt.md'))
+    .sort()
+    .at(-1);
+  assert.match(fs.readFileSync(path.join(runs, last), 'utf8'), /source-be\/src\/users\.js/);
+});
+
+test('submodule: a write outside the task scope inside the submodule is reverted there', () => {
+  const { root } = makeSubmoduleWorkspace(['source-be']);
+  const before = fs.readFileSync(path.join(root, 'source-be', 'package.json'), 'utf8');
+  const env = scenario({
+    'developer-T1-1.js': `
+      import { write, read } from './_lib.js';
+      write('source-be/src/stray.js', 'export const x = 1;\\n');
+      write('source-be/package.json', read('source-be/package.json') + '\\n');
+      await import(${JSON.stringify(new URL('./fixtures/scripted/developer-T1.js', import.meta.url).href)});
+    `,
+  });
+  toPrGate(root, env);
+  const be = path.join(root, 'source-be');
+  assert.equal(fs.existsSync(path.join(be, 'src', 'stray.js')), false);
+  assert.equal(fs.readFileSync(path.join(be, 'package.json'), 'utf8'), before);
+  const results = state(root)
+    .history.filter((h) => h.task === 'T1')
+    .map((h) => h.result);
+  assert.deepEqual(results, ['fail', 'done']);
+});
+
+test('submodule: --worktree and nested submodules are refused before anything is created', () => {
+  const { root } = makeSubmoduleWorkspace(['source-be']);
+  const wt = aiws(root, ['new', 'REQ-001', '--worktree', path.join(tempDir('aiws-wt-'), 'w')]);
+  assert.notEqual(wt.status, 0);
+  assert.match(wt.out, /--worktree does not work with submodules \(source-be\)/);
+  assert.equal(git(root, ['branch', '--list', 'aiws/*']), '');
+
+  // a submodule inside source-be
+  const inner = tempDir('aiws-inner-');
+  git(inner, ['init', '-q', '-b', 'main']);
+  fs.writeFileSync(path.join(inner, 'a.txt'), 'a\n');
+  git(inner, ['add', '-A']);
+  git(inner, ['commit', '-q', '-m', 'inner']);
+  const be = path.join(root, 'source-be');
+  git(be, ['-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', inner, 'vendor/inner']);
+  git(be, ['commit', '-q', '-m', 'nested']);
+  git(root, ['commit', '-qam', 'bump source-be']);
+  const nested = aiws(root, ['new', 'REQ-001']);
+  assert.notEqual(nested.status, 0);
+  assert.match(nested.out, /submodule source-be has submodules of its own \(vendor\/inner\)/);
+  assert.equal(git(be, ['branch', '--list', 'aiws/*']), '');
+});

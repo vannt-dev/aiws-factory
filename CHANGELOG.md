@@ -7,12 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `source-fe/` and `source-be/` may be git submodules. `aiws new` creates the requirement branch inside each one;
+  a task is committed in the submodule first, then the moved pointer in the workspace, with the same trailers. Scope
+  checks and reverts work on the files inside the submodule. The draft pull request opens in the submodule
+  repository first, and `aiws approve REQ pr` waits until it is merged too. `--worktree` and nested submodules are
+  refused with a clear message.
+
 ### Fixed
 
 - `aiws detect` recognises the `.slnx` solution format of .NET 9, and prefers it when a folder also
   has an old `.sln`.
-- The operations guide no longer recommends git submodules for `source-fe/` and `source-be/`: a task
-  commit fails in one. They are plain folders of the workspace for now; `source-legacy/` may still be one.
+- A submodule in `source-fe/` or `source-be/` no longer stops `aiws run` at the first task.
 
 ## [0.7.1] - 2026-10-19
 

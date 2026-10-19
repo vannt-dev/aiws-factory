@@ -4,6 +4,7 @@ import {
   AiwsError,
   EXIT_TEMPFAIL,
   log,
+  warn,
   writeText,
   readTextIfExists,
   copyDir,
@@ -198,6 +199,8 @@ export function newReq(req, { worktree, profile } = {}) {
   if (dirty.length) throw new AiwsError(`Working tree is not clean:\n  ${dirty.join('\n  ')}`);
   if (fs.existsSync(statePath(ws, req))) throw new AiwsError(`${req} already exists.`);
 
+  const subs = submodulesToBranch(ws, branch, { worktree });
+
   const baseBranch = G.currentBranch(ws.root);
   const baseCommit = G.head(ws.root);
   if (worktree) {
@@ -210,6 +213,7 @@ export function newReq(req, { worktree, profile } = {}) {
   } else {
     G.git(ws.root, ['switch', '-q', '-c', branch]);
   }
+  for (const [sub, s] of Object.entries(subs)) G.git(path.join(ws.root, sub), ['switch', '-q', '-c', s.branch]);
   const st = {
     req_id: req,
     title: titleOf(ws, requirement, req),
@@ -217,6 +221,7 @@ export function newReq(req, { worktree, profile } = {}) {
     branch,
     base_branch: baseBranch,
     base_commit: baseCommit,
+    ...(Object.keys(subs).length ? { submodules: subs } : {}),
     ...(profile ? { profile: String(profile) } : {}),
     phase: null,
     status: 'running',
@@ -233,6 +238,41 @@ export function newReq(req, { worktree, profile } = {}) {
   log(
     `${req} created on branch ${branch} (base ${baseBranch} @ ${baseCommit.slice(0, 7)})${profile ? ` on profile ${profile}` : ''}. Next: aiws run ${req}`
   );
+}
+
+/**
+ * The submodules a requirement may write in (every checked-out one that is not protected, so not
+ * source-legacy/), each with the branch it gets: {path: {branch, base_branch, base_commit}}. Checks
+ * everything before anything is created. Not supported: a worktree (its submodules are not checked out)
+ * and a submodule that has submodules of its own.
+ */
+function submodulesToBranch(ws, branch, { worktree }) {
+  const isProtected = matcher(ws.policies.protected_paths ?? []);
+  const missing = G.gitlinks(ws.root).filter((p) => !fs.existsSync(path.join(ws.root, p, '.git')));
+  const subs = G.submodules(ws.root).filter((p) => !isProtected(`${p}/x`));
+  if (!subs.length) return {};
+  for (const p of missing) warn(`submodule ${p} is not checked out, so ${p}/ is left out (git submodule update --init ${p}).`);
+  if (worktree) {
+    throw new AiwsError(
+      `--worktree does not work with submodules (${subs.join(', ')}): a new worktree has none of them checked out. ` +
+        'Run the requirement without --worktree.'
+    );
+  }
+  const out = {};
+  for (const sub of subs) {
+    const abs = path.join(ws.root, sub);
+    const nested = G.gitlinks(abs);
+    if (nested.length) {
+      throw new AiwsError(`submodule ${sub} has submodules of its own (${nested.join(', ')}); aiws supports one level only.`);
+    }
+    if (G.branchExists(abs, branch)) throw new AiwsError(`Branch ${branch} already exists in submodule ${sub}.`);
+    out[sub] = {
+      branch,
+      base_branch: G.currentBranch(abs) ?? G.remoteDefaultBranch(abs) ?? 'main',
+      base_commit: G.head(abs),
+    };
+  }
+  return out;
 }
 
 /**
@@ -388,6 +428,9 @@ export function status(req) {
     log(`  branch: ${st.branch}   phase: ${st.phase}   status: ${st.status}${st.profile ? `   profile: ${st.profile}` : ''}`);
     if (st.reason) log(`  reason: ${st.reason}`);
     if (st.pr_url) log(`  pull request: ${st.pr_url}`);
+    for (const [sub, s] of Object.entries(st.submodules ?? {})) {
+      if (!s.done) log(`  submodule ${sub}: branch ${s.branch}${s.pr_url ? `, pull request: ${s.pr_url}` : ''}`);
+    }
     const stats = runStats(ws, r);
     const usage = statsLine(stats);
     if (usage) log(`  ${usage}`);
@@ -489,14 +532,22 @@ function approvePr(req, opts) {
         `Merge the PR and update your local ${base} first (or pass --no-merge-check).`
     );
   }
+  const subMerges = opts.mergeCheck === false ? {} : submodulesMerged(ws, st);
   const dirty = G.dirtyFiles(ws.root);
   if (dirty.length) throw new AiwsError(`Working tree is not clean:\n  ${dirty.join('\n  ')}`);
+  for (const sub of Object.keys(st.submodules ?? {})) ensureGitlinkCommit(ws, sub, base);
 
   // The knowledge update happens on its own branch cut from the merged base. The base itself is never
   // checked out here, so this also works when it is checked out in another worktree.
   const kBranch = `aiws/${req}-knowledge`;
   G.git(ws.root, ['switch', '-q', '-c', kBranch, base]);
+  // `git switch` moves the gitlinks but not the submodules: check out what the merged base records
+  for (const sub of Object.keys(st.submodules ?? {})) checkoutGitlink(ws, sub);
   ({ ws, st } = openForHuman(req));
+  for (const [sub, s] of Object.entries(st.submodules ?? {})) {
+    s.done = true;
+    if (subMerges[sub]) s.merge = subMerges[sub];
+  }
   const by = currentUser(ws.root);
   const file = recordApproval(ws, req, { gate: 'pr', decision: 'merged', by, notes: opts.message, artifacts: undefined });
   st.code_head = branchHead;
@@ -520,12 +571,68 @@ function approvePr(req, opts) {
 export function mergedInto(root, branchHead, base, baseCommit) {
   if (G.isAncestor(root, branchHead, base)) return 'merge commit';
   if (!baseCommit) return null;
+  // a gitlink is compared in its submodule (submodulesMerged): its pull request may be merged on its own
+  const links = new Set(G.gitlinks(root));
   const files = G.git(root, ['diff', '--name-only', '--no-renames', '-z', baseCommit, branchHead], { allowFail: true })
     .stdout.split('\0')
-    .filter(Boolean);
+    .filter((f) => f && !links.has(f));
   if (!files.length) return null;
   const same = G.git(root, ['diff', '--quiet', base, branchHead, '--', ...files], { allowFail: true }).status === 0;
   return same ? 'squash or rebase' : null;
+}
+
+/**
+ * For each submodule the requirement committed in: how its branch reached its base, checked against the
+ * local base branch and against the remote's copy after a fetch. Throws when one is not merged yet.
+ */
+function submodulesMerged(ws, st) {
+  const remote = ws.runtime.pull_request?.remote ?? 'origin';
+  const out = {};
+  for (const [sub, s] of Object.entries(st.submodules ?? {})) {
+    if (s.done) continue;
+    const abs = path.join(ws.root, sub);
+    const head = G.revParse(abs, s.branch);
+    if (!head) throw new AiwsError(`Branch ${s.branch} not found in submodule ${sub}.`);
+    if (head === s.base_commit) continue; // the requirement changed nothing there
+    G.git(abs, ['fetch', '-q', remote], { allowFail: true });
+    const how = [s.base_branch, `${remote}/${s.base_branch}`]
+      .filter((b) => G.revParse(abs, b))
+      .map((b) => mergedInto(abs, head, b, s.base_commit))
+      .find(Boolean);
+    if (!how) {
+      throw new AiwsError(
+        `submodule ${sub}: ${s.branch} is not merged into ${s.base_branch} yet. Merge its pull request first ` +
+          `(with a merge commit), then the workspace one (or pass --no-merge-check).`
+      );
+    }
+    out[sub] = how;
+  }
+  return out;
+}
+
+/**
+ * Makes sure submodule `sub` has the commit that workspace revision `rev` records (fetching it when needed),
+ * so the switch to the merged base can check it out. Throws before anything changed when it cannot.
+ */
+function ensureGitlinkCommit(ws, sub, rev) {
+  const abs = path.join(ws.root, sub);
+  const want = G.gitlinkAt(ws.root, rev, sub);
+  if (!want || !fs.existsSync(path.join(abs, '.git')) || G.revParse(abs, `${want}^{commit}`)) return;
+  G.git(abs, ['fetch', '-q', ws.runtime.pull_request?.remote ?? 'origin'], { allowFail: true });
+  if (!G.revParse(abs, `${want}^{commit}`)) {
+    throw new AiwsError(
+      `submodule ${sub}: ${rev} records commit ${want.slice(0, 7)}, which ${sub} does not have even after a fetch. ` +
+        `Push it to the submodule's remote (or fetch it into ${sub}), then approve again.`
+    );
+  }
+}
+
+/** Checks out in submodule `sub` the commit the workspace HEAD records (detached, like `git submodule update`). */
+function checkoutGitlink(ws, sub) {
+  const abs = path.join(ws.root, sub);
+  const want = G.gitlinkAt(ws.root, 'HEAD', sub);
+  if (!want || !fs.existsSync(path.join(abs, '.git')) || G.head(abs) === want) return;
+  G.git(abs, ['checkout', '-q', '--detach', want]);
 }
 
 /** `aiws stop REQ`: asks a running `aiws run` to stop after its current step. Changes no state. */

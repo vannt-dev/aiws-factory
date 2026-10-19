@@ -42,9 +42,13 @@ Without `npm link`, run `node aiws/adapters/cli/bin/aiws.js <command>` from the 
 ## 2. Getting started with a real project
 
 1. **Bring the code in** (any language, see section 2a).
-   - `source-fe/`, `source-be/`: the new target repositories, as plain folders of the workspace repository (a copy, or
-     `git subtree add --prefix source-be <url> main --squash`; remove `source-be/.gitkeep` first). **Git submodules are not
-     supported yet** for the sides an agent writes: the commit of a task fails. `source-legacy/` is read-only and may be one.
+   - `source-fe/`, `source-be/`: the new target repositories, as plain folders of the workspace repository or as git
+     submodules (remove the placeholder first: `git rm -q source-be/.gitkeep && git submodule add <url> source-be`).
+     With a submodule, `aiws new` also creates the branch `aiws/REQ-xxx` inside it; each task is committed in the
+     submodule first, then the moved submodule pointer in the workspace, with the same trailers. With
+     `pull_request` set, the draft pull request opens in the submodule repository first: merge that one first, with a
+     merge commit (not squash), then the workspace one; `aiws approve REQ pr` checks both. Not supported: `--worktree`
+     and a submodule that has submodules of its own (`aiws new` refuses both). `source-legacy/` may be a submodule too.
      You can add more sides, for example `source-mobile/` or `source-worker/`.
    - `source-legacy/`: the old system, read-only.
 2. **Declare build/test commands**: run `aiws detect` to see the proposal, then `aiws detect --write` to merge it into `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Review the result. Commands run from the workspace root and may differ per OS: `{windows: ..., posix: ...}`.
