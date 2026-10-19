@@ -38,6 +38,7 @@ export function branchExists(root, name) {
 // checked-out submodule and give its files as `<submodule>/<file>`; the gitlink path itself is never listed.
 // What a submodule "was" at a workspace revision is the commit its gitlink records there.
 
+// the empty tree of a SHA-1 repository (a SHA-256 one has another id)
 const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 
 /** Paths of every gitlink in the index (checked out or not). */

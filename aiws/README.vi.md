@@ -48,7 +48,7 @@ Không muốn `npm link` thì gọi `node aiws/adapters/cli/bin/aiws.js <lệnh>
      rồi commit con trỏ submodule ở workspace, cùng trailer. Khi đặt `pull_request`, draft pull request mở ở repo của
      submodule trước: merge PR đó trước, bằng merge commit (không squash), rồi tới PR của workspace;
      `aiws approve REQ pr` kiểm tra cả hai. Chưa hỗ trợ: `--worktree` và submodule có submodule con (`aiws new` từ chối
-     cả hai). `source-legacy/` cũng có thể là submodule.
+     cả hai), và submodule thêm vào sau `aiws new`. `source-legacy/` cũng có thể là submodule.
      Có thể thêm side khác, ví dụ `source-mobile/` hay `source-worker/`.
    - `source-legacy/`: hệ thống cũ, chỉ đọc.
 2. **Khai báo lệnh build/test**: chạy `aiws detect` để xem đề xuất, rồi `aiws detect --write` để ghi vào `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Kiểm tra lại. Lệnh chạy tại gốc workspace; có thể viết riêng cho từng OS: `{windows: ..., posix: ...}`.

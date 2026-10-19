@@ -27,6 +27,7 @@ function makeSubmoduleWorkspace(sides = ['source-be']) {
     git(root, ['-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', origin, side]);
     git(path.join(root, side), ['config', 'core.autocrlf', 'false']);
     git(path.join(root, side), ['reset', '-q', '--hard']); // line endings as committed, like the workspace
+    git(path.join(root, side), ['checkout', '-q', '--detach']); // as after `git submodule update --init`
     subs[side] = { origin };
   }
   git(root, ['commit', '-q', '-m', `submodules ${sides.join(' ')}`]);
@@ -80,6 +81,22 @@ function mergeSubmodulePr(origin, branch = 'aiws/REQ-001') {
   git(clone, ['merge', '-q', '--no-ff', '-m', `Merge ${branch}`, `origin/${branch}`]);
   git(clone, ['push', '-q', 'origin', 'main']);
 }
+
+test('submodule: both sides as submodules, each task commits in its own submodule', () => {
+  const { root } = makeSubmoduleWorkspace(['source-fe', 'source-be']);
+  const st = toPrGate(root);
+  assert.deepEqual(Object.keys(st.submodules), ['source-be', 'source-fe']);
+  for (const [side, task] of [
+    ['source-be', 'T1'],
+    ['source-fe', 'T2'],
+  ]) {
+    const abs = path.join(root, side);
+    assert.equal(git(abs, ['branch', '--show-current']), 'aiws/REQ-001');
+    assert.match(git(abs, ['log', '--format=%B', '-1', `--grep=Task: ${task}`, '-F']), new RegExp(`Task: ${task}`));
+    assert.equal(git(root, ['rev-parse', `HEAD:${side}`]), git(abs, ['rev-parse', 'HEAD']));
+  }
+  assert.equal(git(root, ['status', '--porcelain', '--ignore-submodules=none']), '');
+});
 
 test('submodule: the draft pull request opens in the submodule repository first, then in the workspace', () => {
   const { root, subs } = makeSubmoduleWorkspace(['source-be']);

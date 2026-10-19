@@ -48,7 +48,8 @@ Without `npm link`, run `node aiws/adapters/cli/bin/aiws.js <command>` from the 
      submodule first, then the moved submodule pointer in the workspace, with the same trailers. With
      `pull_request` set, the draft pull request opens in the submodule repository first: merge that one first, with a
      merge commit (not squash), then the workspace one; `aiws approve REQ pr` checks both. Not supported: `--worktree`
-     and a submodule that has submodules of its own (`aiws new` refuses both). `source-legacy/` may be a submodule too.
+     and a submodule that has submodules of its own (`aiws new` refuses both), and a submodule added after `aiws new`.
+     `source-legacy/` may be a submodule too.
      You can add more sides, for example `source-mobile/` or `source-worker/`.
    - `source-legacy/`: the old system, read-only.
 2. **Declare build/test commands**: run `aiws detect` to see the proposal, then `aiws detect --write` to merge it into `aiws/config/policies.yaml` (`sides`, `source_paths`, `commands`). Review the result. Commands run from the workspace root and may differ per OS: `{windows: ..., posix: ...}`.
