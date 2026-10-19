@@ -726,7 +726,7 @@ test('pull_request in runtime.yaml: at the PR gate the branch is pushed and a dr
   );
   const [branch, base, title, bodyFile] = JSON.parse(fs.readFileSync(calls, 'utf8'));
   assert.deepEqual([branch, base], ['aiws/REQ-001', 'main']);
-  assert.match(title, /^REQ-001/);
+  assert.match(title, /^feat\(REQ-001\): /);
   assert.match(fs.readFileSync(path.join(root, bodyFile), 'utf8'), /T1/);
   // the remote has the branch as it is locally, state commit with the URL included
   assert.equal(git(remote, ['rev-parse', 'aiws/REQ-001']), git(root, ['rev-parse', 'aiws/REQ-001']));

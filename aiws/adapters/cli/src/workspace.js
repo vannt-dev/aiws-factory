@@ -161,6 +161,16 @@ export class Workspace {
     return LANGUAGES.includes(l) ? l : 'vi';
   }
 
+  /**
+   * The language of what lands in the repositories: commit subjects (task titles) and pull requests.
+   * `workflow.yaml -> git_language` (vi or en), the document language by default. English source repositories
+   * set `git_language: en` and keep their documents in Vietnamese.
+   */
+  get gitLanguage() {
+    const l = String(this.workflow.git_language ?? this.language).toLowerCase();
+    return l === 'en' ? 'en' : 'vi';
+  }
+
   /** A template in the workspace language: aiws/templates/<lang>/<name> when it exists, else aiws/templates/<name>. */
   template(name) {
     const own = path.join(this.aiwsDir, 'templates', this.language, name);

@@ -14,8 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   checks and reverts work on the files inside the submodule. The draft pull request opens in the submodule
   repository first, and `aiws approve REQ pr` waits until it is merged too. `--worktree` and nested submodules are
   refused with a clear message.
+- An optional `<side>_lint` command in `policies.yaml` (the lint/format checks of the project's CI) runs after
+  every task like the build, the developer may run it, and `aiws check build` runs it too. `aiws detect`
+  proposes one for npm `lint` / `format:check` scripts, ruff (`[tool.ruff]`) and cargo fmt. Found when a
+  copied project's own lint-staged did not run and a formatting error reached the pull request.
+- `workflow.yaml -> git_language` (vi or en, `language` by default): the language of task titles, which become
+  commit subjects. An English repository gets English commits while the documents stay in Vietnamese.
 
 ### Changed
+
+- A note given with the design approval (`aiws approve REQ design -m "..."`) now reaches the planner, the
+  developer and the reviewer as feedback to follow; before, only the approval record kept it.
+- The draft pull request title is a Conventional Commits subject, `feat(REQ-001): user nickname`
+  (`fix(...)` when every task is a fix), instead of `REQ-001: User nickname`, so a squash merge passes commitlint.
 
 - A task commit is titled `feat(REQ-001): be - add the nickname (T1)`: the task id goes last, a capitalised
   first word starts lower case, no full stop, at most 100 characters. `feat(REQ-001): T1 ...` was refused by

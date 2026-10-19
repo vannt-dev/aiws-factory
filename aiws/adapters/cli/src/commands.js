@@ -517,6 +517,13 @@ function approveDesign(req, opts) {
   const artifacts = hashArtifacts(ws, req, def.artifacts);
   const file = recordApproval(ws, req, { gate: 'design', decision: 'approved', by, notes: opts.message, artifacts });
   addHistory(st, { phase: def.id, result: 'approved', by, record: path.basename(file) });
+  if (opts.message) {
+    // a condition of the approval binds the phases that build on the design, not only the record
+    const text = `Condition of the design approval, on top of the approved design: ${opts.message}`;
+    for (const id of ['planning', 'implementation', 'review']) {
+      if (ws.workflow.phases.some((p) => p.id === id)) addFeedback(st, id, `design approval by ${by}`, text);
+    }
+  }
   enterPhase(ws, st, def.on_approve);
   saveState(ws, st);
   G.commit(ws.root, `chore(${req}): design approved by ${by}\n\nREQ-ID: ${req}\nAIWS-Approval: ${file}\n`, [ws.workRel(req)], {
@@ -911,7 +918,7 @@ export function checkApiContractCmd({ req }) {
 }
 
 /**
- * `aiws check build`: runs every configured `<side>_build` and `<side>_test` command of policies.yaml,
+ * `aiws check build`: runs every configured `<side>_lint`, `<side>_build` and `<side>_test` command of policies.yaml,
  * the same commands the orchestrator runs after each task. Meant for CI on requirement pull requests,
  * so merged code is rebuilt and retested outside the AI run. Does nothing when no command is configured.
  */
@@ -923,7 +930,7 @@ export function checkBuild() {
   const failed = [];
   let ran = 0;
   for (const side of Object.keys(pol.sides ?? {})) {
-    for (const kind of ['build', 'test']) {
+    for (const kind of ['lint', 'build', 'test']) {
       const name = `${side}_${kind}`;
       const cmd = osCommand(pol.commands?.[name]);
       if (!cmd) continue;
@@ -939,7 +946,7 @@ export function checkBuild() {
       }
     }
   }
-  if (!ran) return log('No <side>_build or <side>_test command in aiws/config/policies.yaml; nothing to run.');
+  if (!ran) return log('No <side>_lint, <side>_build or <side>_test command in aiws/config/policies.yaml; nothing to run.');
   if (failed.length) {
     log(`\nbuild check FAILED: ${failed.join(', ')}`);
     process.exitCode = 1;

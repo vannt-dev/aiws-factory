@@ -100,6 +100,8 @@ phase_write_scope:
 #   be_build: "go -C source-be build ./..."              be_test: "go -C source-be test ./..."
 #   be_build: "python -m compileall -q source-be"        be_test: "python -m pytest -q source-be"
 #   fe_build: "npm run build --prefix source-fe"         fe_test: "npm test --prefix source-fe"
+#   fe_lint: "npm run lint --prefix source-fe"            (tuỳ chọn: lint/format như CI của dự án; chạy sau mỗi task)
+#   be_lint: "ruff check source-be && ruff format --check source-be"
 #   api_contract_be: "<so OpenAPI sinh từ code BE với api-contract.yaml>"   (tuỳ chọn, chạy ở review)
 #   api_contract_fe: "<sinh client/type từ contract rồi build FE>"          (tuỳ chọn, chạy ở review)
 commands: {}
