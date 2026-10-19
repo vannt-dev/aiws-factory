@@ -35,6 +35,16 @@ Trước khi đi tiếp, hãy chạy `aiws check build`. Lệnh này chạy mọ
 
 Trên Windows mà chưa `npm link`, hãy gõ `node aiws\adapters\cli\bin\aiws.js` ở mọi chỗ sổ tay ghi `aiws`.
 
+### Khi code nằm trong git submodule
+
+`source-fe/` và `source-be/` có thể là git submodule của workspace, mỗi cái là một repo riêng.
+
+- Thêm bằng `git rm -q source-be/.gitkeep && git submodule add -b <nhánh> <url> source-be`. Mỗi requirement bắt đầu từ nhánh submodule đang đứng, nếu không có thì nhánh `branch` mà `.gitmodules` ghi, nếu không nữa thì nhánh mặc định của origin của nó.
+- Git hook của chính dự án chạy ở mọi lần commit và push mà aiws làm trong submodule, nên hãy cài chúng trong từng bản clone theo cách dự án hướng dẫn (repo chuẩn hoá bằng repokeeper: `npx --yes lefthook@<phiên bản> install`). Hook từ chối commit của task thì lần thử đó fail, và developer nhận được những gì hook in ra.
+- Repo viết bằng tiếng Anh thì đặt `git_language: en` trong `aiws/config/workflow.yaml`: tiêu đề commit ra tiếng Anh, còn tài liệu vẫn theo ngôn ngữ của workspace.
+- Ở gate pull request, merge pull request của submodule trước, bằng merge commit (không squash), rồi mới tới của workspace. `aiws approve REQ-001 pr` tự fetch và kiểm tra cả hai, nên bạn không phải cập nhật nhánh local bằng tay. Sau đó submodule được để ở trạng thái detached trên commit đã merge, giống như `git submodule update`.
+- Chưa hỗ trợ: `--worktree`, submodule có submodule riêng bên trong, và submodule thêm vào sau `aiws new`.
+
 ## 2. Viết requirement
 
 Requirement là một file Markdown ngắn do người viết và commit: `requirements/REQ-001-ten-ngan.md`. AI được đọc thư mục này nhưng không bao giờ ghi được vào đó.

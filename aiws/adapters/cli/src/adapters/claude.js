@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { AiwsError, writeText, fill, runShell } from '../util.js';
+import { fileURLToPath } from 'node:url';
+import { AiwsError, writeText, fill, runShell, warn } from '../util.js';
 import { commandPrefixes } from '../stacks.js';
 import { isHumanOnlyEntry } from '../gate.js';
 
@@ -48,11 +49,31 @@ export function preflight(ws) {
     }
     return;
   }
-  if (runShell('aiws --version', { cwd: ws.root }).status !== 0) {
+  const onPath = runShell('aiws --version', { cwd: ws.root });
+  if (onPath.status !== 0) {
     throw new AiwsError(
       'The guard hook cannot start: `aiws` is not on PATH. Run `npm link` in the aiws CLI folder, ' +
         'or set `claude.guard_command` in aiws/config/runtime.yaml.'
     );
+  }
+  // the hook runs the `aiws` of PATH; an older one may not know the rules this release enforces
+  const theirs = onPath.stdout.trim();
+  const ours = cliVersion();
+  if (theirs && ours && theirs !== ours) {
+    warn(
+      `The guard hook runs aiws ${theirs} from PATH, while this run is aiws ${ours}. Install ${ours} globally, ` +
+        'or set `claude.guard_command` in aiws/config/runtime.yaml to this CLI.'
+    );
+  }
+}
+
+/** The version of this CLI, from its package.json. */
+function cliVersion() {
+  try {
+    const pkg = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'package.json');
+    return JSON.parse(fs.readFileSync(pkg, 'utf8')).version;
+  } catch {
+    return null;
   }
 }
 

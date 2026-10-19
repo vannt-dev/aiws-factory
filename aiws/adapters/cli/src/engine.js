@@ -39,7 +39,13 @@ export function gateMessage(def, req) {
 export function enterPhase(ws, st, id) {
   st.step_index = 0;
   if (id === 'done') {
-    setPhase(st, 'done', 'done');
+    // the knowledge update was committed on its own branch, which the next requirement needs on the base
+    const kBranch = `aiws/${st.req_id}-knowledge`;
+    const reason = G.branchExists(ws.root, kBranch)
+      ? `knowledge updated on ${kBranch}: push it and merge it into ${st.base_branch ?? ws.baseBranch()} ` +
+        '(a pull request), so the next requirement starts from it'
+      : undefined;
+    setPhase(st, 'done', 'done', reason);
     return;
   }
   const def = ws.phaseDef(id);

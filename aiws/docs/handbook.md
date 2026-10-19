@@ -35,6 +35,16 @@ Before you go on, run `aiws check build`. It runs every configured build and tes
 
 On Windows without `npm link`, type `node aiws\adapters\cli\bin\aiws.js` wherever this handbook says `aiws`.
 
+### When your code is in git submodules
+
+`source-fe/` and `source-be/` may be git submodules of the workspace, each one its own repository.
+
+- Add one with `git rm -q source-be/.gitkeep && git submodule add -b <branch> <url> source-be`. Each requirement starts from the branch the submodule is on, else the `branch` that `.gitmodules` names, else the default branch of its origin.
+- The project's own git hooks run on every commit and push that aiws makes inside the submodule, so install them in each clone the way the project says (for a repository standardised with repokeeper, `npx --yes lefthook@<version> install`). A hook that refuses a task commit fails that attempt, and the developer is given what the hook printed.
+- If the repository is written in English, set `git_language: en` in `aiws/config/workflow.yaml`: the commit subjects come out in English while the documents stay in the workspace language.
+- At the pull request gate, merge the submodule's pull request first, with a merge commit (not squash), then the workspace's. `aiws approve REQ-001 pr` fetches both and checks both, so you do not update your local branches by hand. The submodule is then left detached on the merged commit, as `git submodule update` leaves it.
+- Not supported: `--worktree`, a submodule that has submodules of its own, and a submodule added after `aiws new`.
+
 ## 2. Write the requirement
 
 A requirement is a short Markdown file that a person writes and commits: `requirements/REQ-001-short-name.md`. The AI may read this folder but can never write to it.

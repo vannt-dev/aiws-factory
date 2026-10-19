@@ -118,3 +118,20 @@ test('estimate says so when nothing is finished, and points at the handbook numb
   assert.equal(aiws(root, ['stats']).stdout.trim(), 'No requirements in aiws/work/ yet.');
   assert.match(estimateText(null), /handbook/);
 });
+
+test('stats counts the knowledge discovery on a line of its own, outside the requirements', () => {
+  const root = makeWorkspace();
+  fakeReq(root, 'REQ-001', { runs: [{ phase: 'analysis', minutes: 4, cost: 2.5 }] });
+  // aiws discover keeps its evidence in aiws/work/_discover, without a state
+  const runs = path.join(root, 'aiws', 'work', '_discover', 'evidence', 'runs');
+  fs.mkdirSync(runs, { recursive: true });
+  fs.writeFileSync(
+    path.join(runs, 'run-0001.json'),
+    JSON.stringify({ run_id: 'run-0001', phase: 'discover', duration_ms: 3 * 60000, report: { cost_usd: 0.75 } })
+  );
+  const summary = workspaceStats(Workspace.open(root));
+  assert.equal(summary.rows.length, 1, 'not a requirement row');
+  const text = statsText(summary);
+  assert.match(text, /Knowledge discovery \(aiws discover\): 1 run\(s\), 3 min, 0\.75 USD/);
+  assert.match(text, /1 requirement\(s\), 1 AI run\(s\), 4 min, 2\.50 USD/, 'the requirement totals stay their own');
+});

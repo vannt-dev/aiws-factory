@@ -12,7 +12,10 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
   const req = st.req_id;
   const vars = { req, task: task?.id, requirement: st.requirement };
   const agent = ws.agent(agentId);
-  const scope = writeScope(ws.policies, phase, { req, task });
+  // the phase's scope, without what another step of the phase writes (the architect is not shown the
+  // test designer's 03-test-spec.md); what is enforced stays the phase's scope
+  const others = otherStepOutputs(ws, phase, contract, vars);
+  const scope = writeScope(ws.policies, phase, { req, task }).filter((s) => !others.has(s));
   const parts = [];
 
   parts.push(`# AIWS run - ${req} - phase: ${phase} - agent: ${agentId}${task ? ` - task: ${task.id}` : ''}`);
@@ -135,6 +138,27 @@ function shellCommands(ws, phase, contract, task) {
     for (const key of keys) {
       const command = toShell(pol.commands?.[key]);
       if (command) out.push({ key, command });
+    }
+  }
+  return out;
+}
+
+/** The outputs (filled in) of the other agent steps of `phase`, minus this contract's own. */
+function otherStepOutputs(ws, phase, contract, vars) {
+  const def = ws.workflow.phases?.find((p) => p.id === phase);
+  const own = new Set((contract.outputs ?? []).map((o) => fill(o.path, vars)));
+  const out = new Set();
+  for (const step of def?.steps ?? []) {
+    if (!step.contract) continue;
+    let other;
+    try {
+      other = ws.contract(step.contract);
+    } catch {
+      continue;
+    }
+    for (const o of other.outputs ?? []) {
+      const p = fill(o.path, vars);
+      if (!own.has(p)) out.add(p);
     }
   }
   return out;
