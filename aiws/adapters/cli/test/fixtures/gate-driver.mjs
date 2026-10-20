@@ -1,5 +1,6 @@
 // Drives `gateMenu` with keys from a fake terminal, for the tests: node gate-driver.mjs <workspace> <REQ> <keys...>
-// Each key is written after a short pause: ENTER, DOWN, UP, ESC, a digit, or TEXT:<a line to type>.
+// Each key is written after a short pause: ENTER, DOWN, UP, ESC, a digit, or TEXT:<a line to type>;
+// WAIT:<ms> only waits (for a command the menu runs before it asks again).
 import { PassThrough } from 'node:stream';
 import { Workspace } from '../../src/workspace.js';
 import { loadState } from '../../src/state.js';
@@ -12,7 +13,8 @@ const input = new PassThrough();
 const SEQ = { ENTER: '\r', DOWN: '\x1b[B', UP: '\x1b[A', ESC: '\x1b' };
 (async () => {
   for (const k of keys) {
-    await new Promise((r) => setTimeout(r, 150));
+    await new Promise((r) => setTimeout(r, k.startsWith('WAIT:') ? Number(k.slice(5)) : 150));
+    if (k.startsWith('WAIT:')) continue;
     input.write(k.startsWith('TEXT:') ? `${k.slice(5)}\n` : (SEQ[k] ?? k));
   }
 })();

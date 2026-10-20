@@ -67,6 +67,17 @@ export function gateChoices(ws, st) {
       options: [
         { key: 'approve', label: 'The pull request is merged: approve', command: ['approve', 'pr'] },
         { key: 'reject', label: 'Request changes', command: ['reject', 'pr'], ask: 'What must change?' },
+        // the review is already written on the host: send its comments (`aiws reject REQ pr --from-pr`)
+        ...(st.pr_url || Object.values(st.submodules ?? {}).some((s) => s.pr_url)
+          ? [
+              {
+                key: 'reject-from-pr',
+                label: 'Request changes: send the review comments of the pull request',
+                command: ['reject', 'pr'],
+                fromPr: true,
+              },
+            ]
+          : []),
         report,
         later,
       ],
@@ -113,6 +124,8 @@ export function select(options, { input = process.stdin, output = process.stdout
     };
     draw(true);
     input.on('keypress', onKey);
+    // a second pick (after the report, or a request that found nothing to send) reads a stream paused by the first
+    if (typeof input.resume === 'function') input.resume();
   });
 }
 
@@ -172,8 +185,17 @@ export async function gateMenu(ws, st, actions, io = {}) {
       }
     }
     const [command, gate] = picked.command;
-    const opts = { yes: true, message };
-    if (gate) await actions[command](st.req_id, gate, opts);
+    const opts = { yes: true, message, ...(picked.fromPr ? { fromPr: true } : {}) };
+    if (picked.fromPr) {
+      // nothing to read (no comments yet, gh signed out): say why and offer the menu again
+      try {
+        await actions[command](st.req_id, gate, opts);
+      } catch (e) {
+        if (!(e instanceof AiwsError)) throw e;
+        output.write(`${e.message}\n`);
+        continue;
+      }
+    } else if (gate) await actions[command](st.req_id, gate, opts);
     else await actions[command](st.req_id, opts);
     return picked.key;
   }

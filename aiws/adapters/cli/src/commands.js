@@ -32,6 +32,7 @@ import { buildReport, renderHtml } from './report.js';
 import { pipelineSteps, pipelineText } from './pipeline.js';
 import { gateMenu, interactive } from './gatemenu.js';
 import { checkApiContract, runContractCommand } from './apicontract.js';
+import { pullRequestFeedback } from './prfeedback.js';
 import {
   MANIFEST_REL,
   NEW_SUFFIX,
@@ -667,18 +668,27 @@ export function stop(req) {
   log(`Stop requested: ${req} stops after its current step. Continue later with \`aiws run ${req}\`.`);
 }
 
+/**
+ * Sends a gate back with feedback. At the PR gate `--from-pr` (opts.fromPr: true, or the pull request's URL)
+ * adds the review comments of the pull request, after the -m message when both are given.
+ */
 export async function reject(req, gate, opts = {}) {
-  if (!opts.message) throw new AiwsError('reject needs feedback: -m "what must change"');
+  if (opts.fromPr && gate !== 'pr')
+    throw new AiwsError(`--from-pr reads the review comments of the pull request: use it with \`aiws reject ${req} pr\`.`);
+  if (!opts.message && !opts.fromPr) throw new AiwsError('reject needs feedback: -m "what must change" (at the PR gate also --from-pr)');
   await requireHuman(`reject ${gate}`, req, opts);
   const { ws, st } = openForHuman(req);
   const def = gateDef(ws, gate);
   assertAt(st, def);
+  // read before anything is recorded: a pull request without comments stops here
+  const fromPr = opts.fromPr ? pullRequestFeedback(ws, st, { url: typeof opts.fromPr === 'string' ? opts.fromPr : null }) : null;
+  const feedback = [opts.message, fromPr].filter(Boolean).join('\n\n');
   const by = currentUser(ws.root);
   const target = gate === 'pr' ? def.on_changes_requested : def.on_reject;
   const decision = gate === 'pr' ? 'changes_requested' : 'rejected';
   const artifacts = gate === 'design' ? hashArtifacts(ws, req, def.artifacts) : undefined;
-  const file = recordApproval(ws, req, { gate, decision, by, notes: opts.message, artifacts });
-  addFeedback(st, target, `${gate} ${decision} by ${by}`, opts.message);
+  const file = recordApproval(ws, req, { gate, decision, by, notes: feedback, artifacts });
+  addFeedback(st, target, `${gate} ${decision} by ${by}`, feedback);
   addHistory(st, { phase: def.id, result: decision, by, record: path.basename(file) });
   enterPhase(ws, st, target);
   saveState(ws, st);
