@@ -102,7 +102,10 @@ phase_write_scope:
 #   fe_build: "npm run build --prefix source-fe"         fe_test: "npm test --prefix source-fe"
 #   fe_lint: "npm run lint --prefix source-fe"            (tuỳ chọn: lint/format như CI của dự án; chạy sau mỗi task)
 #   be_lint: "ruff check source-be && ruff format --check source-be"
-#   api_contract_be: "<so OpenAPI sinh từ code BE với api-contract.yaml>"   (tuỳ chọn, chạy ở review)
+#   api_contract_be: "npx --yes openapi-drift@0 check --spec aiws/work/{req}/api-contract.yaml --source source-be --framework nestjs --fail-on code --format json"
+#                    (tuỳ chọn, chạy ở review: so contract với route trong code BE; `aiws detect` đề xuất cho
+#                    NestJS/Express/Fastify/Spring; mỗi operation code chưa phục vụ = finding critical. Lệnh khác
+#                    cũng được: exit code != 0 = finding)
 #   api_contract_fe: "<sinh client/type từ contract rồi build FE>"          (tuỳ chọn, chạy ở review)
 commands: {}
 

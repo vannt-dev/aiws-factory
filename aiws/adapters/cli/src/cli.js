@@ -16,7 +16,8 @@ Setup
                                        changed are kept, with the kit's version beside them as *.aiws-new when
                                        it changed too (--force replaces those instead); nothing is committed
   aiws detect [--write] [--force]      recognise the stack of each source-* dir (any language) and propose
-                                       sides + build/test commands; --write merges them into policies.yaml
+                                       sides + build/test commands (and the optional api_contract_be for
+                                       NestJS/Express/Fastify/Spring); --write merges them into policies.yaml
   aiws sync <claude|codex|opencode|antigravity>
                                        generate what the tool reads of a project from aiws/: its agents, the skills
                                        and the guard hook (claude: CLAUDE.md + .claude/; codex: .codex/, no hook;
@@ -62,7 +63,8 @@ Checks (for CI and debugging)
   aiws check diff-scope --req R [--phase P] [--task T] [--base REV]
   aiws check commit-trailer --req R [--range A..B]
   aiws check approvals --req R
-  aiws check api-contract --req R      lint api-contract.yaml and compare it with the backend's OpenAPI document
+  aiws check api-contract --req R      lint api-contract.yaml and compare it with the backend's OpenAPI document,
+                                       and with its code when commands.api_contract_be is set (as the review does)
   aiws check build                     run every <side>_build and <side>_test command of policies.yaml
   aiws guard [--bash] [--from antigravity]
                                        the PreToolUse hook the tools call (reads the tool call as JSON on stdin)

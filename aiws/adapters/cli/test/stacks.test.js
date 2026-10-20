@@ -55,6 +55,43 @@ test('detectStacks recognises many languages and treats legacy as read-only', ()
   assert.equal(legacy.languages[0], '.cbl:2');
 });
 
+test('detectStacks proposes the optional openapi-drift contract check for NestJS, Express, Fastify and Spring backends', () => {
+  const drift = (source, framework) =>
+    `npx --yes openapi-drift@0 check --spec aiws/work/{req}/api-contract.yaml --source ${source} --framework ${framework} --fail-on code --format json`;
+  const node = (deps) => JSON.stringify({ scripts: { test: 'jest' }, dependencies: deps });
+  const cases = [
+    [{ 'source-be/package.json': node({ '@nestjs/core': '^11.0.0', express: '^5.0.0' }) }, drift('source-be', 'nestjs')],
+    [{ 'source-be/package.json': node({ express: '^5.0.0' }) }, drift('source-be', 'express')],
+    [{ 'source-be/package.json': node({ fastify: '^5.0.0' }) }, drift('source-be', 'fastify')],
+    [
+      { 'source-be/pom.xml': '<project><parent><artifactId>spring-boot-starter-parent</artifactId></parent></project>' },
+      drift('source-be', 'spring'),
+    ],
+    [{ 'source-be/build.gradle.kts': 'plugins { id("org.springframework.boot") version "3.5.0" }' }, drift('source-be', 'spring')],
+    // a backend in a sub-project: --source points at it
+    [{ 'source-be/api/package.json': node({ express: '^5.0.0' }) }, drift('source-be/api', 'express')],
+    // a backend side with another name, next to a front end that also depends on express
+    [
+      {
+        'source-api/package.json': node({ fastify: '^5.0.0' }),
+        'source-fe/package.json': node({ express: '^5.0.0', react: '^19.0.0' }),
+      },
+      drift('source-api', 'fastify'),
+    ],
+    // nothing it can read: no proposal, nothing installed
+    [{ 'source-be/package.json': node({ koa: '^3.0.0' }) }, undefined],
+    [{ 'source-be/go.mod': 'module x' }, undefined],
+    [{ 'source-be/pom.xml': '<project/>' }, undefined],
+    [{ 'source-fe/package.json': node({ express: '^5.0.0' }) }, undefined],
+  ];
+  for (const [files, want] of cases) {
+    const root = tempDir('aiws-stk-');
+    tree(root, files);
+    const { commands } = detectStacks(root);
+    assert.equal(commands.api_contract_be, want, JSON.stringify(files));
+  }
+});
+
 test('aiws detect --write merges into policies.yaml, keeps comments and existing commands', () => {
   const root = makeWorkspace();
   tree(root, { 'source-be/go.mod': 'module x' });

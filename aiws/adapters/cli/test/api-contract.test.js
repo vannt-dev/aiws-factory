@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import { makeWorkspace, aiws, ok, state, git, writeFile, scenario, readFile } from './helpers.js';
-import { lintOpenApi, compareContract, normalizePath, findSpecs } from '../src/apicontract.js';
+import { makeWorkspace, aiws, ok, state, git, writeFile, scenario, readFile, tempDir } from './helpers.js';
+import { lintOpenApi, compareContract, normalizePath, findSpecs, driftFindings } from '../src/apicontract.js';
 
 const sound = () =>
   YAML.parse(`
@@ -122,6 +122,126 @@ test('the review fails the contract as a critical finding when the backend docum
   const r = ok(root, ['check', 'api-contract', '--req', 'REQ-001']);
   assert.match(r.stdout, /every operation of aiws\/work\/REQ-001\/api-contract\.yaml \(1\) is exposed by source-be\/openapi\.yaml/);
   assert.match(r.stdout, /api-contract ok for REQ-001/);
+});
+
+/** A report as `openapi-drift check --format json` prints it. */
+const driftReport = (over = {}) =>
+  JSON.stringify({
+    spec: 'aiws/work/REQ-001/api-contract.yaml',
+    source: 'source-be',
+    base: '',
+    prefix: '/api',
+    counts: { spec: 2, code: 5 },
+    missingInSpec: [{ method: 'get', path: '/api/health', file: 'source-be/src/health.ts', line: 3, hint: '' }],
+    missingInCode: [],
+    paramMismatch: [],
+    queryMismatch: [],
+    statusMismatch: [],
+    ...over,
+  });
+
+test('driftFindings turns the JSON report of openapi-drift into review findings', () => {
+  const contract = 'aiws/work/REQ-001/api-contract.yaml';
+  // an operation of the contract that no route serves is a finding; routes the contract does not list are not
+  const missing = driftReport({
+    missingInCode: [{ method: 'put', path: '/users/{id}/nickname', specPath: '/users/{id}/nickname', hint: 'the path exists with GET' }],
+    paramMismatch: [
+      { method: 'get', path: '/users/{id}', specParams: ['id'], codeParams: ['userId'], file: 'source-be/src/users.ts', line: 9 },
+    ],
+  });
+  const r = driftFindings({ status: 1, stdout: missing }, { contract });
+  assert.deepEqual(r.findings, [
+    `PUT /users/{id}/nickname of ${contract} is served by no route of the backend code (openapi-drift; the path exists with GET)`,
+  ]);
+  assert.deepEqual(r.notes, [
+    'GET /users/{id}: path parameters named differently, contract {id}, code {userId} (source-be/src/users.ts:9)',
+  ]);
+
+  // the code serves it under a prefix the contract leaves out (a NestJS global prefix): not a finding
+  const prefixed = driftReport({
+    missingInSpec: [{ method: 'put', path: '/api/users/{userId}/nickname', file: 'source-be/src/users.ts', line: 20, hint: '' }],
+    missingInCode: [{ method: 'put', path: '/users/{id}/nickname', specPath: '/users/{id}/nickname', hint: '' }],
+  });
+  assert.deepEqual(driftFindings({ status: 1, stdout: prefixed }, { contract }).findings, []);
+
+  // what the tool let pass (exit 0, --fail-on none) is not failed here either
+  assert.deepEqual(driftFindings({ status: 0, stdout: missing }, { contract }).findings, []);
+
+  // query and status differences fail only when the command asks for --strict
+  const statuses = driftReport({
+    statusMismatch: [
+      { method: 'post', path: '/users', codeStatuses: [201], specResponses: ['200'], file: 'source-be/src/users.ts', line: 5 },
+    ],
+  });
+  assert.deepEqual(driftFindings({ status: 0, stdout: statuses }, { contract }).findings, []);
+  assert.match(driftFindings({ status: 0, stdout: statuses }, { contract }).notes[0], /POST \/users: the code answers 201/);
+  assert.deepEqual(driftFindings({ status: 1, stdout: statuses }, { contract, strict: true }).findings, [
+    `POST /users of ${contract}: the code answers 201; the contract describes 200 (source-be/src/users.ts:5)`,
+  ]);
+
+  // anything else (a usage error, a document with problems, another tool) is not a drift report
+  assert.equal(driftFindings({ status: 2, stdout: '', stderr: 'bad usage' }, { contract }), null);
+  assert.equal(driftFindings({ status: 1, stdout: 'FAILED: 3 tests' }, { contract }), null);
+  assert.equal(driftFindings({ status: 0, stdout: '{"ok": true}' }, { contract }), null);
+});
+
+test('commands.api_contract_be: the review runs openapi-drift on the contract and fails what the code does not serve', () => {
+  const root = makeWorkspace({ discover: true });
+  const dir = tempDir('aiws-drift-');
+  const script = path.join(dir, 'fake-drift.cjs');
+  const calls = path.join(dir, 'calls.json');
+  const report = driftReport({
+    missingInCode: [{ method: 'put', path: '/users/{id}/nickname', specPath: '/users/{id}/nickname', hint: '' }],
+  });
+  fs.writeFileSync(
+    script,
+    `const fs = require('fs');\n` +
+      `fs.appendFileSync(${JSON.stringify(calls)}, JSON.stringify(process.argv.slice(2)) + '\\n');\n` +
+      `if (fs.existsSync(${JSON.stringify(path.join(dir, 'fixed'))})) { process.stdout.write(${JSON.stringify(driftReport())}); process.exit(1); }\n` +
+      `process.stdout.write(${JSON.stringify(report)});\n` +
+      `process.exit(1);\n`
+  );
+  const pol = YAML.parse(readFile(root, 'aiws/config/policies.yaml'));
+  pol.commands.api_contract_be = `node "${script}" check --spec aiws/work/{req}/api-contract.yaml --source source-be --fail-on code --format json`;
+  writeFile(root, 'aiws/config/policies.yaml', YAML.stringify(pol));
+  git(root, ['commit', '-qam', 'api contract check']);
+  ok(root, ['new', 'REQ-001']);
+  ok(root, ['run', 'REQ-001']);
+  ok(root, ['approve', 'REQ-001', 'design', '--yes']);
+
+  // the CLI check runs it too, and says what the review will say
+  const check = aiws(root, ['check', 'api-contract', '--req', 'REQ-001']);
+  assert.equal(check.status, 1, check.out);
+  assert.match(
+    check.stdout,
+    /PUT \/users\/\{id\}\/nickname of aiws\/work\/REQ-001\/api-contract\.yaml is served by no route of the backend code/
+  );
+  const first = JSON.parse(fs.readFileSync(calls, 'utf8').split('\n')[0]);
+  assert.deepEqual(first.slice(0, 3), ['check', '--spec', 'aiws/work/REQ-001/api-contract.yaml'], '{req} is filled in');
+
+  let st;
+  for (let i = 0; i < 12; i++) {
+    ok(root, ['run', 'REQ-001', '--once']);
+    st = state(root);
+    if (st.history.some((h) => h.phase === 'review' && h.result === 'critical')) break;
+  }
+  assert.equal(st.phase, 'planning', st.reason);
+  const fb = st.feedback.find((f) => f.phase === 'planning');
+  assert.match(
+    fb.text,
+    /PUT \/users\/\{id\}\/nickname of aiws\/work\/REQ-001\/api-contract\.yaml is served by no route of the backend code/
+  );
+  assert.doesNotMatch(fb.text, /\/api\/health/, 'routes the contract does not list are no finding');
+
+  // the code serves it now (as the fix task would make it): the next review passes
+  fs.writeFileSync(path.join(dir, 'fixed'), '');
+  ok(root, ['run', 'REQ-001']);
+  st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+  assert.deepEqual(
+    st.history.filter((h) => h.phase === 'review').map((h) => h.result),
+    ['critical', 'ok']
+  );
 });
 
 test('a backend without an OpenAPI document is noted, not failed, unless require_spec says so', () => {

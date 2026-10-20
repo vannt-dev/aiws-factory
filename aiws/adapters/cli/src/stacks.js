@@ -23,6 +23,7 @@ const SKIP = new Set([
 ]);
 
 const has = (dir, f) => fs.existsSync(path.join(dir, f));
+const read = (dir, f) => (has(dir, f) ? fs.readFileSync(path.join(dir, f), 'utf8') : '');
 const glob1 = (dir, re) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => re.test(f)) : []);
 
 function readJson(file) {
@@ -33,32 +34,52 @@ function readJson(file) {
   }
 }
 
-/** Detectors in priority order. Each returns {stack, build, test} (strings or {windows, posix}) or null. */
+// The backend frameworks openapi-drift reads routes from (https://www.npmjs.com/package/openapi-drift).
+const NODE_FRAMEWORKS = { '@nestjs/core': 'nestjs', fastify: 'fastify', express: 'express' };
+const springIn = (buildFile) => (/spring-boot|org\.springframework/.test(buildFile) ? 'spring' : null);
+
+/**
+ * The optional check of the API contract against the routes of the backend code. It runs at review only when
+ * `commands.api_contract_be` is set, and npx fetches the tool then: nothing is installed by AIWS.
+ */
+export const driftCommand = (source, framework) =>
+  `npx --yes openapi-drift@0 check --spec aiws/work/{req}/api-contract.yaml --source ${source} --framework ${framework} --fail-on code --format json`;
+
+/** Detectors in priority order. Each returns {stack, build, test, lint, framework} (strings or {windows, posix}) or null. */
 const DETECTORS = [
   (d, rel) => {
     if (!has(d, 'pom.xml')) return null;
+    const framework = springIn(read(d, 'pom.xml'));
     if (has(d, 'mvnw')) {
       // `.\` is required on Windows: with NoDefaultCurrentDirectoryInExePath set (Claude Code sets it),
       // cmd.exe does not look up bare `mvnw.cmd` in the current directory.
       // Tests run without -q so the evidence keeps Maven's "Tests run: N" summary (-B -ntp keeps it short).
       return {
         stack: 'java-maven',
+        framework,
         build: { windows: `cd ${rel} && .\\mvnw.cmd -q -DskipTests package`, posix: `cd ${rel} && ./mvnw -q -DskipTests package` },
         test: { windows: `cd ${rel} && .\\mvnw.cmd -B -ntp test`, posix: `cd ${rel} && ./mvnw -B -ntp test` },
       };
     }
-    return { stack: 'java-maven', build: `mvn -q -f ${rel}/pom.xml -DskipTests package`, test: `mvn -B -ntp -f ${rel}/pom.xml test` };
+    return {
+      stack: 'java-maven',
+      framework,
+      build: `mvn -q -f ${rel}/pom.xml -DskipTests package`,
+      test: `mvn -B -ntp -f ${rel}/pom.xml test`,
+    };
   },
   (d, rel) => {
     if (!has(d, 'build.gradle') && !has(d, 'build.gradle.kts')) return null;
+    const framework = springIn(read(d, 'build.gradle') + read(d, 'build.gradle.kts'));
     if (has(d, 'gradlew')) {
       return {
         stack: 'jvm-gradle',
+        framework,
         build: { windows: `${rel}\\gradlew.bat -p ${rel} build -x test`, posix: `${rel}/gradlew -p ${rel} build -x test` },
         test: { windows: `${rel}\\gradlew.bat -p ${rel} test`, posix: `${rel}/gradlew -p ${rel} test` },
       };
     }
-    return { stack: 'jvm-gradle', build: `gradle -p ${rel} build -x test`, test: `gradle -p ${rel} test` };
+    return { stack: 'jvm-gradle', framework, build: `gradle -p ${rel} build -x test`, test: `gradle -p ${rel} test` };
   },
   (d, rel) => {
     // .slnx is the XML solution format of .NET 9; when a folder has both during a migration, `dotnet` needs one named
@@ -100,8 +121,10 @@ const DETECTORS = [
             : `npm run ${script} --prefix ${rel}`;
     // what the project's own CI usually checks besides build and test
     const lintScripts = ['lint', ['format:check', 'format-check', 'prettier:check'].find((s) => scripts[s])].filter((s) => s && scripts[s]);
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
     return {
       stack: `node-${pm}`,
+      framework: ['@nestjs/core', 'fastify', 'express'].map((dep) => deps[dep] && NODE_FRAMEWORKS[dep]).find(Boolean) ?? null,
       build: scripts.build ? runIn('build') : null,
       test: scripts.test ? runIn('test') : null,
       lint: lintScripts.length ? lintScripts.map(runIn).join(' && ') : null,
@@ -159,14 +182,14 @@ export function languageSummary(dir, top = 6) {
 function detectDir(dir, rel) {
   for (const detect of DETECTORS) {
     const hit = detect(dir, rel);
-    if (hit) return hit;
+    if (hit) return { ...hit, source: rel };
   }
   // monorepo-ish: a single sub-project one level down
   const subs = fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory() && !SKIP.has(e.name)) : [];
   const found = subs
     .map((s) => ({ s, hit: DETECTORS.map((f) => f(path.join(dir, s.name), `${rel}/${s.name}`)).find(Boolean) }))
     .filter((x) => x.hit);
-  if (found.length === 1) return { ...found[0].hit, note: `detected in ${rel}/${found[0].s.name}` };
+  if (found.length === 1) return { ...found[0].hit, source: `${rel}/${found[0].s.name}`, note: `detected in ${rel}/${found[0].s.name}` };
   if (found.length > 1)
     return {
       stack: 'multiple',
@@ -181,6 +204,8 @@ function detectDir(dir, rel) {
  * Looks at every source-* directory of the workspace.
  * Returns {sides: {name: glob}, commands: {name_build, name_test}, report: [{dir, side, stack, languages, note}]}.
  * source-legacy is reported (languages) but never becomes a side: it is read-only.
+ * A backend whose routes openapi-drift reads gets the optional `api_contract_be` (the side `be` first; a side
+ * `fe` never).
  */
 export function detectStacks(root) {
   const dirs = fs
@@ -191,6 +216,7 @@ export function detectStacks(root) {
   const sides = {};
   const commands = {};
   const report = [];
+  const backends = [];
   for (const name of dirs) {
     const abs = path.join(root, name);
     const languages = languageSummary(abs);
@@ -204,7 +230,15 @@ export function detectStacks(root) {
     if (hit?.build) commands[`${side}_build`] = hit.build;
     if (hit?.test) commands[`${side}_test`] = hit.test;
     if (hit?.lint) commands[`${side}_lint`] = hit.lint;
+    if (hit?.framework && side !== 'fe') backends.push({ side, hit });
     report.push({ dir: name, side, stack: hit?.stack ?? (languages.length ? 'unknown' : 'empty'), languages, note: hit?.note ?? null });
+  }
+  const be = backends.find((b) => b.side === 'be') ?? backends[0];
+  if (be) {
+    commands.api_contract_be = driftCommand(be.hit.source, be.hit.framework);
+    const r = report.find((x) => x.side === be.side);
+    const note = `api_contract_be compares the contract with its ${be.hit.framework} routes (openapi-drift, optional)`;
+    r.note = r.note ? `${r.note}; ${note}` : note;
   }
   return { sides, commands, report };
 }
