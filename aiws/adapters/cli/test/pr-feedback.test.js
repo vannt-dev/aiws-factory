@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import { makeWorkspace, aiws, ok, git, tempDir, state, readFile, writeFile } from './helpers.js';
+import { spawnSync } from 'node:child_process';
+import { makeWorkspace, aiws, ok, git, tempDir, state, readFile, writeFile, cleanEnv, FIXTURES } from './helpers.js';
 import { reviewComments } from '../src/prfeedback.js';
 
 const URL7 = 'https://github.com/acme/shop/pull/7';
@@ -165,6 +166,12 @@ test('aiws reject REQ pr --from-pr: the review comments of the draft pull reques
   let r = aiws(root, ['reject', 'REQ-001', 'pr', '--from-pr', '--yes']);
   assert.notEqual(r.status, 0);
   assert.match(r.out, /No pull request is recorded for REQ-001/);
+  const noPr = spawnSync(process.execPath, [path.join(FIXTURES, 'gate-driver.mjs'), root, 'REQ-001', 'ESC'], {
+    encoding: 'utf8',
+    env: cleanEnv(),
+    timeout: 60000,
+  });
+  assert.doesNotMatch(noPr.stdout, /review comments of the pull request/, 'the menu offers it only with a pull request');
   // the typed feedback alone is still needed without --from-pr; --from-pr has no meaning at the design gate
   assert.match(aiws(root, ['reject', 'REQ-001', 'pr', '--yes']).out, /reject needs feedback/);
 
@@ -187,6 +194,22 @@ test('aiws reject REQ pr --from-pr: the review comments of the draft pull reques
   assert.match(r.out, /No review comments on https:\/\/github\.com\/acme\/shop\/pull\/7/);
   assert.equal(state(root).phase, 'pr_approval', 'nothing recorded');
   assert.equal(git(root, ['status', '--porcelain']), '');
+
+  // the gate menu offers it once a pull request is recorded; nothing to read keeps the menu open
+  const menu = spawnSync(
+    process.execPath,
+    [path.join(FIXTURES, 'gate-driver.mjs'), root, 'REQ-001', 'DOWN', 'DOWN', 'ENTER', 'WAIT:3000', 'ESC'],
+    {
+      encoding: 'utf8',
+      env: cleanEnv({ FAKE_GH: 'empty' }),
+      timeout: 60000,
+    }
+  );
+  assert.equal(menu.status, 0, menu.stderr);
+  assert.match(menu.stdout, /3\. Request changes: send the review comments of the pull request/);
+  assert.match(menu.stdout, /No review comments on https:\/\/github\.com\/acme\/shop\/pull\/7/);
+  assert.match(menu.stdout, /PICKED later/);
+  assert.equal(state(root).phase, 'pr_approval');
 
   // the comments, after the typed message
   ok(root, ['reject', 'REQ-001', 'pr', '--from-pr', '-m', 'Also log the change.', '--yes']);
