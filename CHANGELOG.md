@@ -7,8 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-21
+
+The review checks the API contract against the backend code with openapi-drift, the pull request review
+comments go back to the planner from the PR gate, and small follow-ups of the real runs.
+
 ### Added
 
+- An optional `commands.api_contract_be` in `policies.yaml` runs in the review phase after the contract lint
+  and the OpenAPI comparison. When it prints the JSON report of openapi-drift, each contract operation that no
+  backend route serves becomes a critical finding; routes the contract does not list are ignored. `aiws detect`
+  proposes it for NestJS, Express, Fastify and Spring backends (`npx --yes openapi-drift@0 ...`, nothing is
+  installed), and `aiws check api-contract` runs it too. Any other command still fails on its exit code.
+- `aiws reject REQ pr --from-pr` sends the review comments of the draft pull request (and of the submodule
+  ones) to the planner as feedback: review bodies, the conversation, and unresolved inline threads as
+  `file:line` with their replies, bots left out. `--from-pr=<url>` names a pull request opened by hand.
+  It reads them through the GitHub CLI (`runtime.yaml -> pull_request.gh`); `pull_request.feedback_command`
+  replaces gh for another host. Nothing to read: it says why and records nothing.
+- The PR gate menu (`aiws gate`) offers the review comments as a third option once a pull request is
+  recorded, and says why when there is nothing to send.
 - The handbook (en, vi) has a section on code in git submodules: adding one, the project's hooks in each
   clone, `git_language`, the merge order at the PR gate, and what is not supported.
 - `aiws stats` shows the cost of `aiws discover` on a line of its own, apart from the requirements.
@@ -456,7 +473,8 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/vannt-dev/aiws-factory/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.6.0...v0.7.0
