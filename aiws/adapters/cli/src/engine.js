@@ -15,7 +15,7 @@ import { buildTrace, traceMarkdown } from './trace.js';
 import { adapterName, getAdapter, preflightAdapters } from './adapters/index.js';
 import { detectStacks, reportText } from './stacks.js';
 import { runStats } from './stats.js';
-import { checkApiContract } from './apicontract.js';
+import { checkApiContract, runContractCommand } from './apicontract.js';
 
 // Phases that are only legal while the design approval is valid (hash unchanged).
 const AFTER_APPROVAL = new Set(['planning', 'implementation', 'design_change_requested', 'review', 'pr_approval']);
@@ -767,7 +767,14 @@ function runNamedChecks(ws, checks, task, req = null) {
     const configured = ws.policies.commands?.[entry.command];
     const cmd = osCommand(configured) ?? (configured === undefined && entry.optional ? null : entry.command);
     if (!cmd) continue;
-    const res = runShell(fill(cmd, { task: task?.id }), { cwd: ws.root, env: cleanEnv({}) });
+    if (req && configured !== undefined && /^api_contract_/.test(entry.command)) {
+      // compares the requirement's contract with the code; an openapi-drift report gives one finding per drift
+      const r = runContractCommand(ws, req, entry.command, { env: cleanEnv({}) });
+      for (const n of r?.notes ?? []) log(`  ${n}`);
+      failures.push(...(r?.failures ?? []));
+      continue;
+    }
+    const res = runShell(fill(cmd, { task: task?.id, req }), { cwd: ws.root, env: cleanEnv({}) });
     if (res.status !== 0)
       failures.push(`check '${entry.command}' failed (exit ${res.status}):\n${tail(res.stdout + '\n' + res.stderr, 3000)}`);
   }

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import { readTextIfExists } from './util.js';
+import { readTextIfExists, runShell, osCommand, fill } from './util.js';
 
 /**
  * The API contract of a requirement (aiws/work/REQ/api-contract.yaml) is the bridge between the backend and
@@ -11,6 +11,9 @@ import { readTextIfExists } from './util.js';
  *  - a comparison with the OpenAPI document the backend keeps in its source tree, run by the review phase:
  *    every path and method of the contract must exist there. A backend that keeps no such document is not
  *    checked, and the review says so.
+ * And, when `policies.yaml -> commands.api_contract_be` is set (`aiws detect` proposes openapi-drift for
+ * NestJS, Express, Fastify and Spring), a comparison with the routes of the backend code, run by the review
+ * phase too: nothing is installed unless that command does it.
  */
 
 const METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
@@ -212,4 +215,111 @@ export function checkApiContract(ws, req) {
   }
   if (!missing.length) notes.push(`every operation of ${rel} (${ops.length}) is exposed by ${files.join(', ')}.`);
   return { problems, notes };
+}
+
+// ---------------------------------------------------------------- the backend's code (commands.api_contract_*)
+
+/** The operations of the requirement's contract; null when it is missing or not valid YAML. */
+export function contractOperations(ws, req) {
+  const text = readTextIfExists(ws.abs(ws.workRel(req, 'api-contract.yaml')));
+  if (text === null) return null;
+  try {
+    return operations(YAML.parse(text));
+  } catch {
+    return null;
+  }
+}
+
+const where = (x) => (x.file ? ` (${x.file}${x.line ? `:${x.line}` : ''})` : '');
+
+/**
+ * The JSON report of `openapi-drift check --format json` (https://www.npmjs.com/package/openapi-drift), which
+ * compares the contract with the routes the backend code declares, as review findings: {findings, notes}.
+ * Null when `res` (a command result) is not such a report, so the caller treats it as any other command.
+ *
+ * The contract lists only the operations of one requirement, so the routes of the code it does not list are
+ * never a finding: only an operation of the contract that no route serves is. A route that serves it under a
+ * prefix the contract leaves out (`/api/users/{id}` for `/users/{id}`) counts, as for the backend's document.
+ * What the tool let pass (exit 0) is not failed here; query and status differences fail only with `strict`.
+ */
+export function driftFindings(res, { contract, strict = false }) {
+  let report;
+  try {
+    report = JSON.parse(String(res.stdout ?? '').trim());
+  } catch {
+    return null;
+  }
+  if (!report || typeof report !== 'object' || !Array.isArray(report.missingInCode) || !Array.isArray(report.missingInSpec)) return null;
+  const list = (k) => (Array.isArray(report[k]) ? report[k] : []);
+  const routes = [...list('missingInSpec'), ...(report.accepted?.missingInSpec ?? [])].map((r) => ({
+    method: String(r.method).toLowerCase(),
+    norm: normalizePath(r.path),
+  }));
+  const served = (op) =>
+    [op.path, op.specPath]
+      .filter(Boolean)
+      .map(normalizePath)
+      .some((want) => routes.some((r) => r.method === String(op.method).toLowerCase() && (r.norm === want || r.norm.endsWith(want))));
+  const M = (x) => String(x.method).toUpperCase();
+  const failed = res.status !== 0;
+  const findings = [];
+  const notes = [];
+
+  if (failed) {
+    for (const op of list('missingInCode')) {
+      if (served(op)) continue;
+      findings.push(
+        `${M(op)} ${op.specPath ?? op.path} of ${contract} is served by no route of the backend code (openapi-drift${op.hint ? `; ${op.hint}` : ''})`
+      );
+    }
+  }
+  for (const p of list('paramMismatch')) {
+    notes.push(
+      `${M(p)} ${p.path}: path parameters named differently, contract {${(p.specParams ?? []).join('}, {')}}, code {${(p.codeParams ?? []).join('}, {')}}${where(p)}`
+    );
+  }
+  const strictOnes = [
+    ...list('queryMismatch').map((q) => {
+      const parts = [
+        q.codeOnly?.length ? `in the code only: ${q.codeOnly.join(', ')}` : '',
+        q.specOnly?.length ? `in the contract only: ${q.specOnly.join(', ')}` : '',
+      ].filter(Boolean);
+      return { op: q, text: `query parameters differ, ${parts.join('; ')}${where(q)}` };
+    }),
+    ...list('statusMismatch').map((s) => ({
+      op: s,
+      text: `the code answers ${(s.codeStatuses ?? []).join(', ')}; the contract describes ${(s.specResponses ?? []).join(', ') || 'no status'}${where(s)}`,
+    })),
+  ];
+  for (const { op, text } of strictOnes) {
+    if (strict && failed) findings.push(`${M(op)} ${op.path} of ${contract}: ${text}`);
+    else notes.push(`${M(op)} ${op.path}: ${text}`);
+  }
+  return { findings, notes };
+}
+
+/**
+ * Runs `policies.yaml -> commands.<key>` (`api_contract_be`, `api_contract_fe`) for a requirement, `{req}` filled
+ * in: the review's optional contract checks and `aiws check api-contract`. Null when the command is not
+ * configured. Not run when the contract is missing or declares no operation: there is nothing to compare, and the
+ * builtin check already reports a missing contract. A report of openapi-drift becomes one finding per drift;
+ * any other command fails on its exit code, with the end of its output.
+ */
+export function runContractCommand(ws, req, key, { env } = {}) {
+  const cmd = osCommand(ws.policies.commands?.[key]);
+  if (!cmd) return null;
+  const rel = ws.workRel(req, 'api-contract.yaml');
+  if (!contractOperations(ws, req)?.length) return { failures: [], notes: [`${key} not run: ${rel} is missing or declares no operation.`] };
+  const res = runShell(fill(cmd, { req }), { cwd: ws.root, env, timeout: 30 * 60 * 1000 });
+  const drift = driftFindings(res, { contract: rel, strict: /(^|\s)--strict(\s|$)/.test(cmd) });
+  if (drift) {
+    if (!drift.findings.length) drift.notes.push(`${key}: every operation of ${rel} is served by the backend code.`);
+    return { failures: drift.findings, notes: drift.notes };
+  }
+  if (res.status === 0) return { failures: [], notes: [] };
+  const output = `${res.stdout}\n${res.stderr}`.trim();
+  return {
+    failures: [`check '${key}' failed (exit ${res.status}):\n${output.length > 3000 ? '...' + output.slice(-3000) : output}`],
+    notes: [],
+  };
 }

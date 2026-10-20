@@ -31,7 +31,7 @@ import { notify, stopEvent } from './notify.js';
 import { buildReport, renderHtml } from './report.js';
 import { pipelineSteps, pipelineText } from './pipeline.js';
 import { gateMenu, interactive } from './gatemenu.js';
-import { checkApiContract } from './apicontract.js';
+import { checkApiContract, runContractCommand } from './apicontract.js';
 import {
   MANIFEST_REL,
   NEW_SUFFIX,
@@ -909,6 +909,13 @@ export function checkApiContractCmd({ req }) {
   const ws = Workspace.open();
   assertReqId(req);
   const { problems, notes } = checkApiContract(ws, req);
+  // the optional checks of the code the review runs too (commands.api_contract_be / _fe)
+  for (const key of ['api_contract_be', 'api_contract_fe']) {
+    const r = runContractCommand(ws, req, key);
+    if (!r) continue;
+    notes.push(...r.notes);
+    problems.push(...r.failures);
+  }
   for (const n of notes) log(n);
   if (problems.length) {
     log(`api-contract FAILED for ${req}:`);
