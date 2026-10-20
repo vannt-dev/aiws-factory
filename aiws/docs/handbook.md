@@ -172,6 +172,8 @@ The run stops with `phase=pr_approval status=waiting_human`. From here the steps
    aiws run REQ-001
    ```
 
+   If you already wrote your review on the pull request, `aiws reject REQ-001 pr --from-pr` sends its comments instead (inline ones as `file:line`, resolved threads left out), through the GitHub CLI; add `-m` for a note of your own. Submit the review first: a pending one is visible to you only.
+
    The planner adds a fix task, the developer does it, and a follow-up review runs. Push again and the pull request updates. On the demo, such a cycle for a four-line change took 7 minutes of AI time and cost 3.39 USD.
 4. **Merge the pull request.** Any merge method works; a merge commit keeps one commit per task, which is best for traceability.
 5. **Confirm the merge.** Update your local base branch first, then run `aiws approve REQ-001 pr`. The command checks that the branch really is merged, records the approval and switches to a new branch, `aiws/REQ-001-knowledge`.

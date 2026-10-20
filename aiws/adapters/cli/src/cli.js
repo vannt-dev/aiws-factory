@@ -51,6 +51,9 @@ Human-only (refuse to run inside an AI session; confirm interactively or pass --
                                        a terminal; --no-menu on run skips it)
   aiws approve REQ-001 design|pr [-m NOTE] [--sign] [--no-merge-check]
   aiws reject  REQ-001 design|pr -m FEEDBACK [--sign]
+  aiws reject  REQ-001 pr --from-pr[=URL] [-m FEEDBACK]
+                                       send the review comments of the draft pull request (inline ones with
+                                       file:line, unresolved threads only) to the planner, after -m if given
   aiws answer  REQ-001 -m ANSWER       answer blocking questions / a developer question (design unchanged)
   aiws redesign REQ-001 -m REASON      developer question needs a design change -> back to design
   aiws resume  REQ-001 [-m NOTE] [--budget USD]
@@ -112,7 +115,7 @@ export async function main(argv) {
     log(version());
     return 0;
   }
-  const human = { yes: Boolean(flags.yes), message: flags.message, sign: Boolean(flags.sign) };
+  const human = { yes: Boolean(flags.yes), message: flags.message, sign: Boolean(flags.sign), fromPr: flags['from-pr'] };
 
   switch (cmd) {
     case undefined:

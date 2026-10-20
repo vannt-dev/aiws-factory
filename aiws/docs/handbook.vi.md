@@ -172,6 +172,8 @@ Lần chạy dừng với `phase=pr_approval status=waiting_human`. Từ đây l
    aiws run REQ-001
    ```
 
+   Nếu bạn đã viết review trên pull request, `aiws reject REQ-001 pr --from-pr` gửi chính các comment đó (comment inline dạng `file:dòng`, bỏ thread đã resolve) qua GitHub CLI; thêm `-m` cho ghi chú riêng. Hãy submit review trước: review pending chỉ mình bạn thấy.
+
    Planner thêm một task sửa, developer làm task đó, rồi một lượt review tiếp nối chạy. Push lại là pull request tự cập nhật. Trên demo, một vòng như vậy cho thay đổi bốn dòng mất 7 phút AI chạy và tốn 3,39 USD.
 4. **Merge pull request.** Cách merge nào cũng được; merge commit giữ mỗi task một commit, tốt nhất cho truy vết.
 5. **Xác nhận đã merge.** Cập nhật nhánh gốc ở máy trước, rồi chạy `aiws approve REQ-001 pr`. Lệnh này kiểm tra nhánh đã thật sự được merge, ghi approval và chuyển sang nhánh mới `aiws/REQ-001-knowledge`.
