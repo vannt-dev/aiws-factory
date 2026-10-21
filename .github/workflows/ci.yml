@@ -103,7 +103,9 @@ jobs:
     # Linux result it used to wait for is checked by the result stage all the same.
     needs: lint
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    # Windows runs the suite at about a fifth of Linux speed; past 150 tests it needs
+    # more than 20 minutes.
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 35 || 20 }}
     strategy:
       # The Windows leg takes five minutes for what Linux does in one, and macOS runners are
       # few and shared by every repository, so both are part of the matrix on main and on
