@@ -18,7 +18,7 @@ jobs:
   gates:
     name: AIWS gates
     if: startsWith(github.head_ref, 'aiws/REQ-')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     env:
       HEAD_REF: ${{ github.head_ref }}
@@ -45,7 +45,7 @@ jobs:
       - name: Traceability
         run: node aiws/adapters/cli/bin/aiws.js trace "$REQ"
 
-      # Toolchains for the project's own commands. Node.js is set up above; ubuntu-latest also ships
+      # Toolchains for the project's own commands. Node.js is set up above; ubuntu-26.04 also ships
       # .NET, Go, Python, PHP, Ruby and Rust. Add or pin what your stack needs. Each step only runs
       # when a matching project exists under source-*, so other stacks and the kit itself are unaffected.
       - name: Set up Java (Maven or Gradle project)

@@ -30,7 +30,7 @@ defaults:
 jobs:
   changes:
     name: 0. Detect changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     outputs:
       cli: ${{ steps.diff.outputs.cli }}
@@ -68,7 +68,7 @@ jobs:
     name: 1. Lint and format
     needs: changes
     if: needs.changes.outputs.cli == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -84,7 +84,7 @@ jobs:
   test-linux:
     name: 2. Test (Linux, Node 22)
     needs: lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -110,7 +110,7 @@ jobs:
       # demand, not on pull requests. (A job-level if cannot look at the matrix, hence the
       # two lists.)
       matrix:
-        include: ${{ fromJSON(github.event_name == 'pull_request' && '[{"os":"ubuntu-latest","node":24}]' || '[{"os":"windows-latest","node":22},{"os":"macos-latest","node":22},{"os":"ubuntu-latest","node":24}]') }}
+        include: ${{ fromJSON(github.event_name == 'pull_request' && '[{"os":"ubuntu-26.04","node":24}]' || '[{"os":"windows-latest","node":22},{"os":"macos-latest","node":22},{"os":"ubuntu-26.04","node":24}]') }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -125,7 +125,7 @@ jobs:
     name: 4. CI result
     if: always()
     needs: [changes, lint, test-linux, test-matrix]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 2
     defaults:
       run:
