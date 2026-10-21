@@ -180,8 +180,10 @@ test('aiws reject REQ pr --from-pr: the review comments of the draft pull reques
   assert.equal(state(root).pr_url, URL7);
 
   // gh missing, gh not signed in, no comments: each says so and changes nothing
+  // edited as YAML, not as text: a long temp path (macOS) makes the yaml writer fold the value onto two lines
   const rtText = readFile(root, 'aiws/config/runtime.yaml');
-  writeFile(root, 'aiws/config/runtime.yaml', rtText.replace(`node "${fakeGh}"`, 'aiws-no-such-gh-cli'));
+  writeFile(root, 'aiws/config/runtime.yaml', YAML.stringify({ ...rt, pull_request: { ...rt.pull_request, gh: 'aiws-no-such-gh-cli' } }));
+  assert.equal(YAML.parse(readFile(root, 'aiws/config/runtime.yaml')).pull_request.gh, 'aiws-no-such-gh-cli');
   r = aiws(root, ['reject', 'REQ-001', 'pr', '--from-pr', '--yes']);
   assert.notEqual(r.status, 0);
   assert.match(r.out, /GitHub CLI \(gh\) not found/);
