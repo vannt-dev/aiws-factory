@@ -60,6 +60,18 @@ export function git(root, args) {
 }
 
 /**
+ * A bare repository standing in for the host (GitHub) of a test. Newer git (2.56 on macOS) repacks it in
+ * the background after each push; a local `git clone` or `git submodule add` of it, which copies its files,
+ * can then fail on a file the repack removes. A host does not repack under the test, so this one does not.
+ */
+export function bareRepo(prefix) {
+  const dir = tempDir(prefix);
+  git(dir, ['init', '-q', '--bare', '-b', 'main']);
+  git(dir, ['config', 'receive.autogc', 'false']);
+  return dir;
+}
+
+/**
  * Creates a throwaway workspace: sample FE/BE/legacy + the real aiws/ kit of this repo,
  * with sample build/test commands and the scripted adapter. Returns its root.
  */

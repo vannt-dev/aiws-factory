@@ -1,12 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeWorkspace, ok, git, tempDir, state } from './helpers.js';
+import { makeWorkspace, ok, git, tempDir, state, bareRepo } from './helpers.js';
 import { prTitle } from '../src/engine.js';
 
 test('PR gate: a pull request merged on the host is seen without updating the local base by hand', () => {
   const root = makeWorkspace({ discover: true });
-  const origin = tempDir('aiws-origin-');
-  git(origin, ['init', '-q', '--bare', '-b', 'main']);
+  const origin = bareRepo('aiws-origin-');
   git(root, ['remote', 'add', 'origin', origin]);
   git(root, ['push', '-q', 'origin', 'main']);
   ok(root, ['new', 'REQ-001']);

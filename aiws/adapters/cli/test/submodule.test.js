@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import { makeWorkspace, ok, aiws, state, git, tempDir, scenario } from './helpers.js';
+import { makeWorkspace, ok, aiws, state, git, tempDir, scenario, bareRepo } from './helpers.js';
 
 /**
  * A workspace whose `side` folders are git submodules. Each one is its own repository (with a bare
@@ -13,8 +13,7 @@ function makeSubmoduleWorkspace(sides = ['source-be']) {
   const root = makeWorkspace();
   const subs = {};
   for (const side of sides) {
-    const origin = tempDir('aiws-sub-origin-');
-    git(origin, ['init', '-q', '--bare', '-b', 'main']);
+    const origin = bareRepo('aiws-sub-origin-');
     const seed = tempDir('aiws-sub-seed-');
     fs.cpSync(path.join(root, side), seed, { recursive: true });
     git(seed, ['init', '-q', '-b', 'main']);
