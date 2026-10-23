@@ -2,7 +2,7 @@ name: CI
 
 # Staged pipeline, cheapest first; every stage runs only if the previous one passed:
 #   0. changes     - decides whether the CLI or its test inputs changed (seconds)
-#   1. lint        - ESLint + Prettier, once (OS/Node independent)
+#   1. lint        - ESLint + Prettier, and .claude/ + CLAUDE.md match `aiws sync claude` (once)
 #   2. test-linux  - full test suite on Linux, minimum Node (22): catches logic errors fast
 #   3. test-matrix - Windows and macOS (Node 22) + Linux on the current LTS (Node 24)
 #   4. ci-result   - the single required status for branch protection
@@ -49,7 +49,7 @@ jobs:
           HEAD: ${{ github.sha }}
         run: |
           # the tests copy the aiws/ kit and AGENTS.md, so those count as CLI inputs
-          pattern='^(aiws/adapters/cli/|aiws/config/|aiws/agents/|aiws/skills/|aiws/templates/|AGENTS\.md$|\.github/workflows/ci\.yml$)'
+          pattern='^(aiws/adapters/cli/|aiws/config/|aiws/agents/|aiws/skills/|aiws/templates/|AGENTS\.md$|CLAUDE\.md$|\.claude/|\.github/workflows/ci\.yml$)'
           if [ "$EVENT" = "workflow_dispatch" ] || [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
             echo "full run ($EVENT, base '$BASE')"
             echo "cli=true" >> "$GITHUB_OUTPUT"
@@ -80,6 +80,18 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
+      # .claude/ and CLAUDE.md are generated from aiws/; a change there without a re-sync
+      # leaves Claude Code running agents with old prompts or models.
+      - name: Generated Claude files match aiws/
+        working-directory: .
+        run: |
+          node aiws/adapters/cli/bin/aiws.js sync claude > /dev/null
+          drift=$(git status --porcelain -- .claude CLAUDE.md)
+          if [ -n "$drift" ]; then
+            echo "$drift"
+            echo "::error::.claude/ or CLAUDE.md is out of date: run 'aiws sync claude' and commit the result"
+            exit 1
+          fi
 
   test-linux:
     name: 2. Test (Linux, Node 22)
