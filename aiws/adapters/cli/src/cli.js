@@ -59,6 +59,8 @@ Human-only (refuse to run inside an AI session; confirm interactively or pass --
   aiws resume  REQ-001 [-m NOTE] [--budget USD]
                                        continue after a block you have fixed, or raise the cost budget
                                        (with --budget also ahead of time, while waiting at a gate before the PR)
+  aiws abandon REQ-001 -m REASON       drop a requirement that will not be finished: recorded with the reason,
+                                       its source lock released, its branch and work kept; nothing runs it again
   aiws unlock                          release a stale source lock
 
 Checks (for CI and debugging)
@@ -185,6 +187,9 @@ export async function main(argv) {
       return 0;
     case 'resume':
       await C.resume(a1, { ...human, budget: flags.budget });
+      return 0;
+    case 'abandon':
+      await C.abandon(a1, human);
       return 0;
     case 'unlock':
       await C.unlock(human);

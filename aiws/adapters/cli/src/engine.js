@@ -6,7 +6,7 @@ import { AiwsError, log, warn, nowIso, writeText, writeYaml, readTextIfExists, r
 import * as G from './git.js';
 import * as DS from './diffscope.js';
 import * as Lock from './lock.js';
-import { loadState, saveState, setPhase, addHistory, nextRunId, addFeedback } from './state.js';
+import { loadState, saveState, setPhase, addHistory, nextRunId, addFeedback, assertNotAbandoned } from './state.js';
 import { writeScope, orchestratorPaths, matcher } from './scope.js';
 import { buildPrompt } from './prompt.js';
 import { validateOutputs, loadPlan } from './validate.js';
@@ -202,6 +202,7 @@ function pauseOnUsageLimit(ws, st, r, entry) {
 /** Runs a REQ until the next human gate, a block, or done. Returns the final state. */
 export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
   let st = loadState(ws, req);
+  assertNotAbandoned(st);
   assertOnBranch(ws, st);
   assertCleanEnough(ws, st);
   if (st.status === 'running') {

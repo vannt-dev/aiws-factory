@@ -2,7 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { AiwsError, readYaml, writeYaml, nowIso, pad } from './util.js';
 
-export const STATUSES = ['running', 'waiting_human', 'blocked', 'done'];
+export const STATUSES = ['running', 'waiting_human', 'blocked', 'done', 'abandoned'];
+
+/** Refuses to go on with a requirement a human abandoned (`aiws abandon`). */
+export function assertNotAbandoned(st) {
+  if (st.status === 'abandoned') {
+    throw new AiwsError(`${st.req_id} was abandoned (${st.reason ?? 'no reason recorded'}); nothing more is done with it.`);
+  }
+}
 
 export function statePath(ws, req) {
   return path.join(ws.workDir(req), 'state.yaml');

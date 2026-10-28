@@ -112,12 +112,13 @@ Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lện
 | Design sẵn sàng | `design_approval / waiting_human` | `aiws approve … design` hoặc `aiws reject … design -m` |
 | Developer ghi `questions.md` | `design_change_requested` | `aiws answer … -m` (giữ design) hoặc `aiws redesign … -m` (quay lại design, phải duyệt lại) |
 | Task fail 3 lần | `implementation / blocked` | sửa tay hoặc revert, rồi `aiws resume REQ-001`, rồi `aiws run` |
+| REQ sẽ không làm tiếp (kẹt, hoặc không cần nữa) | mọi trạng thái trừ `done` | `aiws abandon REQ-001 -m LÝ_DO`: ghi lại kèm lý do và commit, nhả source lock; nhánh và `aiws/work/REQ-001` được giữ, không lệnh nào chạy tiếp REQ đó |
 | Review có `[critical]` | tự quay lại `planning` | không cần làm gì: planner thêm task sửa. Lần review sau đó là review tiếp nối: kiểm lại các finding cũ và chỉ đọc kỹ phần đã thay đổi từ lần trước |
 | Design review có `[critical]` | tự quay lại `design` | không cần làm gì: architect và test designer sửa, reviewer kiểm lại. Sau 3 vòng (`max_rounds`) vẫn còn finding chặn thì lần chạy dừng ở gate duyệt design, liệt kê các finding đó, và bạn quyết |
 | Sửa design sau khi đã duyệt | tự quay về `design_approval` | duyệt lại |
 | AI hết giới hạn sử dụng | giữ nguyên phase, vẫn `running` | không cần duyệt gì: chạy lại `aiws run REQ-001` khi giới hạn được đặt lại, hoặc `aiws run REQ-001 --wait` để tự chạy lại mỗi 15 phút |
 
-Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **từ chối chạy trong phiên AI** và đòi gõ lại mã REQ để xác nhận. Trong script CI thì truyền `--yes`.
+Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `resume`, `abandon`, `unlock`) **từ chối chạy trong phiên AI** và đòi gõ lại mã REQ để xác nhận. Trong script CI thì truyền `--yes`.
 
 **Quyết định bằng menu.** Khi `aiws run` dừng ở một gate trong terminal của bạn, nó hiện những gì đang chờ và một menu: duyệt, từ chối (gõ điều cần đổi), trả lời câu hỏi, mở report, hoặc để sau. Chọn bằng phím mũi tên hoặc số rồi Enter; chọn là xác nhận, nên không phải gõ lại mã REQ. `aiws gate REQ-001` mở lại menu đó sau, còn `aiws run --no-menu` thì bỏ qua menu. Ở gate design, menu cho xem chi phí đến lúc đó, các finding còn mở của design review và mục "Quyết định cần duyệt" của design; ở gate PR là các task đã xong, finding còn mở của review và pull request, và khi đã có pull request thì menu còn cho yêu cầu sửa bằng chính các comment review của nó (`--from-pr`, bên dưới). Menu cần terminal và từ chối chạy trong phiên AI, như các lệnh.
 
@@ -172,7 +173,7 @@ Hai chế độ dùng chung một bộ bảo vệ:
 - **Tự động:** `aiws run`.
 - **Tương tác:** mở `claude` trên nhánh `aiws/REQ-001` và yêu cầu *"dùng agent architect cho REQ-001"*. Hook suy ra phase từ `state.yaml` và chặn ghi sai phase. Phiên như vậy cũng được chạy `aiws run`, `aiws stop` và ghi ghi chú của riêng nó ra ngoài workspace; lệnh git và các lệnh gate vẫn bị chặn. Agent do `aiws run` khởi động thì không được nới bất kỳ điều nào trong số này.
 
-Trên `main`, không ở REQ nào, bạn được dùng Claude để bảo trì chính `aiws/` (agents, skills, config). Claude cũng có thể điều phối quy trình bằng `aiws new`, `aiws run` hay `aiws status`; mỗi lần chạy vẫn dừng ở các gate của người. Riêng `source-legacy/`, `requirements/`, `state.yaml` và `approvals/` luôn bị khoá. AI không bao giờ được chạy các lệnh gate `approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`, và khi đang ở trong một phase thì cũng không được tự khởi động `aiws run` lồng nhau.
+Trên `main`, không ở REQ nào, bạn được dùng Claude để bảo trì chính `aiws/` (agents, skills, config). Claude cũng có thể điều phối quy trình bằng `aiws new`, `aiws run` hay `aiws status`; mỗi lần chạy vẫn dừng ở các gate của người. Riêng `source-legacy/`, `requirements/`, `state.yaml` và `approvals/` luôn bị khoá. AI không bao giờ được chạy các lệnh gate `approve`, `reject`, `answer`, `redesign`, `resume`, `abandon`, `unlock`, và khi đang ở trong một phase thì cũng không được tự khởi động `aiws run` lồng nhau.
 
 Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
 

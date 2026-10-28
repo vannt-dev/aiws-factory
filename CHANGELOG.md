@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `aiws abandon REQ-001 -m REASON` drops a requirement that will not be finished (stuck, or no longer
+  wanted). Human-only, like `approve`. The decision and its reason go into the history and are committed on
+  the requirement branch, the source lock it holds is released so the next requirement can write, and its
+  branch and `aiws/work/REQ-001` are kept. Its status becomes `abandoned`; `run`, `resume`, `approve` and the
+  other gate commands then refuse it, and the guard hook lets no AI write for it.
+
 ## [0.9.0] - 2026-10-21
 
 The review checks the API contract against the backend code with openapi-drift, the pull request review
