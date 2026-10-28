@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+## [0.10.0] - 2026-10-28
+
+A human can drop a requirement that will not be finished.
 
 - `aiws abandon REQ-001 -m REASON` drops a requirement that will not be finished (stuck, or no longer
   wanted). Human-only, like `approve`. The decision and its reason go into the history and are committed on
@@ -481,7 +483,8 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/vannt-dev/aiws-factory/compare/v0.7.0...v0.7.1
