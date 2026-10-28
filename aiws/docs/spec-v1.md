@@ -172,7 +172,7 @@ Discovery không nằm trong vòng đời REQ: chạy một lần cho repo (`aiw
 req_id: REQ-001
 title: User management
 phase: implementation
-status: running            # running | waiting_human | blocked | done
+status: running            # running | waiting_human | blocked | done | abandoned
 history:
   - {phase: analysis, result: ok, at: 2026-09-26T09:10:00Z, run: run-0001}
   - {phase: design,   result: ok, at: 2026-09-26T09:40:00Z, run: run-0002}

@@ -16,7 +16,7 @@ import {
 import { Workspace, KIT_DIR, KIT_AGENTS_MD, cliVersion, assertReqId, findRoot } from './workspace.js';
 import * as G from './git.js';
 import * as Lock from './lock.js';
-import { loadState, saveState, setPhase, addHistory, addFeedback, listReqs, statePath } from './state.js';
+import { loadState, saveState, setPhase, addHistory, addFeedback, listReqs, statePath, assertNotAbandoned } from './state.js';
 import { enterPhase, runReq, runDiscover, changesSince, budgetStatus } from './engine.js';
 import YAML from 'yaml';
 import { detectStacks, reportText } from './stacks.js';
@@ -496,6 +496,7 @@ function openForHuman(req) {
   assertReqId(req);
   const ws = Workspace.open();
   const st = loadState(ws, req);
+  assertNotAbandoned(st);
   return { ws, st };
 }
 
@@ -740,6 +741,29 @@ export async function redesign(req, opts = {}) {
   saveState(ws, st);
   G.commit(ws.root, `chore(${req}): design change requested by ${by}\n\nREQ-ID: ${req}\n`, [ws.workRel(req)]);
   log(`Back to ${st.phase}; the new design must be approved again. Next: aiws run ${req}`);
+}
+
+/**
+ * A human drops a requirement that will not be finished (stuck, or no longer wanted). The decision and its
+ * reason are recorded and committed, the source lock it holds is released so the next requirement can
+ * write, and its branch and work folder are kept for the record. Nothing runs it again.
+ */
+export async function abandon(req, opts = {}) {
+  if (!opts.message) throw new AiwsError('abandon needs the reason: -m "..."');
+  await requireHuman('abandon', req, opts);
+  const { ws, st } = openForHuman(req);
+  if (st.status === 'done') throw new AiwsError(`${req} is done; there is nothing to abandon.`);
+  const by = currentUser(ws.root);
+  const phase = st.phase;
+  for (const t of st.tasks) if (t.status === 'running') t.status = 'pending';
+  delete st.blocked_by;
+  delete st.paused;
+  addHistory(st, { phase, result: 'abandoned', by, reason: opts.message });
+  setPhase(st, phase, 'abandoned', `abandoned by ${by}: ${opts.message}`);
+  saveState(ws, st);
+  if (Lock.readLock(ws.root)?.req === req) Lock.release(ws.root, req);
+  G.commit(ws.root, `chore(${req}): abandoned by ${by}\n\nREQ-ID: ${req}\n`, [ws.workRel(req)]);
+  log(`${req} abandoned in phase ${phase}. Its branch and aiws/work/${req} are kept; nothing will run it again.`);
 }
 
 export async function resume(req, opts = {}) {

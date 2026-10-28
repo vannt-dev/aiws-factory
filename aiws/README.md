@@ -113,12 +113,13 @@ When the orchestrator stops, `aiws status REQ-001` tells you why and what to run
 | Design is ready | `design_approval / waiting_human` | `aiws approve … design` or `aiws reject … design -m` |
 | Developer wrote `questions.md` | `design_change_requested` | `aiws answer … -m` (keep the design) or `aiws redesign … -m` (back to design, needs a new approval) |
 | A task failed 3 times | `implementation / blocked` | fix or revert by hand, `aiws resume REQ-001`, then `aiws run` |
+| The requirement will not be finished (stuck, or no longer wanted) | any but `done` | `aiws abandon REQ-001 -m REASON`: recorded with the reason and committed, the source lock released; the branch and `aiws/work/REQ-001` are kept, and no command runs it again |
 | Review found a `[critical]` issue | back to `planning` automatically | nothing: the planner adds fix tasks. The review after them is a follow-up: it checks the earlier findings and reads in full only what changed since |
 | Design review found a `[critical]` issue | back to `design` automatically | nothing: the architect and test designer fix it and the reviewer checks again. After 3 rounds (`max_rounds`) with blocking findings left, the run stops at the design gate with them listed, and you decide |
 | The design changed after approval | back to `design_approval` automatically | approve again |
 | The AI usage limit is reached | same phase, still `running` | nothing to approve: `aiws run REQ-001` again once the limit resets, or `aiws run REQ-001 --wait` to have it retried every 15 minutes |
 
-Human-only commands (`approve`, `reject`, `answer`, `redesign`, `resume`, `unlock`) **refuse to run inside an AI session** and ask you to retype the requirement id. Pass `--yes` in CI scripts.
+Human-only commands (`approve`, `reject`, `answer`, `redesign`, `resume`, `abandon`, `unlock`) **refuse to run inside an AI session** and ask you to retype the requirement id. Pass `--yes` in CI scripts.
 
 **Deciding from a menu.** When `aiws run` stops at a gate in your terminal, it shows what waits and a menu: approve, reject (you type what must change), answer a question, open the report, or decide later. Pick with the arrow keys or the number and Enter; choosing is the confirmation, so you do not retype the requirement id. `aiws gate REQ-001` opens the same menu later, and `aiws run --no-menu` skips it. At the design gate the menu shows the cost so far, the open design-review findings and the "Decisions to approve" of the design; at the PR gate the tasks done, the open review findings and the pull request, and once a pull request is recorded it also offers to request changes with its review comments (`--from-pr`, below). The menu needs a terminal and refuses inside an AI session, like the commands.
 
@@ -173,7 +174,7 @@ Both modes share the same protection:
 - **Automatic:** `aiws run`.
 - **Interactive:** open `claude` on branch `aiws/REQ-001` and ask *"use the architect agent for REQ-001"*. The hook infers the phase from `state.yaml` and blocks writes that belong to another phase. Such a session may also run `aiws run` and `aiws stop`, and write its own notes outside the workspace; git commands and the gate commands stay blocked. Agents started by `aiws run` get none of these allowances.
 
-On `main`, outside any requirement, you may use Claude to maintain `aiws/` itself (agents, skills, config). Claude can also coordinate the workflow by running `aiws new`, `aiws run` or `aiws status`; each run still stops at the human gates. `source-legacy/`, `requirements/`, `state.yaml` and `approvals/` stay locked. An AI can never run the gate commands `approve`, `reject`, `answer`, `redesign`, `resume` or `unlock`, and inside a phase it cannot start a nested `aiws run` either.
+On `main`, outside any requirement, you may use Claude to maintain `aiws/` itself (agents, skills, config). Claude can also coordinate the workflow by running `aiws new`, `aiws run` or `aiws status`; each run still stops at the human gates. `source-legacy/`, `requirements/`, `state.yaml` and `approvals/` stay locked. An AI can never run the gate commands `approve`, `reject`, `answer`, `redesign`, `resume`, `abandon` or `unlock`, and inside a phase it cannot start a nested `aiws run` either.
 
 To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 
