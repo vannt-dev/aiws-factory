@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `aiws new REQ-001 --from-issue 12` writes `requirements/REQ-001-<title>.md` from a GitHub issue, then
+  starts the requirement. The title becomes the heading, followed by a link back to the issue, its labels
+  and its body; the file is committed on the current branch and `state.yaml` records the issue URL.
+  `owner/repo#12` or the issue's URL reads an issue of another repository. It reads the issue with the GitHub
+  CLI (`runtime.yaml -> pull_request.gh`) and posts nothing back. Without gh, without a sign-in, or when the
+  issue does not exist, it says so and creates nothing. Human-only: since only a person writes
+  `requirements/`, it refuses inside an AI session, before reading the issue; plain `aiws new` does not.
+
 ## [0.10.0] - 2026-10-28
 
 A human can drop a requirement that will not be finished.

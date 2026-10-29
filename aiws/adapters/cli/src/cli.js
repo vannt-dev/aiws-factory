@@ -29,10 +29,13 @@ Setup
                                        knowledge commit), and skips the AI run when nothing changed
 
 Requirement lifecycle
-  aiws new REQ-001 [--worktree PATH] [--profile NAME]
+  aiws new REQ-001 [--worktree PATH] [--profile NAME] [--from-issue N|URL]
                                        create aiws/work/REQ-001 and branch aiws/REQ-001; --profile runs it on
                                        aiws/config/workflow.NAME.yaml ("small": one design step, no separate
-                                       test designer)
+                                       test designer); --from-issue first writes requirements/REQ-001-*.md from
+                                       a GitHub issue (12, owner/repo#12 or its URL; read with gh: title,
+                                       a link back, labels, body) and commits it on the current branch;
+                                       --from-issue is human-only: it refuses inside an AI session
   aiws run REQ-001 [--once] [--wait[=MIN]]
                                        run phases until the next human gate / block / done; exit 75 when the
                                        AI usage limit paused it (run it again once the limit resets, or let
@@ -92,6 +95,7 @@ const VALUE_FLAGS = new Set([
   '--out',
   '--profile',
   '--from',
+  '--from-issue',
 ]);
 
 export function parseArgs(argv) {
@@ -147,7 +151,7 @@ export async function main(argv) {
       C.detect({ write: Boolean(flags.write), force: Boolean(flags.force) });
       return 0;
     case 'new':
-      C.newReq(a1, { worktree: flags.worktree, profile: flags.profile });
+      C.newReq(a1, { worktree: flags.worktree, profile: flags.profile, fromIssue: flags['from-issue'] });
       return 0;
     case 'run':
       await C.run(a1, { once: Boolean(flags.once), wait: flags.wait, menu: !flags['no-menu'] });

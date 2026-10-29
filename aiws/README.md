@@ -105,6 +105,8 @@ aiws run REQ-001                 # updates aiws/knowledge → done; push that br
 aiws trace REQ-001               # AC → TC → task → commit → test matrix
 ```
 
+**A requirement from a GitHub issue.** `aiws new REQ-001 --from-issue 12` first writes `requirements/REQ-001-<title>.md` from issue #12 of the repository of the workspace, then starts the requirement as above. The issue title becomes the heading, followed by a link back to the issue, its labels and its body; the file is committed on the current branch, like a requirement written by hand, and `state.yaml` records the issue URL. `owner/repo#12` or the issue's URL reads an issue of another repository. The issue is read with the GitHub CLI (`gh issue view`, signed in with `gh auth login`; `runtime.yaml -> pull_request.gh` names another path), and nothing is posted back to it. It is human-only: inside an AI session it refuses before reading the issue, because only a person writes `requirements/` (plain `aiws new` stays open to an assistant). Without gh, without a sign-in, or when the issue does not exist, `aiws new` says so and creates nothing. Read the file before `aiws run`: the analysis starts from it.
+
 When the orchestrator stops, `aiws status REQ-001` tells you why and what to run next:
 
 | Situation | State | What the human does |
@@ -174,7 +176,7 @@ Both modes share the same protection:
 - **Automatic:** `aiws run`.
 - **Interactive:** open `claude` on branch `aiws/REQ-001` and ask *"use the architect agent for REQ-001"*. The hook infers the phase from `state.yaml` and blocks writes that belong to another phase. Such a session may also run `aiws run` and `aiws stop`, and write its own notes outside the workspace; git commands and the gate commands stay blocked. Agents started by `aiws run` get none of these allowances.
 
-On `main`, outside any requirement, you may use Claude to maintain `aiws/` itself (agents, skills, config). Claude can also coordinate the workflow by running `aiws new`, `aiws run` or `aiws status`; each run still stops at the human gates. `source-legacy/`, `requirements/`, `state.yaml` and `approvals/` stay locked. An AI can never run the gate commands `approve`, `reject`, `answer`, `redesign`, `resume`, `abandon` or `unlock`, and inside a phase it cannot start a nested `aiws run` either.
+On `main`, outside any requirement, you may use Claude to maintain `aiws/` itself (agents, skills, config). Claude can also coordinate the workflow by running `aiws new` (not with `--from-issue`), `aiws run` or `aiws status`; each run still stops at the human gates. `source-legacy/`, `requirements/`, `state.yaml` and `approvals/` stay locked. An AI can never run the gate commands `approve`, `reject`, `answer`, `redesign`, `resume`, `abandon` or `unlock`, and inside a phase it cannot start a nested `aiws run` either.
 
 To see the prompt an agent will receive: `aiws prompt REQ-001 design`.
 
