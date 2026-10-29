@@ -8,7 +8,16 @@
 
 **Language:** English · [Tiếng Việt](README.vi.md)
 
-AIWS turns a requirement into tested code through controlled phases with human gates:
+AIWS turns a requirement into tested code in an existing system that spans several repositories, and a person
+approves the design before any code is written. Each target repository (frontend, backend, or any other side
+you add) sits in its own `source-*` folder, as a plain folder or a git submodule; with submodules, each task
+is committed in the repository it changes and, when pull requests are enabled, a draft pull request opens in
+every repository that changed. An old system can sit beside them in `source-legacy/`, read-only.
+`aiws discover` first builds a knowledge base from that code, and the analysis of each requirement works from it.
+The design approval is recorded against the design files: if they change afterwards, the run stops until the
+design is approved again.
+
+Each requirement goes through controlled phases with human gates:
 analysis → design + test spec → AI design review → **human approval** → per-task implementation with unit tests → review → **human PR merge** → knowledge update.
 A deterministic orchestrator owns the state; AI agents only work inside the write scope of the current phase.
 V1 runs on Claude Code and works with any language in the frontend, backend or legacy code.
