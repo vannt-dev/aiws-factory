@@ -104,6 +104,8 @@ aiws run REQ-001                 # cập nhật aiws/knowledge → done; push nh
 aiws trace REQ-001               # ma trận AC → TC → task → commit → test
 ```
 
+**Requirement từ một GitHub issue.** `aiws new REQ-001 --from-issue 12` viết `requirements/REQ-001-<tiêu-đề>.md` từ issue #12 của repo chứa workspace, rồi tạo requirement như trên. Tiêu đề issue thành heading, tiếp theo là link về issue, các label và nội dung issue; file được commit vào nhánh đang đứng, như requirement người viết tay, và `state.yaml` ghi lại URL của issue. Dùng `owner/repo#12` hoặc URL của issue để đọc issue của repo khác. Issue được đọc qua GitHub CLI (`gh issue view`, đã `gh auth login`; `runtime.yaml -> pull_request.gh` chỉ tới đường dẫn khác), và không có gì được ghi ngược lên issue. Không có gh, chưa đăng nhập, hay issue không tồn tại thì `aiws new` báo rõ và không tạo gì. Đọc lại file trước khi `aiws run`: analysis bắt đầu từ nó.
+
 Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lệnh cần chạy:
 
 | Tình huống | Trạng thái | Người làm gì |

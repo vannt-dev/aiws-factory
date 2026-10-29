@@ -105,6 +105,8 @@ aiws run REQ-001                 # updates aiws/knowledge → done; push that br
 aiws trace REQ-001               # AC → TC → task → commit → test matrix
 ```
 
+**A requirement from a GitHub issue.** `aiws new REQ-001 --from-issue 12` first writes `requirements/REQ-001-<title>.md` from issue #12 of the repository of the workspace, then starts the requirement as above. The issue title becomes the heading, followed by a link back to the issue, its labels and its body; the file is committed on the current branch, like a requirement written by hand, and `state.yaml` records the issue URL. `owner/repo#12` or the issue's URL reads an issue of another repository. The issue is read with the GitHub CLI (`gh issue view`, signed in with `gh auth login`; `runtime.yaml -> pull_request.gh` names another path), and nothing is posted back to it. Without gh, without a sign-in, or when the issue does not exist, `aiws new` says so and creates nothing. Read the file before `aiws run`: the analysis starts from it.
+
 When the orchestrator stops, `aiws status REQ-001` tells you why and what to run next:
 
 | Situation | State | What the human does |

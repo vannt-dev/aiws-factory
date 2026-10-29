@@ -28,6 +28,7 @@ import { getAdapter, preflightAdapters } from './adapters/index.js';
 import * as DS from './diffscope.js';
 import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 import { notify, stopEvent } from './notify.js';
+import { issueViewArgs, fetchIssue, requirementFromIssue, issueLabel } from './issue.js';
 import { buildReport, renderHtml } from './report.js';
 import { pipelineSteps, pipelineText } from './pipeline.js';
 import { gateMenu, interactive } from './gatemenu.js';
@@ -187,20 +188,37 @@ function titleOf(ws, rel, req) {
   return h ? h.replace(new RegExp(`^${req}\\s*[-:—]?\\s*`), '') : req;
 }
 
-export function newReq(req, { worktree, profile } = {}) {
+export function newReq(req, { worktree, profile, fromIssue } = {}) {
   assertReqId(req);
   let ws = Workspace.open();
   if (profile) ws.useProfile(String(profile)); // fails here, before any branch exists, when the profile is unknown
   if (!G.isRepo(ws.root) || !G.hasCommits(ws.root)) throw new AiwsError('The workspace must be a git repository with at least one commit.');
-  const requirement = findRequirement(ws, req);
-  if (!requirement) throw new AiwsError(`No requirement file requirements/${req}-*.md found. Write the requirement first.`);
+  let requirement = findRequirement(ws, req);
+  if (fromIssue !== undefined) {
+    if (requirement) {
+      throw new AiwsError(`${requirement} already exists: drop --from-issue to start ${req} from it, or pick another id.`);
+    }
+    issueViewArgs(fromIssue); // refuses a bad reference before gh runs
+  } else if (!requirement) {
+    throw new AiwsError(`No requirement file requirements/${req}-*.md found. Write the requirement first, or use --from-issue.`);
+  }
   const branch = `aiws/${req}`;
   if (G.branchExists(ws.root, branch)) throw new AiwsError(`Branch ${branch} already exists.`);
   const dirty = G.dirtyFiles(ws.root);
   if (dirty.length) throw new AiwsError(`Working tree is not clean:\n  ${dirty.join('\n  ')}`);
   if (fs.existsSync(statePath(ws, req))) throw new AiwsError(`${req} already exists.`);
 
+  const issue = fromIssue !== undefined ? fetchIssue(fromIssue, { gh: ws.runtime.pull_request?.gh ?? 'gh', cwd: ws.root }) : null;
   const subs = submodulesToBranch(ws, branch, { worktree });
+  if (issue) {
+    // committed on the current branch, like a requirement written by hand, before the requirement branch starts
+    const { file, text } = requirementFromIssue(req, issue);
+    fs.mkdirSync(path.dirname(ws.abs(file)), { recursive: true });
+    fs.writeFileSync(ws.abs(file), text);
+    G.commit(ws.root, `docs(${req}): requirement from issue ${issueLabel(issue)}\n\nREQ-ID: ${req}\n`, [file]);
+    requirement = file;
+    log(`${file} written from ${issue.url} and committed on ${G.currentBranch(ws.root)}.`);
+  }
 
   const baseBranch = G.currentBranch(ws.root);
   const baseCommit = G.head(ws.root);
@@ -219,6 +237,7 @@ export function newReq(req, { worktree, profile } = {}) {
     req_id: req,
     title: titleOf(ws, requirement, req),
     requirement,
+    ...(issue ? { issue: issue.url } : {}),
     branch,
     base_branch: baseBranch,
     base_commit: baseCommit,

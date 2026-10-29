@@ -48,7 +48,7 @@ aiws detect --write      # nhận diện stack của từng thư mục source-*
 aiws sync claude         # sinh CLAUDE.md và .claude/
 aiws sync opencode       # hoặc codex, antigravity: cùng agent, skill và guard cho công cụ đó
 aiws discover            # lập aiws/knowledge/
-aiws new REQ-001 && aiws run REQ-001
+aiws new REQ-001 && aiws run REQ-001   # viết requirements/REQ-001-*.md trước, hoặc: aiws new REQ-001 --from-issue 12
 ```
 
 ## Tài liệu

@@ -10,7 +10,7 @@ aiws detect --write            # recognise the stack of each source-* folder
 aiws sync claude               # generate CLAUDE.md and .claude/
 aiws sync opencode             # or codex, antigravity: agents, skills and the guard for that tool
 aiws discover                  # build aiws/knowledge/
-aiws new REQ-001 && aiws run REQ-001
+aiws new REQ-001 && aiws run REQ-001   # requirements/REQ-001-*.md first, or: aiws new REQ-001 --from-issue 12
 ```
 
 Requirements: Node.js 22 or newer, Git, and Claude Code signed in. The package carries the kit it was released with; `aiws init` records that version in `aiws/config/kit-version`, and `aiws run` says so when the CLI and the kit of a workspace are not the same release. `aiws upgrade` then brings the kit to the CLI's: it replaces the files you left alone, keeps the ones you changed (with the kit's version beside them as `*.aiws-new` when both changed), and commits nothing.
