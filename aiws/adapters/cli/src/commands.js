@@ -190,6 +190,10 @@ function titleOf(ws, rel, req) {
 
 export function newReq(req, { worktree, profile, fromIssue } = {}) {
   assertReqId(req);
+  if (fromIssue !== undefined && inAiSession()) {
+    // requirements/ is written by people only; the same session check as the human-only gate commands
+    throw new AiwsError('--from-issue writes requirements/, which only a person may do: run it yourself.', 3);
+  }
   let ws = Workspace.open();
   if (profile) ws.useProfile(String(profile)); // fails here, before any branch exists, when the profile is unknown
   if (!G.isRepo(ws.root) || !G.hasCommits(ws.root)) throw new AiwsError('The workspace must be a git repository with at least one commit.');

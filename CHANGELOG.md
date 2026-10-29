@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and its body; the file is committed on the current branch and `state.yaml` records the issue URL.
   `owner/repo#12` or the issue's URL reads an issue of another repository. It reads the issue with the GitHub
   CLI (`runtime.yaml -> pull_request.gh`) and posts nothing back. Without gh, without a sign-in, or when the
-  issue does not exist, it says so and creates nothing.
+  issue does not exist, it says so and creates nothing. Human-only: since only a person writes
+  `requirements/`, it refuses inside an AI session, before reading the issue; plain `aiws new` does not.
 
 ## [0.10.0] - 2026-10-28
 

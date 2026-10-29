@@ -371,7 +371,7 @@ phases:
 | `aiws sync claude` | Sinh `.claude/` + `CLAUDE.md` từ `aiws/` |
 | `aiws discover` | Chạy discovery, sinh `aiws/knowledge/` |
 | `aiws new REQ-001` | Tạo `aiws/work/REQ-001/`, nhánh `aiws/REQ-001` |
-| `aiws new REQ-001 --from-issue 12` | Viết `requirements/REQ-001-*.md` từ GitHub issue (số, `owner/repo#12` hoặc URL; đọc qua `gh`), commit vào nhánh đang đứng, rồi như `aiws new` |
+| `aiws new REQ-001 --from-issue 12` | Viết `requirements/REQ-001-*.md` từ GitHub issue (số, `owner/repo#12` hoặc URL; đọc qua `gh`), commit vào nhánh đang đứng, rồi như `aiws new`. Chỉ người chạy (trong phiên AI thì từ chối) |
 | `aiws run REQ-001` | Chạy tới human gate kế tiếp rồi dừng |
 | `aiws status [REQ]` | Hiển thị phase, task, lỗi |
 | `aiws approve REQ-001 design` | Ghi approval + hash, mở khoá phase sau |

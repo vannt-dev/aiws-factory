@@ -104,7 +104,7 @@ aiws run REQ-001                 # cập nhật aiws/knowledge → done; push nh
 aiws trace REQ-001               # ma trận AC → TC → task → commit → test
 ```
 
-**Requirement từ một GitHub issue.** `aiws new REQ-001 --from-issue 12` viết `requirements/REQ-001-<tiêu-đề>.md` từ issue #12 của repo chứa workspace, rồi tạo requirement như trên. Tiêu đề issue thành heading, tiếp theo là link về issue, các label và nội dung issue; file được commit vào nhánh đang đứng, như requirement người viết tay, và `state.yaml` ghi lại URL của issue. Dùng `owner/repo#12` hoặc URL của issue để đọc issue của repo khác. Issue được đọc qua GitHub CLI (`gh issue view`, đã `gh auth login`; `runtime.yaml -> pull_request.gh` chỉ tới đường dẫn khác), và không có gì được ghi ngược lên issue. Không có gh, chưa đăng nhập, hay issue không tồn tại thì `aiws new` báo rõ và không tạo gì. Đọc lại file trước khi `aiws run`: analysis bắt đầu từ nó.
+**Requirement từ một GitHub issue.** `aiws new REQ-001 --from-issue 12` viết `requirements/REQ-001-<tiêu-đề>.md` từ issue #12 của repo chứa workspace, rồi tạo requirement như trên. Tiêu đề issue thành heading, tiếp theo là link về issue, các label và nội dung issue; file được commit vào nhánh đang đứng, như requirement người viết tay, và `state.yaml` ghi lại URL của issue. Dùng `owner/repo#12` hoặc URL của issue để đọc issue của repo khác. Issue được đọc qua GitHub CLI (`gh issue view`, đã `gh auth login`; `runtime.yaml -> pull_request.gh` chỉ tới đường dẫn khác), và không có gì được ghi ngược lên issue. Chỉ người được chạy: trong phiên AI lệnh từ chối trước khi đọc issue, vì chỉ người viết `requirements/` (`aiws new` không kèm cờ thì AI vẫn chạy được). Không có gh, chưa đăng nhập, hay issue không tồn tại thì `aiws new` báo rõ và không tạo gì. Đọc lại file trước khi `aiws run`: analysis bắt đầu từ nó.
 
 Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lệnh cần chạy:
 
@@ -175,7 +175,7 @@ Hai chế độ dùng chung một bộ bảo vệ:
 - **Tự động:** `aiws run`.
 - **Tương tác:** mở `claude` trên nhánh `aiws/REQ-001` và yêu cầu *"dùng agent architect cho REQ-001"*. Hook suy ra phase từ `state.yaml` và chặn ghi sai phase. Phiên như vậy cũng được chạy `aiws run`, `aiws stop` và ghi ghi chú của riêng nó ra ngoài workspace; lệnh git và các lệnh gate vẫn bị chặn. Agent do `aiws run` khởi động thì không được nới bất kỳ điều nào trong số này.
 
-Trên `main`, không ở REQ nào, bạn được dùng Claude để bảo trì chính `aiws/` (agents, skills, config). Claude cũng có thể điều phối quy trình bằng `aiws new`, `aiws run` hay `aiws status`; mỗi lần chạy vẫn dừng ở các gate của người. Riêng `source-legacy/`, `requirements/`, `state.yaml` và `approvals/` luôn bị khoá. AI không bao giờ được chạy các lệnh gate `approve`, `reject`, `answer`, `redesign`, `resume`, `abandon`, `unlock`, và khi đang ở trong một phase thì cũng không được tự khởi động `aiws run` lồng nhau.
+Trên `main`, không ở REQ nào, bạn được dùng Claude để bảo trì chính `aiws/` (agents, skills, config). Claude cũng có thể điều phối quy trình bằng `aiws new` (không kèm `--from-issue`), `aiws run` hay `aiws status`; mỗi lần chạy vẫn dừng ở các gate của người. Riêng `source-legacy/`, `requirements/`, `state.yaml` và `approvals/` luôn bị khoá. AI không bao giờ được chạy các lệnh gate `approve`, `reject`, `answer`, `redesign`, `resume`, `abandon`, `unlock`, và khi đang ở trong một phase thì cũng không được tự khởi động `aiws run` lồng nhau.
 
 Xem prompt một agent sẽ nhận: `aiws prompt REQ-001 design`.
 

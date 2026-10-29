@@ -34,7 +34,8 @@ Requirement lifecycle
                                        aiws/config/workflow.NAME.yaml ("small": one design step, no separate
                                        test designer); --from-issue first writes requirements/REQ-001-*.md from
                                        a GitHub issue (12, owner/repo#12 or its URL; read with gh: title,
-                                       a link back, labels, body) and commits it on the current branch
+                                       a link back, labels, body) and commits it on the current branch;
+                                       --from-issue is human-only: it refuses inside an AI session
   aiws run REQ-001 [--once] [--wait[=MIN]]
                                        run phases until the next human gate / block / done; exit 75 when the
                                        AI usage limit paused it (run it again once the limit resets, or let

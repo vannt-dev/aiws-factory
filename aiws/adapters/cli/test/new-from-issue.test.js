@@ -166,6 +166,26 @@ test('aiws new --from-issue fails clearly and creates nothing when gh is missing
   assert.equal(git(root, ['branch', '--list', 'aiws/REQ-001']), '');
 });
 
+test('aiws new --from-issue is human-only: inside an AI session it refuses before gh runs; plain aiws new still works', () => {
+  const { root, calls } = workspaceWithFakeGh();
+  const head = git(root, ['rev-parse', 'HEAD']);
+  for (const env of [{ CLAUDECODE: '1' }, { CODEX_SANDBOX: 'seatbelt' }]) {
+    const r = aiws(root, ['new', 'REQ-001', '--from-issue', '12'], { env });
+    assert.equal(r.status, 3, JSON.stringify(env));
+    assert.match(r.out, /--from-issue writes requirements\/, which only a person may do: run it yourself/);
+  }
+  assert.equal(calls().length, 0, 'gh is not run');
+  assert.equal(git(root, ['rev-parse', 'HEAD']), head);
+  assert.equal(git(root, ['status', '--porcelain']), '');
+  assert.equal(git(root, ['branch', '--list', 'aiws/REQ-001']), '');
+
+  writeFile(root, 'requirements/REQ-002-by-hand.md', '# REQ-002 — By hand\n');
+  git(root, ['add', '-A']);
+  git(root, ['commit', '-q', '-m', 'by hand']);
+  ok(root, ['new', 'REQ-002'], { env: { CLAUDECODE: '1' } });
+  assert.equal(state(root, 'REQ-002').title, 'By hand');
+});
+
 test('aiws new --from-issue refuses when a requirement file for the id already exists', () => {
   const { root, calls } = workspaceWithFakeGh();
   writeFile(root, 'requirements/REQ-001-by-hand.md', '# REQ-001 — By hand\n');
