@@ -535,7 +535,7 @@ AIWS-Run: run-0005</pre>
       <h2 data-i18n="gs.h2">Up and running in a few commands</h2>
       <p class="sub" style="margin-bottom:24px" data-i18n="gs.sub">Requires Node.js ≥ 22, Git and a signed-in Claude Code. Put your code into <code>source-fe/</code>, <code>source-be/</code> and <code>source-legacy/</code>, as plain folders or git submodules, then:</p>
       <ul class="check">
-        <li data-i18n="gs.1"><b>Human-only commands</b> (<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>) refuse to run inside an AI session.</li>
+        <li data-i18n="gs.1"><b>Human-only commands</b> (<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>, <code>abandon</code>, <code>new --from-issue</code>) refuse to run inside an AI session.</li>
         <li data-i18n="gs.2"><b>Parallel work</b>: several requirements can run analysis and design at once with <code>aiws new --worktree</code>.</li>
         <li data-i18n="gs.3"><b>Token-free tests</b>: the <code>scripted</code> adapter runs the whole workflow deterministically.</li>
         <li data-i18n="gs.4"><b>Your first requirement</b>: the <a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md">handbook</a> goes through it step by step, from writing it to the merged pull request.</li>
@@ -555,7 +555,7 @@ AIWS-Run: run-0005</pre>
 <span class="p">$</span> aiws discover
 
 <span class="c"># one requirement</span>
-<span class="p">$</span> aiws new REQ-001
+<span class="p">$</span> aiws new REQ-001            <span class="c"># or: aiws new REQ-001 --from-issue 12</span>
 <span class="p">$</span> aiws run REQ-001            <span class="c"># stops at the design gate</span>
 <span class="p">$</span> aiws approve REQ-001 design
 <span class="p">$</span> aiws run REQ-001            <span class="c"># stops at the PR gate</span>
@@ -637,7 +637,7 @@ AIWS-Run: run-0005</pre>
       'rs.4': 'gate của người cho mỗi requirement: duyệt design, merge PR', 'rs.5': 'test tự động, CI trên Windows, Linux và macOS',
       'gs.h2': 'Chạy trong vài lệnh',
       'gs.sub': 'Yêu cầu Node.js ≥ 22, Git và Claude Code đã đăng nhập. Đưa code vào <code>source-fe/</code>, <code>source-be/</code>, <code>source-legacy/</code>, dạng thư mục thường hoặc git submodule, rồi:',
-      'gs.1': '<b>Lệnh của người</b> (<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>) từ chối chạy trong phiên AI.',
+      'gs.1': '<b>Lệnh của người</b> (<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>, <code>abandon</code>, <code>new --from-issue</code>) từ chối chạy trong phiên AI.',
       'gs.2': '<b>Chạy song song</b> nhiều REQ ở phase analysis/design qua <code>aiws new --worktree</code>.',
       'gs.3': '<b>Không tốn token khi test</b>: adapter <code>scripted</code> chạy toàn bộ quy trình tất định.',
       'gs.4': '<b>Requirement đầu tiên</b>: <a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.vi.md">sổ tay</a> dẫn bạn đi từng bước, từ lúc viết requirement tới lúc pull request được merge.',
@@ -739,7 +739,7 @@ AIWS-Run: run-0005</pre>
       'rs.4': '要件ごとの人によるゲート：設計承認と PR マージ', 'rs.5': '自動テスト、Windows・Linux・macOS で CI',
       'gs.h2': '数コマンドで動かせます',
       'gs.sub': 'Node.js 22 以上、Git、サインイン済みの Claude Code が必要です。コードを <code>source-fe/</code>、<code>source-be/</code>、<code>source-legacy/</code> に置いたら（通常のフォルダでも git サブモジュールでも構いません）、次を実行します。',
-      'gs.1': '<b>人専用コマンド</b>（<code>approve</code>、<code>reject</code>、<code>answer</code>、<code>resume</code>）は、AI セッション内では実行を拒否します。',
+      'gs.1': '<b>人専用コマンド</b>（<code>approve</code>、<code>reject</code>、<code>answer</code>、<code>resume</code>、<code>abandon</code>、<code>new --from-issue</code>）は、AI セッション内では実行を拒否します。',
       'gs.2': '<b>並行作業</b>：<code>aiws new --worktree</code> で、複数の要件の分析・設計を同時に進められます。',
       'gs.3': '<b>トークン不要のテスト</b>：<code>scripted</code> アダプターがワークフロー全体を決定的に実行します。',
       'gs.4': '<b>最初の要件</b>：<a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md">ハンドブック</a>（英語）が、要件を書くところからプルリクエストのマージまでを順を追って説明します。',
@@ -841,7 +841,7 @@ AIWS-Run: run-0005</pre>
       'rs.4': '每个需求的人工关卡：设计审批和 PR 合并', 'rs.5': '自动化测试，CI 在 Windows、Linux 和 macOS 上运行',
       'gs.h2': '几条命令即可运行',
       'gs.sub': '需要 Node.js ≥ 22、Git 以及已登录的 Claude Code。将代码放入 <code>source-fe/</code>、<code>source-be/</code> 和 <code>source-legacy/</code>（普通文件夹或 git 子模块均可），然后执行：',
-      'gs.1': '<b>仅限人工的命令</b>（<code>approve</code>、<code>reject</code>、<code>answer</code>、<code>resume</code>）在 AI 会话中会拒绝执行。',
+      'gs.1': '<b>仅限人工的命令</b>（<code>approve</code>、<code>reject</code>、<code>answer</code>、<code>resume</code>、<code>abandon</code>、<code>new --from-issue</code>）在 AI 会话中会拒绝执行。',
       'gs.2': '<b>并行工作</b>：通过 <code>aiws new --worktree</code>，可同时对多个需求进行分析和设计。',
       'gs.3': '<b>测试不消耗 token</b>：<code>scripted</code> 适配器以确定性方式运行整个工作流。',
       'gs.4': '<b>第一个需求</b>：<a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md">手册</a>（英文）从编写需求到合并拉取请求，一步一步带你完成。',
@@ -943,7 +943,7 @@ AIWS-Run: run-0005</pre>
       'rs.4': '요구사항당 사람 게이트: 설계 승인, PR 병합', 'rs.5': '자동화 테스트, Windows·Linux·macOS에서 CI',
       'gs.h2': '몇 개의 명령으로 바로 시작',
       'gs.sub': 'Node.js 22 이상, Git, 로그인된 Claude Code가 필요합니다. 코드를 <code>source-fe/</code>, <code>source-be/</code>, <code>source-legacy/</code>에 넣은 뒤(일반 폴더나 git 서브모듈 모두 가능) 다음을 실행하세요.',
-      'gs.1': '<b>사람 전용 명령</b>(<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>)은 AI 세션 안에서는 실행을 거부합니다.',
+      'gs.1': '<b>사람 전용 명령</b>(<code>approve</code>, <code>reject</code>, <code>answer</code>, <code>resume</code>, <code>abandon</code>, <code>new --from-issue</code>)는 AI 세션 안에서는 실행을 거부합니다.',
       'gs.2': '<b>병렬 작업</b>: <code>aiws new --worktree</code>로 여러 요구사항의 분석·설계를 동시에 진행할 수 있습니다.',
       'gs.3': '<b>토큰 없는 테스트</b>: <code>scripted</code> 어댑터가 전체 워크플로를 결정적으로 실행합니다.',
       'gs.4': '<b>첫 번째 요구사항</b>: <a class="handbook" href="https://github.com/vannt-dev/aiws-factory/blob/main/aiws/docs/handbook.md">핸드북</a>(영문)이 요구사항 작성부터 풀 리퀘스트 병합까지 단계별로 안내합니다.',
