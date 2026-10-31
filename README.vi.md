@@ -49,6 +49,7 @@ aiws sync claude         # sinh CLAUDE.md và .claude/
 aiws sync opencode       # hoặc codex, antigravity: cùng agent, skill và guard cho công cụ đó
 aiws discover            # lập aiws/knowledge/
 aiws new REQ-001 && aiws run REQ-001   # viết requirements/REQ-001-*.md trước, hoặc: aiws new REQ-001 --from-issue 12
+aiws abandon REQ-001 -m "không cần nữa"   # lệnh của người: bỏ một requirement sẽ không làm tiếp (status abandoned)
 ```
 
 ## Tài liệu
