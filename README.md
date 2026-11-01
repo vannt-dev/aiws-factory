@@ -24,6 +24,13 @@ V1 runs on Claude Code and works with any language in the frontend, backend or l
 
 **Landing page:** https://vannt-dev.github.io/aiws-factory/
 
+## How it works
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vannt-dev/aiws-factory/main/docs/diagrams/overview-dark.svg">
+  <img alt="A requirement, written in requirements/ or taken from a GitHub issue, and the knowledge base that aiws discover builds from the source-* repositories go into aiws run, which writes the analysis, the design and test spec and an AI design review and stops for a human to approve the design; the next aiws run codes each task with unit tests, reviews it and commits it with draft pull requests in every changed repository, and after a human merges them the knowledge base is updated." src="https://raw.githubusercontent.com/vannt-dev/aiws-factory/main/docs/diagrams/overview-light.svg">
+</picture>
+
 ## Workspace layout
 
 ```
