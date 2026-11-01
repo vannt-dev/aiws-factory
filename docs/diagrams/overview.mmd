@@ -1,0 +1,23 @@
+%% Overview diagram for the README. Re-render the SVGs after editing, from docs/diagrams:
+%% npx -y @mermaid-js/mermaid-cli@latest -i overview.mmd -c mermaid.config.json -b transparent -t default -o overview-light.svg
+%% npx -y @mermaid-js/mermaid-cli@latest -i overview.mmd -c mermaid.config.json -b transparent -t dark -o overview-dark.svg
+flowchart LR
+  subgraph inputs ["Inputs"]
+    direction TB
+    req["Requirement<br/>requirements/*.md<br/>or a GitHub issue"]
+    src["Target repositories<br/>source-fe, source-be, …<br/>source-legacy read-only"]
+    kb["Knowledge base<br/>aiws/knowledge"]
+    src -->|aiws discover| kb
+  end
+
+  subgraph designing ["Design: aiws run"]
+    direction TB
+    analysis["Analysis"] --> design["Design +<br/>test spec"] --> dreview["AI design review"] --> approve(["Human approval<br/>of the design"])
+  end
+
+  subgraph building ["Code: aiws run"]
+    direction TB
+    impl["Each task:<br/>code + unit tests"] --> review["AI review"] --> prs["Commits and draft PRs<br/>in each changed repository"] --> merge(["Human PR merge"]) --> update["Knowledge update<br/>into aiws/knowledge"]
+  end
+
+  inputs --> designing --> building
