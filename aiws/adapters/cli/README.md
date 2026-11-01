@@ -2,6 +2,11 @@
 
 The `aiws` command: the orchestrator of [AIWS — AI Software Factory](https://github.com/vannt-dev/aiws-factory): a requirement becomes tested code through gated phases (analysis → design + test specification → AI design review → human approval → implementation task by task with unit tests → review → human pull-request merge → knowledge update). A deterministic CLI owns the state; AI agents only work inside the write scope of the current phase. Runs on Claude Code; a Codex adapter can take the review. When a run stops at a gate, `aiws gate` (opened by `aiws run` in a terminal) lets you approve, reject or answer from a menu, and `aiws stats` shows where the tokens of each phase went.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vannt-dev/aiws-factory/main/docs/diagrams/overview-dark.svg">
+  <img alt="A requirement, written in requirements/ or taken from a GitHub issue, and the knowledge base that aiws discover builds from the source-* repositories go into aiws run, which writes the analysis, the design and test spec and an AI design review and stops for a human to approve the design; the next aiws run codes each task with unit tests, reviews it and commits it with draft pull requests in every changed repository, and after a human merges them the knowledge base is updated." src="https://raw.githubusercontent.com/vannt-dev/aiws-factory/main/docs/diagrams/overview-light.svg">
+</picture>
+
 ```bash
 npx aiws-factory init my-project   # a new workspace with the reference kit (config, agents, skills, templates, docs)
 npm install -g aiws-factory        # puts the `aiws` command on your PATH
