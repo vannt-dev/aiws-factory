@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-08
+
 - `aiws board` also lists the requirements of the other git worktrees of the repository (one per
   requirement branch, say), read from their `aiws/work/` and never written. A requirement found in several
   checkouts is shown once, from the copy updated last or the one a run is working in, with its worktree
@@ -524,7 +526,8 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.9.0...v0.10.0
