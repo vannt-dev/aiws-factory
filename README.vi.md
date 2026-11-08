@@ -50,7 +50,7 @@ aiws sync opencode       # hoặc codex, antigravity: cùng agent, skill và gua
 aiws discover            # lập aiws/knowledge/
 aiws new REQ-001 && aiws run REQ-001   # viết requirements/REQ-001-*.md trước, hoặc: aiws new REQ-001 --from-issue 12
 aiws abandon REQ-001 -m "không cần nữa"   # lệnh của người: bỏ một requirement sẽ không làm tiếp (status abandoned)
-aiws board --serve       # trang chỉ để xem mọi requirement, cập nhật liên tục ở http://127.0.0.1:4319 (aiws board: một file HTML để gửi)
+aiws board --serve       # trang chỉ để xem mọi requirement của mọi worktree, cập nhật liên tục ở http://127.0.0.1:4319 (aiws board: một file HTML để gửi)
 ```
 
 ## Tài liệu
