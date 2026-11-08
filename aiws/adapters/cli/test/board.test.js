@@ -4,9 +4,10 @@ import fs from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import YAML from 'yaml';
-import { makeWorkspace, aiws, ok, git, tempDir, cleanEnv, BIN } from './helpers.js';
+import { makeWorkspace, aiws, ok, git, tempDir, cleanEnv, scenario, BIN, CLI_ROOT, SCRIPTED } from './helpers.js';
 import { Workspace } from '../src/workspace.js';
 import { buildBoard, renderBoard, boardServer, listenBoard } from '../src/board.js';
 import { parseArgs } from '../src/cli.js';
@@ -295,5 +296,187 @@ test('aiws board --serve listens on 127.0.0.1 only, and says so when the port is
     assert.match(home.body, /REQ-002/);
   } finally {
     child.kill();
+  }
+});
+
+// ---------------------------------------------------------------- a run under way
+
+/** The marker `aiws run` keeps in the git common dir while it works on a requirement. */
+function runMarker(root, req, marker) {
+  const common = path.resolve(root, git(root, ['rev-parse', '--git-common-dir']));
+  fs.writeFileSync(path.join(common, `aiws-running-${req}.yaml`), YAML.stringify({ req, root, at: '2026-11-08T09:00:00.000Z', ...marker }));
+}
+
+/** The pid of a process that has ended. */
+function deadPid() {
+  return spawnSync(process.execPath, ['-e', '']).pid;
+}
+
+test('a requirement whose first AI run is under way is running; one whose run died is not started', () => {
+  const root = makeWorkspace();
+  fakeReq(root, 'REQ-001', { phase: 'analysis', status: 'running' });
+  fakeReq(root, 'REQ-002', { phase: 'analysis', status: 'running' });
+  fakeReq(root, 'REQ-003', { phase: 'analysis', status: 'running' });
+  runMarker(root, 'REQ-001', { pid: process.pid });
+  runMarker(root, 'REQ-002', { pid: deadPid() });
+  const row = Object.fromEntries(buildBoard(new Workspace(root)).rows.map((r) => [r.req, r]));
+  assert.equal(row['REQ-001'].state, 'running');
+  assert.equal(row['REQ-001'].next, '');
+  assert.equal(row['REQ-001'].steps[0].status, 'running');
+  assert.equal(row['REQ-001'].running_since, '2026-11-08T09:00:00.000Z');
+  assert.equal(row['REQ-002'].state, 'not_started', 'a crashed run is not running forever');
+  assert.equal(row['REQ-002'].next, 'aiws run REQ-002');
+  assert.equal(row['REQ-003'].state, 'not_started');
+  // a workspace that is not a git repository has no markers, and the board still works
+  const plain = tempDir('aiws-plain-');
+  fs.cpSync(path.join(root, 'aiws'), path.join(plain, 'aiws'), { recursive: true });
+  assert.equal(buildBoard(new Workspace(plain)).rows.find((r) => r.req === 'REQ-001').state, 'not_started');
+});
+
+test('aiws run marks the requirement as running from the start of its first step, and clears it after', () => {
+  const root = makeWorkspace({ discover: true });
+  ok(root, ['new', 'REQ-001']);
+  const probe = path.join(tempDir('aiws-probe-'), 'board.json');
+  const url = (f) => JSON.stringify(pathToFileURL(f).href);
+  const env = scenario({
+    'analyst.js': `
+      import fs from 'node:fs';
+      const { buildBoard } = await import(${url(path.join(CLI_ROOT, 'src', 'board.js'))});
+      const { Workspace } = await import(${url(path.join(CLI_ROOT, 'src', 'workspace.js'))});
+      const row = buildBoard(new Workspace(process.cwd())).rows.find((r) => r.req === process.env.AIWS_REQ);
+      fs.writeFileSync(process.env.BOARD_PROBE, JSON.stringify(row));
+      await import(${url(path.join(SCRIPTED, 'analyst.js'))});
+    `,
+  });
+  ok(root, ['run', 'REQ-001', '--once'], { env: { ...env, BOARD_PROBE: probe } });
+  const during = JSON.parse(fs.readFileSync(probe, 'utf8'));
+  assert.equal(during.runs, 0, 'no evidence run is written yet');
+  assert.equal(during.state, 'running');
+  assert.match(during.running_since, /^\d{4}-/);
+  const common = path.resolve(root, git(root, ['rev-parse', '--git-common-dir']));
+  assert.deepEqual(
+    fs.readdirSync(common).filter((f) => f.startsWith('aiws-running-')),
+    []
+  );
+});
+
+// ---------------------------------------------------------------- other worktrees
+
+/** A workspace with a linked worktree per requirement branch, the way a team works on several at once. */
+function worktreeWorkspace() {
+  const root = makeWorkspace();
+  const base = tempDir('aiws-wts-');
+  const wt = path.join(base, 'shop-REQ-002');
+  git(root, ['worktree', 'add', '-q', '-b', 'aiws/REQ-002', wt]);
+  const gone = path.join(base, 'shop-REQ-009');
+  git(root, ['worktree', 'add', '-q', '-b', 'aiws/REQ-009', gone]);
+  fs.rmSync(gone, { recursive: true, force: true });
+  const at = (h) => [{ phase: 'analysis', result: 'ok', at: `2026-11-08T0${h}:00:00.000Z` }];
+  fakeReq(wt, 'REQ-002', { phase: 'design_approval', status: 'waiting_human', history: at(5) }, [{ phase: 'design', minutes: 3, cost: 1 }]);
+  // in both checkouts: the copy updated last is the one shown
+  fakeReq(root, 'REQ-003', { phase: 'design', status: 'running', history: at(2) }, [{ phase: 'analysis', minutes: 1 }]);
+  fakeReq(wt, 'REQ-003', { phase: 'done', status: 'done', history: at(6) });
+  fakeReq(root, 'REQ-004', { phase: 'review', status: 'blocked', reason: 'here', history: at(7) });
+  fakeReq(wt, 'REQ-004', { phase: 'design', status: 'running', history: at(3) });
+  return { root, wt, gone };
+}
+
+test('the board lists the requirements of the other worktrees, each once, with where it lives', () => {
+  const { root, wt, gone } = worktreeWorkspace();
+  const board = buildBoard(new Workspace(root));
+  const row = Object.fromEntries(board.rows.map((r) => [r.req, r]));
+  assert.deepEqual(Object.keys(row).sort(), ['REQ-002', 'REQ-003', 'REQ-004']);
+  assert.equal(board.totals.requirements, 3);
+  assert.equal(row['REQ-002'].state, 'waiting');
+  assert.equal(row['REQ-002'].worktree.branch, 'aiws/REQ-002');
+  assert.equal(row['REQ-002'].worktree.here, false);
+  assert.equal(fs.realpathSync(row['REQ-002'].worktree.path), fs.realpathSync(wt));
+  assert.equal(row['REQ-002'].cost_usd, 1);
+  assert.equal(row['REQ-003'].state, 'done');
+  assert.equal(row['REQ-003'].worktree.here, false);
+  assert.equal(row['REQ-003'].elsewhere.length, 1);
+  assert.equal(row['REQ-004'].state, 'blocked');
+  assert.equal(row['REQ-004'].worktree.here, true);
+  assert.equal(row['REQ-004'].worktree.branch, 'main');
+  assert.equal(board.worktrees, 1);
+  assert.equal(board.notes.length, 1);
+  assert.match(board.notes[0], /shop-REQ-009/);
+  assert.match(board.notes[0], /missing/);
+  assert.ok(!fs.existsSync(gone));
+
+  const html = renderBoard(board);
+  assert.match(html, /aiws\/REQ-002/);
+  assert.match(html, /shop-REQ-002/);
+  assert.match(html, /1 other worktree/);
+  assert.match(html, /shop-REQ-009/);
+
+  // this checkout only, as before
+  const own = buildBoard(new Workspace(root), { otherWorktrees: false });
+  assert.deepEqual(
+    own.rows.map((r) => [r.req, r.state]),
+    [
+      ['REQ-004', 'blocked'],
+      ['REQ-003', 'running'],
+    ]
+  );
+  assert.deepEqual(own.notes, []);
+});
+
+test('a run under way in another worktree shows as running there', () => {
+  const { root, wt } = worktreeWorkspace();
+  fakeReq(wt, 'REQ-005', { phase: 'analysis', status: 'running' });
+  runMarker(root, 'REQ-005', { pid: process.pid, root: wt });
+  const row = buildBoard(new Workspace(root)).rows.find((r) => r.req === 'REQ-005');
+  assert.equal(row.state, 'running');
+  assert.equal(row.worktree.here, false);
+});
+
+test('aiws board links the reports another worktree has, writes nothing there, and --this-checkout leaves them out', () => {
+  const { root, wt } = worktreeWorkspace();
+  const files = (dir) => fs.readdirSync(dir, { recursive: true }).sort();
+  const before = files(path.join(wt, 'aiws', 'work'));
+  ok(root, ['board']);
+  let html = fs.readFileSync(path.join(root, 'aiws', 'work', 'board.html'), 'utf8');
+  assert.match(html, /REQ-002/);
+  assert.doesNotMatch(html, /<a href="[^"]*">REQ-002<\/a>/, 'no report there yet, so no link');
+  assert.deepEqual(files(path.join(wt, 'aiws', 'work')), before, 'nothing written into the other worktree');
+  assert.ok(!fs.existsSync(path.join(root, 'aiws', 'work', 'REQ-002')), 'nor a copy of it here');
+
+  fs.writeFileSync(path.join(wt, 'aiws', 'work', 'REQ-002', 'report.html'), '<p>report of REQ-002</p>');
+  ok(root, ['board']);
+  html = fs.readFileSync(path.join(root, 'aiws', 'work', 'board.html'), 'utf8');
+  const href = /<a href="([^"]+)">REQ-002<\/a>/.exec(html)[1];
+  const target = href.startsWith('file:') ? new URL(href) : path.resolve(path.join(root, 'aiws', 'work'), decodeURI(href));
+  assert.equal(fs.readFileSync(target, 'utf8'), '<p>report of REQ-002</p>');
+  assert.equal(fs.readFileSync(path.join(wt, 'aiws', 'work', 'REQ-002', 'report.html'), 'utf8'), '<p>report of REQ-002</p>');
+
+  ok(root, ['board', '--this-checkout']);
+  html = fs.readFileSync(path.join(root, 'aiws', 'work', 'board.html'), 'utf8');
+  assert.doesNotMatch(html, /REQ-002/);
+  assert.deepEqual(parseArgs(['board', '--serve', '--this-checkout']), { pos: ['board'], flags: { serve: true, 'this-checkout': true } });
+});
+
+test('the board server renders the report of a requirement found in another worktree, and nothing else', async () => {
+  const { root, wt } = worktreeWorkspace();
+  const before = fs.readdirSync(path.join(wt, 'aiws', 'work', 'REQ-002')).sort();
+  const server = boardServer(root, { refreshSeconds: 10 });
+  const own = boardServer(root, { otherWorktrees: false });
+  const { port } = await listenBoard(server, 0);
+  const { port: ownPort } = await listenBoard(own, 0);
+  try {
+    const home = await request(port, '/');
+    assert.match(home.body, /<a href="\/REQ-002\/report\.html">REQ-002<\/a>/);
+    const report = await request(port, '/REQ-002/report.html');
+    assert.equal(report.status, 200);
+    assert.match(report.body, /<h1>REQ-002 — /);
+    assert.deepEqual(fs.readdirSync(path.join(wt, 'aiws', 'work', 'REQ-002')).sort(), before, 'served, not written');
+    for (const p of ['/REQ-009/report.html', '/REQ-002/state.yaml', '/shop-REQ-002/aiws/work/REQ-002/report.html']) {
+      assert.equal((await request(port, p)).status, 404, p);
+    }
+    assert.equal((await request(ownPort, '/REQ-002/report.html')).status, 404);
+    assert.doesNotMatch((await request(ownPort, '/')).body, /REQ-002/);
+  } finally {
+    server.close();
+    own.close();
   }
 });

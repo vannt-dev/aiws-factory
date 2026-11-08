@@ -893,14 +893,15 @@ export function report(req, { out } = {}) {
  * aiws/work/board.html), with each requirement's report written fresh beside it so the links work.
  * `aiws board --serve [--port N]`: the same page served on 127.0.0.1, rendered again on every request.
  */
-export async function board({ out, serve, port } = {}) {
+export async function board({ out, serve, port, thisCheckout = false } = {}) {
+  const otherWorktrees = !thisCheckout;
   const ws = Workspace.open();
   ws.warnKitVersion();
   if (serve) {
     if (out !== undefined) throw new AiwsError('--out writes the board to a file; --serve serves it instead. Use one of them.');
     const n = port === undefined ? DEFAULT_PORT : Number(port);
     if (!Number.isInteger(n) || n < 1 || n > 65535) throw new AiwsError(`Invalid port '${port}': pass a number from 1 to 65535.`);
-    const server = boardServer(ws.root);
+    const server = boardServer(ws.root, { otherWorktrees });
     try {
       await listenBoard(server, n);
     } catch (e) {
@@ -916,25 +917,36 @@ export async function board({ out, serve, port } = {}) {
   }
   if (port !== undefined) throw new AiwsError('--port goes with --serve.');
   const file = out ? path.resolve(out) : path.join(ws.aiwsDir, 'work', 'board.html');
-  const data = buildBoard(ws);
+  const data = buildBoard(ws, { otherWorktrees });
   // generated views: kept out of commits and of the clean-tree checks of the gates, like `aiws report`
   if (G.isRepo(ws.root)) {
     if (!out) G.excludeLocally(ws.root, '/aiws/work/board.html');
     G.excludeLocally(ws.root, '/aiws/work/*/report.html');
   }
   const links = {};
+  const linkTo = (target) => {
+    const rel = path.relative(path.dirname(file), target);
+    return path.isAbsolute(rel) ? pathToFileURL(target).href : encodeURI(rel.split(path.sep).join('/'));
+  };
   for (const r of data.rows.filter((x) => x.state !== 'error')) {
+    if (!r.worktree.here) {
+      // another worktree is only read: its report is linked when it has one, never written
+      const theirs = path.join(r.worktree.root, 'aiws', 'work', r.req, 'report.html');
+      if (fs.existsSync(theirs)) links[r.req] = linkTo(theirs);
+      continue;
+    }
     const target = path.join(ws.workDir(r.req), 'report.html');
     try {
       writeText(target, renderHtml(buildReport(ws, loadState(ws, r.req))));
     } catch {
       continue; // the board still lists it, without a link
     }
-    const rel = path.relative(path.dirname(file), target);
-    links[r.req] = path.isAbsolute(rel) ? pathToFileURL(target).href : encodeURI(rel.split(path.sep).join('/'));
+    links[r.req] = linkTo(target);
   }
   writeText(file, renderBoard(data, { reportHref: (req) => links[req] ?? null }));
-  log(`Board written: ${file} (${data.rows.length} requirement(s); reports refreshed beside them)`);
+  for (const note of data.notes) log(`  ${note}`);
+  const others = data.worktrees ? `, ${data.worktrees} other worktree(s) read` : '';
+  log(`Board written: ${file} (${data.rows.length} requirement(s)${others}; reports refreshed beside them)`);
   return file;
 }
 

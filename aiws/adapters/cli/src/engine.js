@@ -219,6 +219,24 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
     saveState(ws, st);
   }
 
+  // the board shows the requirement as running from here on, before the first AI run has left any evidence
+  const marked = st.status === 'running' && Lock.markRunning(ws.root, req);
+  try {
+    runSteps(ws, req, { once, maxSteps });
+  } finally {
+    if (marked) Lock.clearRunning(ws.root, req);
+  }
+  st = loadState(ws, req);
+  const gate = st.status === 'waiting_human' ? ws.phaseDef(st.phase) : null;
+  if (gate?.gate === 'pr' && gate.via === 'git_host' && ws.runtime.pull_request && !st.pr_url) {
+    openDraftPr(ws, st);
+  }
+  return loadState(ws, req);
+}
+
+/** The steps of one `aiws run`, until a human gate, a block, a pause, a stop request or done. */
+function runSteps(ws, req, { once, maxSteps }) {
+  let st;
   for (let i = 0; i < maxSteps; i++) {
     st = loadState(ws, req);
     if (st.status !== 'running') break;
@@ -264,12 +282,6 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
     else stepAgentPhase(ws, st, def);
     if (st.paused || once) break; // paused: the status stays running, so without this the same step would spin
   }
-  st = loadState(ws, req);
-  const gate = st.status === 'waiting_human' ? ws.phaseDef(st.phase) : null;
-  if (gate?.gate === 'pr' && gate.via === 'git_host' && ws.runtime.pull_request && !st.pr_url) {
-    openDraftPr(ws, st);
-  }
-  return loadState(ws, req);
 }
 
 /**

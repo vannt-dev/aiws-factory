@@ -1,5 +1,8 @@
 import fs from 'node:fs';
 import http from 'node:http';
+import path from 'node:path';
+import * as G from './git.js';
+import { liveRuns } from './lock.js';
 import { Workspace } from './workspace.js';
 import { loadState, listReqs, statePath } from './state.js';
 import { runStats } from './stats.js';
@@ -11,7 +14,8 @@ import { buildReport, renderHtml, esc, STYLE } from './report.js';
  * One page over every requirement of aiws/work/: where each stands, what waits for a person and the command
  * that person runs, the pull request, cost and time so far, and the last activity. Read-only by design: the
  * decisions stay in the terminal, where an AI session cannot take them and no sign-in is needed.
- * Like `aiws stats`, it shows the requirements whose work folder is in this checkout.
+ * Beside this checkout, it reads the aiws/work/ of every other worktree of the repository (one per
+ * requirement branch, say), read-only; a requirement found in several is shown once, as last updated.
  */
 
 /** The order of the page: what needs a person first, what is finished last. */
@@ -31,13 +35,14 @@ const STATE_LABEL = {
 export const DEFAULT_PORT = 4319;
 
 /** The state of a requirement as a whole, in the words of the pipeline row. */
-function boardState(st, stats) {
+function boardState(st, stats, run) {
   if (st.status === 'done') return 'done';
   if (st.status === 'abandoned') return 'abandoned';
   if (st.status === 'waiting_human') return 'waiting';
   if (st.status === 'blocked') return 'blocked';
   if (st.paused) return 'paused';
-  return stats.runs ? 'running' : 'not_started';
+  // an `aiws run` under way (its marker), or one that has already left evidence
+  return run || stats.runs ? 'running' : 'not_started';
 }
 
 /** The command a person runs next, when the next step is theirs to start. */
@@ -69,15 +74,15 @@ function lastActivity(ws, st) {
   }
 }
 
-function row(ws, req) {
+function row(ws, req, run) {
   let st;
   try {
     st = loadState(ws, req); // switches ws to the workflow profile of this requirement
   } catch (e) {
-    return { req, title: '', state: 'error', error: e?.message ?? String(e), steps: [] };
+    return { req, title: '', state: 'error', error: e?.message ?? String(e), steps: [], last_activity: '' };
   }
   const stats = runStats(ws, req);
-  const state = boardState(st, stats);
+  const state = boardState(st, stats, run);
   const tasks = st.tasks ?? [];
   return {
     req,
@@ -95,6 +100,7 @@ function row(ws, req) {
     minutes: stats.runs ? Math.max(1, Math.round(stats.duration_ms / 60000)) : 0,
     cost_usd: stats.cost_usd,
     last_activity: lastActivity(ws, st),
+    running_since: state === 'running' && run ? String(run.at ?? '') : '',
     steps: stepsOf(ws, st, stats, state),
   };
 }
@@ -110,9 +116,110 @@ function stepsOf(ws, st, stats, state) {
   return steps;
 }
 
-/** Every requirement of aiws/work/ with its state, sorted by what needs a person first, and the totals. */
-export function buildBoard(ws) {
-  const rows = listReqs(ws).map((req) => row(ws, req));
+// ---------------------------------------------------------------- worktrees
+
+/** The real path, to compare two spellings of a folder (8.3 names on Windows, /private/var on macOS). */
+function real(p) {
+  try {
+    return fs.realpathSync.native(p);
+  } catch {
+    return path.resolve(p);
+  }
+}
+
+function samePath(a, b) {
+  const [x, y] = [real(a), real(b)];
+  return process.platform === 'win32' ? x.toLowerCase() === y.toLowerCase() : x === y;
+}
+
+const placeOf = (wt) => `worktree ${wt.path}${wt.branch ? ` (${wt.branch})` : ''}`;
+const why = (e) => e?.code ?? e?.message ?? String(e);
+
+/**
+ * The checkouts whose aiws/work/ the board reads: this one first, then each other worktree of the
+ * repository, where the workspace sits at the same place inside it. A worktree missing on disk or that
+ * cannot be read is left out with a note. Nothing is written in any of them.
+ */
+export function checkouts(ws, { otherWorktrees = true } = {}) {
+  const repo = G.isRepo(ws.root);
+  const list = [{ root: ws.root, path: ws.root, branch: repo ? G.currentBranch(ws.root) : null, here: true }];
+  const notes = [];
+  if (!otherWorktrees || !repo) return { list, notes };
+  const top = G.git(ws.root, ['rev-parse', '--show-toplevel'], { allowFail: true }).stdout.trim();
+  const worktrees = top ? G.worktrees(ws.root) : null;
+  if (!worktrees) {
+    notes.push('The other worktrees could not be listed (git worktree list failed): this checkout only.');
+    return { list, notes };
+  }
+  const rel = path.relative(real(top), real(ws.root)); // the workspace may sit in a folder of the repository
+  for (const wt of worktrees) {
+    if (wt.bare || samePath(wt.path, top)) continue;
+    if (wt.prunable || !fs.existsSync(wt.path)) {
+      notes.push(`${placeOf(wt)} is missing on disk: skipped (git worktree prune forgets it).`);
+      continue;
+    }
+    const root = path.join(wt.path, rel);
+    const work = path.join(root, 'aiws', 'work');
+    try {
+      if (!fs.existsSync(work)) continue; // no requirement there
+      if (!fs.existsSync(path.join(root, 'aiws', 'config', 'workflow.yaml'))) {
+        notes.push(`${placeOf(wt)} has aiws/work/ but no aiws/config/workflow.yaml: skipped.`);
+        continue;
+      }
+      fs.readdirSync(work);
+    } catch (e) {
+      notes.push(`${placeOf(wt)} could not be read (${why(e)}): skipped.`);
+      continue;
+    }
+    list.push({ root, path: wt.path, branch: wt.branch, here: false });
+  }
+  return { list, notes };
+}
+
+function activity(r) {
+  const t = Date.parse(r.last_activity);
+  return Number.isFinite(t) ? t : -Infinity;
+}
+
+/**
+ * One row per requirement: the copy a run under way works in, else the copy updated last, else the first
+ * found (this checkout before the others). Where the other copies are is kept in `elsewhere`.
+ */
+function dedupe(rows, runs) {
+  const by = new Map();
+  for (const r of rows) {
+    if (!by.has(r.req)) by.set(r.req, []);
+    by.get(r.req).push(r);
+  }
+  return [...by.values()].map((copies) => {
+    const run = runs[copies[0].req];
+    const running = run?.root ? copies.find((c) => samePath(c.worktree.root, run.root)) : null;
+    const pick = running ?? copies.reduce((best, c) => (activity(c) > activity(best) ? c : best));
+    return { ...pick, elsewhere: copies.filter((c) => c !== pick).map((c) => c.worktree) };
+  });
+}
+
+/**
+ * Every requirement of aiws/work/ of this checkout and, unless `otherWorktrees` is false, of the other
+ * worktrees of the repository, with its state, sorted by what needs a person first, and the totals.
+ * Each row says in `worktree` where it was read ({ root, path, branch, here }).
+ */
+export function buildBoard(ws, { otherWorktrees = true } = {}) {
+  const { list, notes } = checkouts(ws, { otherWorktrees });
+  const runs = liveRuns(ws.root); // every worktree's, from the git common dir
+  const found = [];
+  for (const c of list) {
+    const cws = c.here ? ws : new Workspace(c.root);
+    let reqs;
+    try {
+      reqs = listReqs(cws);
+    } catch (e) {
+      notes.push(`${placeOf(c)} could not be read (${why(e)}): skipped.`);
+      continue;
+    }
+    for (const req of reqs) found.push({ ...row(cws, req, runs[req]), worktree: c });
+  }
+  const rows = dedupe(found, runs);
   const order = (r) => BOARD_STATES.indexOf(r.state);
   rows.sort((a, b) => order(a) - order(b) || a.req.localeCompare(b.req, 'en', { numeric: true }));
   const by_state = {};
@@ -120,6 +227,8 @@ export function buildBoard(ws) {
   const costs = rows.map((r) => r.cost_usd).filter((c) => typeof c === 'number');
   return {
     rows,
+    worktrees: list.filter((c) => !c.here).length,
+    notes,
     totals: {
       requirements: rows.length,
       by_state,
@@ -183,6 +292,7 @@ const BOARD_STYLE = `
   .dot.waiting { background: var(--wait); border-color: var(--wait); }
   .dot.blocked { background: var(--stop); border-color: var(--stop); }
   .dot.abandoned { background: var(--idle); }
+  .where { font-size: 12px; } .note { font-size: 12.5px; margin: 2px 0; }
   td.nowrap { white-space: nowrap; }
   td code { white-space: nowrap; }
   footer { margin-top: 32px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
@@ -204,14 +314,27 @@ function dots(steps) {
   return `<div class="dots">${steps.map(one).join('')}</div>`;
 }
 
+/** Where a requirement read from another worktree lives: the folder name and the branch, the full path on hover. */
+function placeLine(r) {
+  const wt = r.worktree;
+  const others = r.elsewhere?.length ? ` · also in ${r.elsewhere.length} other checkout(s)` : '';
+  if (!wt || wt.here) return others ? `<div class="muted where">${esc(others.slice(3))}</div>` : '';
+  const name = path.basename(wt.path) || wt.path;
+  return (
+    `<div class="muted where" title="${esc(wt.path)}">worktree ${esc(name)}` +
+    `${wt.branch ? ` · <code>${esc(wt.branch)}</code>` : ''}${esc(others)}</div>`
+  );
+}
+
 function reqCell(r, reportHref) {
   const href = reportHref(r.req);
   const id = href ? `<a href="${esc(href)}">${esc(r.req)}</a>` : esc(r.req);
-  return `<b>${id}</b> ${esc(r.title)}${r.profile ? ` <span class="muted">(${esc(r.profile)})</span>` : ''}${dots(r.steps)}`;
+  return `<b>${id}</b> ${esc(r.title)}${r.profile ? ` <span class="muted">(${esc(r.profile)})</span>` : ''}${placeLine(r)}${dots(r.steps)}`;
 }
 
 function stateCell(r) {
   const lines = [];
+  if (r.running_since) lines.push(`AI run under way since ${esc(shortTime(r.running_since))}`);
   if (r.waits_for) lines.push(esc(r.waits_for));
   if (r.reason) lines.push(esc(r.reason.split('\n')[0].slice(0, 200)));
   if (r.error) lines.push(`<span class="bad">${esc(r.error.split('\n')[0].slice(0, 200))}</span>`);
@@ -236,11 +359,13 @@ export function renderBoard(board, { generatedAt = new Date().toISOString(), rep
   const count = (s) => t.by_state[s] ?? 0;
   const parts = [];
   parts.push('<h1>AIWS board</h1>');
+  const where = board.worktrees ? ` of this checkout and ${board.worktrees} other worktree(s)` : '';
   parts.push(
-    `<p class="muted">${t.requirements} requirement(s) in aiws/work/ · generated ${esc(generatedAt)} by <code>aiws board</code>` +
+    `<p class="muted">${t.requirements} requirement(s) in aiws/work/${esc(where)} · generated ${esc(generatedAt)} by <code>aiws board</code>` +
       (refreshSeconds ? ` · refreshes every ${esc(refreshSeconds)} s` : '') +
       '</p>'
   );
+  for (const note of board.notes ?? []) parts.push(`<p class="muted note">${esc(note)}</p>`);
   if (!board.rows.length) {
     parts.push('<p>No requirements in aiws/work/ yet. Start one with <code>aiws new REQ-001</code>.</p>');
   } else {
@@ -328,10 +453,11 @@ const LOCAL_HOST = /^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/i;
 
 /**
  * The served board: an http.Server (not listening yet) that renders the board, and the report of a
- * requirement of aiws/work/, fresh on every request. It answers two kinds of path and nothing else; no part
- * of a URL is ever used as a file path. Read-only: GET and HEAD only, nothing is written.
+ * requirement the board lists (from this checkout or another worktree), fresh on every request. It answers
+ * two kinds of path and nothing else; no part of a URL is ever used as a file path: a report is found by
+ * looking its id up among the requirements the board found. Read-only: GET and HEAD only, nothing is written.
  */
-export function boardServer(root, { refreshSeconds = 10 } = {}) {
+export function boardServer(root, { refreshSeconds = 10, otherWorktrees = true } = {}) {
   return http.createServer((req, res) => {
     const send = (status, body, type = 'text/plain; charset=utf-8', extra = {}) => {
       res.writeHead(status, {
@@ -356,11 +482,15 @@ export function boardServer(root, { refreshSeconds = 10 } = {}) {
       const ws = new Workspace(root); // config read again too, so a change shows on the next request
       const html = 'text/html; charset=utf-8';
       if (pathname === '/' || pathname === '/board.html') {
-        const board = buildBoard(ws);
+        const board = buildBoard(ws, { otherWorktrees });
         return send(200, renderBoard(board, { refreshSeconds, reportHref: (r) => `/${r}/report.html` }), html);
       }
       const m = REPORT_PATH.exec(pathname);
-      if (m && listReqs(ws).includes(m[1])) return send(200, renderHtml(buildReport(ws, loadState(ws, m[1]))), html);
+      const found = m ? buildBoard(ws, { otherWorktrees }).rows.find((r) => r.req === m[1]) : null;
+      if (found) {
+        const rws = found.worktree.here ? ws : new Workspace(found.worktree.root);
+        return send(200, renderHtml(buildReport(rws, loadState(rws, m[1]))), html);
+      }
       return send(404, 'Not found. The board is at /.\n');
     } catch (e) {
       return send(500, `The page could not be rendered: ${e?.message ?? e}\n`);

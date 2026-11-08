@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- `aiws board` also lists the requirements of the other git worktrees of the repository (one per
+  requirement branch, say), read from their `aiws/work/` and never written. A requirement found in several
+  checkouts is shown once, from the copy updated last or the one a run is working in, with its worktree
+  folder and branch. Its report is linked when that worktree has one; `--serve` renders it on request.
+  A worktree missing on disk or unreadable is skipped with a note. `--this-checkout` shows this checkout
+  only.
+- The board shows a requirement as running from the start of its first AI run, not as not started until
+  that run has left its evidence: `aiws run` keeps a marker in the git common directory while it works,
+  with its process id and computer, and removes it when it returns. A marker whose process is gone (a
+  crash, a killed terminal) is ignored, so a dead run does not show as running.
+
 ## [0.12.0] - 2026-11-08
 
 One page over every requirement, for the people who follow the work without a terminal.

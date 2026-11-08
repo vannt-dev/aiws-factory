@@ -49,7 +49,9 @@ Requirement lifecycle
                                        (default aiws/work/REQ-001/report.html)
   aiws board [--out FILE]              one read-only HTML page over every requirement: state, what waits for you
                                        and the command to run, pull request, cost, time, last activity, with links
-                                       to the reports, refreshed beside it (default aiws/work/board.html)
+                                       to the reports, refreshed beside it (default aiws/work/board.html); also
+                                       lists the requirements of the other git worktrees of the repository, read
+                                       only (--this-checkout: this checkout only)
   aiws board --serve [--port N]        the same page live on http://127.0.0.1:4319 (or port N), this computer
                                        only, rendered on every request and reloading every 10 s; Ctrl+C stops it
 
@@ -181,7 +183,7 @@ export async function main(argv) {
       C.report(a1, { out: flags.out });
       return 0;
     case 'board':
-      await C.board({ out: flags.out, serve: Boolean(flags.serve), port: flags.port });
+      await C.board({ out: flags.out, serve: Boolean(flags.serve), port: flags.port, thisCheckout: Boolean(flags['this-checkout']) });
       return 0;
     case 'gate':
       await C.gate(a1);

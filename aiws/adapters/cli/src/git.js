@@ -278,6 +278,28 @@ export function isTracked(root, p) {
   return git(root, ['ls-files', '--error-unmatch', '--', p], { allowFail: true }).status === 0;
 }
 
+/**
+ * The worktrees of the repository of `root` (`git worktree list --porcelain`), the main one first:
+ * [{ path, branch, bare, detached, prunable }], branch without refs/heads/. Null when git cannot list them.
+ */
+export function worktrees(root) {
+  const res = git(root, ['worktree', 'list', '--porcelain'], { allowFail: true });
+  if (res.status !== 0) return null;
+  const list = [];
+  let cur = null;
+  for (const line of res.stdout.split(/\r?\n/)) {
+    if (line.startsWith('worktree ')) {
+      cur = { path: path.resolve(line.slice('worktree '.length)), branch: null, bare: false, detached: false, prunable: false };
+      list.push(cur);
+    } else if (!cur) continue;
+    else if (line.startsWith('branch ')) cur.branch = line.slice('branch '.length).replace(/^refs\/heads\//, '');
+    else if (line === 'bare') cur.bare = true;
+    else if (line === 'detached') cur.detached = true;
+    else if (line === 'prunable' || line.startsWith('prunable ')) cur.prunable = true;
+  }
+  return list;
+}
+
 export function commonDir(root) {
   const dir = git(root, ['rev-parse', '--git-common-dir']).stdout.trim();
   return path.resolve(root, dir);
