@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   AiwsError,
   EXIT_TEMPFAIL,
@@ -30,6 +31,7 @@ import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 import { notify, stopEvent } from './notify.js';
 import { issueViewArgs, fetchIssue, requirementFromIssue, issueLabel } from './issue.js';
 import { buildReport, renderHtml } from './report.js';
+import { buildBoard, renderBoard, boardServer, listenBoard, DEFAULT_PORT } from './board.js';
 import { pipelineSteps, pipelineText } from './pipeline.js';
 import { gateMenu, interactive } from './gatemenu.js';
 import { checkApiContract, runContractCommand } from './apicontract.js';
@@ -883,6 +885,56 @@ export function report(req, { out } = {}) {
   if (!out) G.excludeLocally(ws.root, '/aiws/work/*/report.html');
   writeText(file, html);
   log(`Report written: ${file}`);
+  return file;
+}
+
+/**
+ * `aiws board [--out FILE]`: one read-only HTML page over every requirement of aiws/work/ (default
+ * aiws/work/board.html), with each requirement's report written fresh beside it so the links work.
+ * `aiws board --serve [--port N]`: the same page served on 127.0.0.1, rendered again on every request.
+ */
+export async function board({ out, serve, port } = {}) {
+  const ws = Workspace.open();
+  ws.warnKitVersion();
+  if (serve) {
+    if (out !== undefined) throw new AiwsError('--out writes the board to a file; --serve serves it instead. Use one of them.');
+    const n = port === undefined ? DEFAULT_PORT : Number(port);
+    if (!Number.isInteger(n) || n < 1 || n > 65535) throw new AiwsError(`Invalid port '${port}': pass a number from 1 to 65535.`);
+    const server = boardServer(ws.root);
+    try {
+      await listenBoard(server, n);
+    } catch (e) {
+      if (e?.code === 'EADDRINUSE') {
+        throw new AiwsError(
+          `Port ${n} is in use (another \`aiws board --serve\`?). Pass another one: --port ${n === 65535 ? n - 1 : n + 1}.`
+        );
+      }
+      throw new AiwsError(`Cannot listen on 127.0.0.1:${n}: ${e?.message ?? e}`);
+    }
+    log(`Board at http://127.0.0.1:${n}/ (this computer only, read-only, refreshes every 10 s). Ctrl+C stops it.`);
+    return server;
+  }
+  if (port !== undefined) throw new AiwsError('--port goes with --serve.');
+  const file = out ? path.resolve(out) : path.join(ws.aiwsDir, 'work', 'board.html');
+  const data = buildBoard(ws);
+  // generated views: kept out of commits and of the clean-tree checks of the gates, like `aiws report`
+  if (G.isRepo(ws.root)) {
+    if (!out) G.excludeLocally(ws.root, '/aiws/work/board.html');
+    G.excludeLocally(ws.root, '/aiws/work/*/report.html');
+  }
+  const links = {};
+  for (const r of data.rows.filter((x) => x.state !== 'error')) {
+    const target = path.join(ws.workDir(r.req), 'report.html');
+    try {
+      writeText(target, renderHtml(buildReport(ws, loadState(ws, r.req))));
+    } catch {
+      continue; // the board still lists it, without a link
+    }
+    const rel = path.relative(path.dirname(file), target);
+    links[r.req] = path.isAbsolute(rel) ? pathToFileURL(target).href : encodeURI(rel.split(path.sep).join('/'));
+  }
+  writeText(file, renderBoard(data, { reportHref: (req) => links[req] ?? null }));
+  log(`Board written: ${file} (${data.rows.length} requirement(s); reports refreshed beside them)`);
   return file;
 }
 

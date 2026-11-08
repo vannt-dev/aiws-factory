@@ -132,7 +132,7 @@ function table(headers, rows) {
   return `<table><thead><tr>${head}</tr></thead><tbody>\n${body}\n</tbody></table>`;
 }
 
-const STYLE = `
+export const STYLE = `
   :root { --bg: #fff; --fg: #1a1a1a; --muted: #666; --line: #ddd; --ok: #1a7f37; --bad: #c0392b; --warn: #b26a00; --card: #f6f7f9; }
   @media (prefers-color-scheme: dark) { :root { --bg: #111417; --fg: #e6e6e6; --muted: #9a9a9a; --line: #333; --card: #1b1f24; } }
   body { font: 14px/1.5 system-ui, sans-serif; margin: 0 auto; max-width: 1100px; padding: 24px 16px; color: var(--fg); background: var(--bg); }

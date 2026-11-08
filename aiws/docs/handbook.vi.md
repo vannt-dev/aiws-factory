@@ -115,7 +115,7 @@ Lần chạy dừng với `phase=design_approval status=waiting_human`. Chưa c�
 
 Tài liệu nằm trong `aiws/work/REQ-001/`. Hãy đọc theo thứ tự này:
 
-`aiws report REQ-001` gom các tài liệu, trace và chi phí đến lúc đó vào một trang, `aiws/work/REQ-001/report.html`, nếu bạn muốn đọc trên trình duyệt.
+`aiws report REQ-001` gom các tài liệu, trace và chi phí đến lúc đó vào một trang, `aiws/work/REQ-001/report.html`, nếu bạn muốn đọc trên trình duyệt. `aiws board` (hoặc `aiws board --serve`) cho xem mọi requirement trên một trang, kèm thứ mỗi cái đang chờ.
 
 0. **`02-design-review.md`.** Trước khi tới tay bạn, một AI reviewer đã đối chiếu thiết kế với requirement, test spec và code. Finding `[critical]` đưa thiết kế về sửa, tối đa 3 vòng, nên bản bạn đọc đã qua review đó. Hãy đọc các finding `[major]` và `[minor]`: chúng để lại cho bạn. Nếu sau 3 vòng vẫn còn finding chặn, `aiws status` nói rõ và liệt kê chúng; bạn quyết duyệt, hay reject kèm ghi chú.
 1. **`02-design.md`, mục cuối "Quyết định cần duyệt".** Architect liệt kê mọi lựa chọn cần bạn cân nhắc, kèm các phương án nó đã loại. Những điều nó không tự kiểm chứng được mang nhãn `[CẦN XÁC NHẬN]`.
