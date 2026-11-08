@@ -47,6 +47,11 @@ Requirement lifecycle
   aiws prompt REQ-001 PHASE [--task T] print the prompt an agent would receive
   aiws report REQ-001 [--out FILE]     one HTML page: status, trace, tasks, approvals, runs, cost, documents
                                        (default aiws/work/REQ-001/report.html)
+  aiws board [--out FILE]              one read-only HTML page over every requirement: state, what waits for you
+                                       and the command to run, pull request, cost, time, last activity, with links
+                                       to the reports, refreshed beside it (default aiws/work/board.html)
+  aiws board --serve [--port N]        the same page live on http://127.0.0.1:4319 (or port N), this computer
+                                       only, rendered on every request and reloading every 10 s; Ctrl+C stops it
 
 Human-only (refuse to run inside an AI session; confirm interactively or pass --yes)
   aiws gate REQ-001                    the decision that waits, as a menu: approve, reject, answer, open the
@@ -96,6 +101,7 @@ const VALUE_FLAGS = new Set([
   '--profile',
   '--from',
   '--from-issue',
+  '--port',
 ]);
 
 export function parseArgs(argv) {
@@ -173,6 +179,9 @@ export async function main(argv) {
       return 0;
     case 'report':
       C.report(a1, { out: flags.out });
+      return 0;
+    case 'board':
+      await C.board({ out: flags.out, serve: Boolean(flags.serve), port: flags.port });
       return 0;
     case 'gate':
       await C.gate(a1);

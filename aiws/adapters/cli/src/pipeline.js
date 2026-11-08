@@ -81,7 +81,7 @@ export function pipelineText(steps) {
   });
 }
 
-const LABEL = {
+export const LABEL = {
   done: 'done',
   running: 'running now',
   paused: 'paused',

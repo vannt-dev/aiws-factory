@@ -115,7 +115,7 @@ The run stops with `phase=design_approval status=waiting_human`. Nothing is code
 
 The documents are in `aiws/work/REQ-001/`. Read them in this order:
 
-`aiws report REQ-001` puts the documents, the trace and the cost so far on one page, `aiws/work/REQ-001/report.html`, if you would rather read them in a browser.
+`aiws report REQ-001` puts the documents, the trace and the cost so far on one page, `aiws/work/REQ-001/report.html`, if you would rather read them in a browser. `aiws board` (or `aiws board --serve`) shows every requirement on one page, with what each waits for.
 
 0. **`02-design-review.md`.** Before you see the design, an AI reviewer has checked it against the requirement, the test specification and the code. A `[critical]` finding sent the design back to be fixed, up to 3 rounds, so what you read has passed that review. Read the `[major]` and `[minor]` findings: they are left for you. If blocking findings are still open after 3 rounds, `aiws status` says so and lists them; decide whether to approve, or reject with a note.
 1. **`02-design.md`, the last section, "Quyết định cần duyệt" (decisions to approve).** The architect lists every choice that needs your judgement, with the alternatives it rejected. Statements it could not verify are marked `[CẦN XÁC NHẬN]` ("to be confirmed").

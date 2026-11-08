@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+One page over every requirement, for the people who follow the work without a terminal.
+
+- `aiws board` writes `aiws/work/board.html` (or `--out FILE`): every requirement of `aiws/work/`, those
+  waiting on a person first, with what each waits for and the command to run (`aiws gate REQ-001`), then the
+  stopped ones with their reason, the paused, running, not started, done and abandoned ones. Each row has the
+  phase, a small pipeline strip, the tasks done, the pull request, AI runs, time, cost and last activity, and
+  links to the requirement's report, which it writes fresh beside it; totals per state and the total cost sit
+  at the top. One self-contained file: inline styles, no scripts, light and dark, every string escaped.
+- `aiws board --serve [--port N]` serves the same page on `http://127.0.0.1:4319`, rendered again on every
+  request and reloading every 10 seconds, with each report at `/REQ-001/report.html`. It listens on
+  127.0.0.1 only, answers only to 127.0.0.1 and localhost, serves nothing else and never reads a file named
+  by the URL; a busy port is reported with another to try.
+- The board is read-only on purpose: no approve or reject on the page, nothing changed; decisions stay in the
+  terminal, where an AI session cannot take them and no sign-in is needed. Like `aiws status` and `aiws
+  report`, an AI session may run it. Both generated files stay out of commits, like the report.
+
 ## [0.11.0] - 2026-10-29
 
 A requirement can start from a GitHub issue.

@@ -129,6 +129,9 @@ test('guard --bash: denylist incl. nested, path-prefixed and option-laden forms'
     'git status',
     'git diff',
     'aiws status REQ-001',
+    'aiws report REQ-001',
+    'aiws board',
+    'aiws board --serve --port 4320',
     'ls source-fe',
   ];
   for (const command of allowed) assert.equal(hook(root, { tool_name: 'Bash', tool_input: { command } }, phaseEnv).status, 0, command);
