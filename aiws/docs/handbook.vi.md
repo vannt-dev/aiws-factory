@@ -158,6 +158,7 @@ Có hai việc có thể xảy ra giữa chừng mà không cần bạn:
 
 - **Review có finding critical.** Quy trình tự quay về planning, thêm một task sửa, rồi review lại. Lần review thứ hai là review tiếp nối, chỉ đọc kỹ phần đã thay đổi. Trên demo việc này xảy ra một lần, khi developer làm đúng phương án mà design đã loại tường minh.
 - **Developer có câu hỏi.** Khi design sai hoặc thiếu, developer không tự chế: nó ghi `questions.md` và lần chạy dừng. Trả lời bằng `aiws answer REQ-001 -m "..."` để giữ design, hoặc `aiws redesign REQ-001 -m "..."` để quay lại phase design, khi đó phải duyệt lại.
+- **Chính requirement thay đổi.** Sau khi design đã duyệt, hoặc sau khi REQ đã xong, sửa `requirements/REQ-001-*.md` rồi chạy `aiws revise REQ-001 -m "lý do"`. Revision được ghi lại kèm commit giữ nội dung cũ, lần duyệt cũ không còn hiệu lực, analysis và design chạy lại với diff của nội dung; bạn duyệt design mới như trước. Lệnh liệt kê mọi thứ sinh ra từ nội dung cũ (tài liệu, task đã xong, pull request) để kiểm tra lại; nó không nói được thay đổi chạm vào phần nào. REQ đã xong được mở lại trên nhánh mới `aiws/REQ-001-r2`, tách từ nhánh gốc.
 
 ## 6. Gate pull request
 

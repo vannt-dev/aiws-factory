@@ -66,6 +66,14 @@ Human-only (refuse to run inside an AI session; confirm interactively or pass --
                                        file:line, unresolved threads only) to the planner, after -m if given
   aiws answer  REQ-001 -m ANSWER       answer blocking questions / a developer question (design unchanged)
   aiws redesign REQ-001 -m REASON      developer question needs a design change -> back to design
+  aiws revise  REQ-001 -m REASON [--sign]
+                                       the text of a requirement changed after its design was approved, or
+                                       after it was finished: edit requirements/REQ-001-*.md, then run this.
+                                       The revision is recorded (who, when, why, the commit of the earlier
+                                       text), the earlier approval no longer counts, analysis and design run
+                                       again and the design gate applies again; lists what was derived from
+                                       the earlier text and needs a re-check. A finished requirement is
+                                       reopened on a new branch aiws/REQ-001-r2. Refuses a draft
   aiws resume  REQ-001 [-m NOTE] [--budget USD]
                                        continue after a block you have fixed, or raise the cost budget
                                        (with --budget also ahead of time, while waiting at a gate before the PR)
@@ -199,6 +207,9 @@ export async function main(argv) {
       return 0;
     case 'redesign':
       await C.redesign(a1, human);
+      return 0;
+    case 'revise':
+      await C.revise(a1, human);
       return 0;
     case 'resume':
       await C.resume(a1, { ...human, budget: flags.budget });

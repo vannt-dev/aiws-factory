@@ -6,7 +6,7 @@ import { AiwsError, log, warn, nowIso, writeText, writeYaml, readTextIfExists, r
 import * as G from './git.js';
 import * as DS from './diffscope.js';
 import * as Lock from './lock.js';
-import { loadState, saveState, setPhase, addHistory, nextRunId, addFeedback, assertNotAbandoned } from './state.js';
+import { loadState, saveState, setPhase, addHistory, nextRunId, addFeedback, assertNotAbandoned, knowledgeBranch } from './state.js';
 import { writeScope, orchestratorPaths, matcher } from './scope.js';
 import { buildPrompt } from './prompt.js';
 import { validateOutputs, loadPlan } from './validate.js';
@@ -40,7 +40,7 @@ export function enterPhase(ws, st, id) {
   st.step_index = 0;
   if (id === 'done') {
     // the knowledge update was committed on its own branch, which the next requirement needs on the base
-    const kBranch = `aiws/${st.req_id}-knowledge`;
+    const kBranch = knowledgeBranch(st);
     const reason = G.branchExists(ws.root, kBranch)
       ? `knowledge updated on ${kBranch}: push it and merge it into ${st.base_branch ?? ws.baseBranch()} ` +
         '(a pull request), so the next requirement starts from it'
@@ -609,8 +609,21 @@ function phaseExtra(ws, st, def) {
       '## Existing tasks (re-plan)',
       'A plan already exists. Keep the id, allowed_files and tests of every DONE task that is unaffected, so it stays done.',
       'Change or add tasks (new ids) only for what the new design / feedback requires.',
+      ...(st.tasks.some((t) => t.before_revision)
+        ? [
+            'A task with `before_revision` was done for an earlier text of the requirement: keep it only when the new design leaves it as it is.',
+          ]
+        : []),
       '```yaml',
-      YAML.stringify(st.tasks.map((t) => ({ id: t.id, status: t.status, allowed_files: t.allowed_files, tests: t.tests }))).trim(),
+      YAML.stringify(
+        st.tasks.map((t) => ({
+          id: t.id,
+          status: t.status,
+          allowed_files: t.allowed_files,
+          tests: t.tests,
+          ...(t.before_revision ? { before_revision: t.before_revision } : {}),
+        }))
+      ).trim(),
       '```',
     ].join('\n');
   }
@@ -713,6 +726,8 @@ export function mergePlan(ws, st) {
     const prev = old.get(p.id);
     if (prev && prev.status === 'done' && sig(prev) === sig(task)) {
       Object.assign(task, { status: 'done', commit: prev.commit, test_result: prev.test_result });
+      // done for the text of an earlier revision of the requirement (`aiws revise`): kept, and still shown as such
+      if (prev.before_revision) task.before_revision = prev.before_revision;
     }
     return task;
   });
