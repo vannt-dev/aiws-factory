@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`approvals/design-NN.yaml` with decision `revised`), analysis and design run again with the diff of the
   text, and the design gate applies again. It lists what was derived from the earlier text for a re-check
   (documents, done tasks, pull request), as a whole. A finished requirement is reopened on a new branch
-  `aiws/REQ-001-r2`; a requirement whose design was never approved is refused.
+  `aiws/REQ-001-r2`; a requirement whose design was never approved is refused. A workspace with its own
+  copy of `.github/workflows/aiws-gates.yml` takes the new "Resolve requirement id" step, so the gates find
+  the requirement of an `aiws/REQ-001-r2` pull request.
 
 ## [0.13.0] - 2026-11-08
 

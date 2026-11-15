@@ -93,6 +93,12 @@ test('revise reopens an approved requirement: recorded, the approval no longer c
   assert.match(ok(root, ['status', 'REQ-001']).out, /revision: 2 \(opened by tuan at .*: unique nicknames; record design-02\.yaml\)/);
   assert.match(ok(root, ['status', 'REQ-001']).out, /done before revision 2, re-check/);
 
+  // the report shows the record as a decision that is not an approval; the board still renders
+  ok(root, ['report', 'REQ-001']);
+  assert.match(readFile(root, 'aiws/work/REQ-001/report.html'), /<span class="warn">revised<\/span>/);
+  ok(root, ['board']);
+  git(root, ['clean', '-fdq', 'aiws/work']);
+
   // the run starts over at the analysis, which is told what changed, and stops at the design gate
   ok(root, ['run', 'REQ-001']);
   st = state(root);
@@ -149,7 +155,7 @@ test('revise refuses a draft, an AI session and another branch', () => {
   let r = aiws(root, ['revise', 'REQ-001', '--yes', '-m', 'x']);
   assert.notEqual(r.status, 0);
   assert.match(r.out, /REQ-001 is still a draft: its design has not been approved/);
-  assert.match(r.out, /Edit requirements\/REQ-001-user-nickname\.md directly/);
+  assert.match(r.out, /Edit requirements\/REQ-001-user-nickname\.md and commit it/);
   assert.equal(state(root).revision, undefined);
   assert.ok(!fs.existsSync(path.join(root, 'aiws/work/REQ-001/approvals')));
   git(root, ['checkout', '--', REQUIREMENT]);

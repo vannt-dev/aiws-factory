@@ -828,7 +828,7 @@ export async function revise(req, opts = {}) {
   if (!approved) {
     throw new AiwsError(
       `${req} is still a draft: its design has not been approved, so there is no approval to reopen. ` +
-        `Edit ${file} directly; \`aiws revise\` is for a requirement that was approved or is finished.`
+        `Edit ${file} and commit it; \`aiws revise\` is for a requirement that was approved or is finished.`
     );
   }
   const finished = st.status === 'done';
