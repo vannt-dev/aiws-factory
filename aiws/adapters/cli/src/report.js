@@ -152,7 +152,7 @@ export const STYLE = `
 function statusClass(status) {
   if (['done', 'pass', 'ok', 'approved', 'merged'].includes(status)) return 'ok';
   if (['blocked', 'fail', 'failed', 'MISSING', 'rejected', 'changes_requested', 'critical_findings'].includes(status)) return 'bad';
-  if (['waiting_human', 'running', 'needs_human', 'usage_limit', 'question'].includes(status)) return 'warn';
+  if (['waiting_human', 'running', 'needs_human', 'usage_limit', 'question', 'revised'].includes(status)) return 'warn';
   return '';
 }
 

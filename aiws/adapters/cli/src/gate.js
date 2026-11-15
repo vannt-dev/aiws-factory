@@ -74,7 +74,7 @@ export function hashArtifacts(ws, req, artifacts) {
 }
 
 /** Writes approvals/<gate>-NN.yaml (never overwrites). Returns the repo-relative path. */
-export function recordApproval(ws, req, { gate, decision, by, notes, artifacts }) {
+export function recordApproval(ws, req, { gate, decision, by, notes, artifacts, extra }) {
   const existing = listApprovals(ws, req, gate);
   const nn = pad(existing.length + 1);
   const file = path.join(approvalsDir(ws, req), `${gate}-${nn}.yaml`);
@@ -82,6 +82,7 @@ export function recordApproval(ws, req, { gate, decision, by, notes, artifacts }
   const record = { gate, decision, by, at: nowIso() };
   if (artifacts) record.artifacts = artifacts;
   if (notes) record.notes = notes;
+  if (extra) Object.assign(record, extra);
   writeYaml(file, record);
   return ws.workRel(req, `approvals/${gate}-${nn}.yaml`);
 }

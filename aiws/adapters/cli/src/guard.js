@@ -37,12 +37,10 @@ export function resolveContext(ws, env = process.env) {
   const branch = currentBranch(ws.root);
   const m = /^aiws\/(REQ-[A-Za-z0-9_-]+?)(-knowledge)?$/.exec(branch ?? '');
   if (!m) return null;
-  let st;
-  try {
-    st = loadState(ws, m[1]);
-  } catch {
-    return null;
-  }
+  // aiws/REQ-001-r2 is the branch of revision 2 of REQ-001 (`aiws revise` on a finished requirement),
+  // unless a requirement named REQ-001-r2 exists
+  const st = safeState(ws, m[1]) ?? (/-r\d+$/.test(m[1]) ? safeState(ws, m[1].replace(/-r\d+$/, '')) : null);
+  if (!st) return null;
   const running = (st.tasks ?? []).find((t) => t.status === 'running');
   return { req: st.req_id, phase: st.phase, taskId: running?.id ?? null, source: 'branch', status: st.status, state: st };
 }

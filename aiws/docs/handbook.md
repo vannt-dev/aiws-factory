@@ -158,6 +158,7 @@ Two things can happen on the way without you:
 
 - **A critical review finding.** The workflow goes back to planning by itself, adds a fix task, and reviews again. The second review is a follow-up that reads in full only what changed. On the demo this happened once, when the developer built something the design had explicitly rejected.
 - **A question from the developer.** If the design is wrong or incomplete, the developer does not improvise: it writes `questions.md` and the run stops. Answer with `aiws answer REQ-001 -m "..."` to keep the design, or `aiws redesign REQ-001 -m "..."` to go back to the design phase, which then needs a new approval.
+- **The requirement itself changes.** After the design was approved, or after the requirement was finished, edit `requirements/REQ-001-*.md` and run `aiws revise REQ-001 -m "why"`. The revision is recorded with the commit that holds the earlier text, the earlier approval no longer counts, and analysis and design run again with the diff of the text; you approve the new design as before. The command lists everything derived from the earlier text (documents, done tasks, the pull request) for a re-check; it cannot say which of them the change touches. A finished requirement is reopened on a new branch `aiws/REQ-001-r2`, cut from the base branch.
 
 ## 6. The pull request gate
 

@@ -17,7 +17,17 @@ import {
 import { Workspace, KIT_DIR, KIT_AGENTS_MD, cliVersion, assertReqId, findRoot } from './workspace.js';
 import * as G from './git.js';
 import * as Lock from './lock.js';
-import { loadState, saveState, setPhase, addHistory, addFeedback, listReqs, statePath, assertNotAbandoned } from './state.js';
+import {
+  loadState,
+  saveState,
+  setPhase,
+  addHistory,
+  addFeedback,
+  listReqs,
+  statePath,
+  assertNotAbandoned,
+  knowledgeBranch,
+} from './state.js';
 import { enterPhase, runReq, runDiscover, changesSince, budgetStatus } from './engine.js';
 import YAML from 'yaml';
 import { detectStacks, reportText } from './stacks.js';
@@ -459,6 +469,8 @@ export function status(req) {
     const st = loadState(ws, r);
     log(`${st.req_id}  ${st.title}`);
     log(`  branch: ${st.branch}   phase: ${st.phase}   status: ${st.status}${st.profile ? `   profile: ${st.profile}` : ''}`);
+    const revised = st.revision ? st.history.findLast((h) => h.result === 'revised') : null;
+    if (revised) log(`  revision: ${st.revision} (opened by ${revised.by} at ${revised.at}: ${revised.reason}; record ${revised.record})`);
     if (st.reason) log(`  reason: ${st.reason}`);
     if (st.pr_url) log(`  pull request: ${st.pr_url}`);
     for (const [sub, s] of Object.entries(st.submodules ?? {})) {
@@ -478,6 +490,7 @@ export function status(req) {
           t.commit && `commit ${t.commit.slice(0, 7)}`,
           t.attempts && `attempts ${t.attempts}`,
           t.test_result && `tests ${t.test_result}`,
+          t.before_revision && `done before revision ${t.before_revision}, re-check`,
         ]
           .filter(Boolean)
           .join(', ');
@@ -588,7 +601,7 @@ function approvePr(req, opts) {
 
   // The knowledge update happens on its own branch cut from the merged base. The base itself is never
   // checked out here, so this also works when it is checked out in another worktree.
-  const kBranch = `aiws/${req}-knowledge`;
+  const kBranch = knowledgeBranch(st);
   G.git(ws.root, ['switch', '-q', '-c', kBranch, base]);
   // `git switch` moves the gitlinks but not the submodules: check out what the merged base records
   for (const sub of Object.keys(st.submodules ?? {})) checkoutGitlink(ws, sub);
@@ -766,6 +779,192 @@ export async function redesign(req, opts = {}) {
   saveState(ws, st);
   G.commit(ws.root, `chore(${req}): design change requested by ${by}\n\nREQ-ID: ${req}\n`, [ws.workRel(req)]);
   log(`Back to ${st.phase}; the new design must be approved again. Next: aiws run ${req}`);
+}
+
+// Documents of a requirement that are derived from its text, in the order they are written.
+const DERIVED_DOCUMENTS = [
+  '01-analysis.md',
+  '02-design.md',
+  '03-test-spec.md',
+  'api-contract.yaml',
+  '02-design-review.md',
+  '04-plan.yaml',
+  '05-review.md',
+  'trace.md',
+];
+const REVISION_DIFF_MAX = 4000;
+
+/**
+ * What was derived from the text of the requirement and exists now: the documents of its work folder, the
+ * tasks that are done and the pull request. Coarse on purpose: nothing links a line of the requirement to an
+ * acceptance criterion (and AC ids are renumbered by a new analysis), so which of them a change touches
+ * cannot be told from the data; all of them are listed for a re-check.
+ */
+function derivedFromRequirement(ws, st) {
+  const req = st.req_id;
+  return {
+    documents: DERIVED_DOCUMENTS.filter((d) => fs.existsSync(ws.abs(ws.workRel(req, d)))),
+    tasks: st.tasks.filter((t) => t.status === 'done'),
+    pullRequest: st.pr_url ?? null,
+  };
+}
+
+/**
+ * `aiws revise REQ -m REASON`: the text of a requirement whose design was approved (work under way or
+ * finished) has changed. A human edits requirements/REQ-*.md first, then runs this. It
+ *  - records revision N: who, when, why, and the commit that holds the text the approval covered;
+ *  - writes approvals/design-NN.yaml with decision `revised`, so the earlier approval no longer counts
+ *    (the same check that catches a design changed after approval) and the design gate applies again;
+ *  - sends the requirement back to the first phase with the diff of the text as feedback;
+ *  - lists what was derived from the earlier text and needs a re-check.
+ * A finished requirement is reopened on a new branch aiws/REQ-rN cut from the base branch.
+ */
+export async function revise(req, opts = {}) {
+  if (!opts.message) throw new AiwsError('revise needs the reason: -m "what changed and why"');
+  await requireHuman('revise', req, opts);
+  const { ws, st } = openForHuman(req);
+  const file = st.requirement;
+  const approved = listApprovals(ws, req, 'design').findLast((a) => a.decision === 'approved');
+  if (!approved) {
+    throw new AiwsError(
+      `${req} is still a draft: its design has not been approved, so there is no approval to reopen. ` +
+        `Edit ${file} and commit it; \`aiws revise\` is for a requirement that was approved or is finished.`
+    );
+  }
+  const finished = st.status === 'done';
+  if (!finished && (st.branch ?? '').endsWith('-knowledge')) {
+    throw new AiwsError(`${req} is in its knowledge update. Finish it first (\`aiws run ${req}\`), then revise.`);
+  }
+  const current = G.currentBranch(ws.root);
+  const base = st.base_branch ?? ws.baseBranch();
+  const n = (st.revision ?? 1) + 1;
+  const branch = finished ? `aiws/${req}-r${n}` : st.branch;
+  if (finished) {
+    if (current !== base) {
+      throw new AiwsError(
+        `${req} is finished. Revise it from its base branch ${base}, with its pull requests merged ` +
+          `(you are on ${current}): \`git switch ${base}\`.`
+      );
+    }
+    if (Object.keys(st.submodules ?? {}).length) {
+      throw new AiwsError(
+        `${req} is finished and worked in submodules (${Object.keys(st.submodules).join(', ')}); reopening those is not supported. ` +
+          'Write the change as a new requirement.'
+      );
+    }
+    if (G.branchExists(ws.root, branch)) throw new AiwsError(`Branch ${branch} already exists.`);
+  } else if (current !== st.branch) {
+    throw new AiwsError(`${req} runs on branch ${st.branch} but you are on ${current}. Run \`git switch ${st.branch}\`.`);
+  }
+  if (!fs.existsSync(ws.abs(file))) throw new AiwsError(`Requirement file ${file} not found.`);
+  const isOwn = matcher([file, `${ws.workRel(req)}/**`]);
+  const stray = G.dirtyFiles(ws.root).filter((f) => !isOwn(f));
+  if (stray.length) {
+    throw new AiwsError(`Working tree has changes other than ${file}:\n  ${stray.join('\n  ')}\nCommit, stash or discard them first.`);
+  }
+
+  // the text the approval covered: the requirement file as of the commit that added the approval record
+  const recordRel = ws.workRel(req, `approvals/${approved.name}`);
+  const approvedIn = G.git(ws.root, ['log', '-1', '--diff-filter=A', '--format=%H', '--', recordRel], { allowFail: true }).stdout.trim();
+  if (!approvedIn) throw new AiwsError(`Cannot find the commit of ${recordRel}, so the approved text of ${file} is unknown.`);
+  if (G.git(ws.root, ['diff', '--quiet', approvedIn, '--', file], { allowFail: true }).status === 0) {
+    throw new AiwsError(
+      `${file} is the text that ${approved.name} approved (commit ${approvedIn.slice(0, 7)}). ` +
+        `Edit the file first, then run \`aiws revise ${req} -m "..."\`.`
+    );
+  }
+  const diff = G.git(ws.root, ['diff', approvedIn, '--', file], { allowFail: true }).stdout.trim();
+  const derived = derivedFromRequirement(ws, st);
+
+  const by = currentUser(ws.root);
+  const from = st.phase;
+  if (finished) {
+    G.git(ws.root, ['switch', '-q', '-c', branch]);
+    st.branch = branch;
+    st.base_branch = base;
+    st.base_commit = G.head(ws.root);
+    delete st.pr_url;
+    delete st.code_head;
+  }
+  const record = recordApproval(ws, req, {
+    gate: 'design',
+    decision: 'revised',
+    by,
+    notes: opts.message,
+    extra: { revision: n, supersedes: approved.name, requirement: { file, approved_in: approvedIn } },
+  });
+  st.revision = n;
+  for (const t of st.tasks) {
+    if (t.status === 'running') t.status = 'pending';
+    else if (t.status === 'done') t.before_revision = n;
+  }
+  st.attempts = {};
+  st.last_failure = {};
+  for (const k of ['blocked_by', 'paused', 'interrupted', 'rounds', 'last_review']) delete st[k];
+
+  const shown = diff.length > REVISION_DIFF_MAX ? `${diff.slice(0, REVISION_DIFF_MAX)}\n... (cut; read ${file} in full)` : diff;
+  const what = [
+    `Revision ${n} of the requirement, opened by ${by}: ${opts.message}`,
+    `${file} changed after the design approval ${approved.name}. The change, against the approved text:`,
+    '```diff',
+    shown,
+    '```',
+  ].join('\n');
+  const first = ws.workflow.phases[0].id;
+  const ask = {
+    [first]: 'Bring the analysis in line with the new text; keep what the change does not touch.',
+    design:
+      'Bring the design, the API contract and the test spec in line with the revised requirement and its analysis; ' +
+      'keep what the change does not touch.',
+    planning:
+      'Tasks done before this revision were built for the earlier text: keep those the new design leaves as they are, ' +
+      'and add tasks (new ids) for what changed.',
+  };
+  for (const [phase, text] of Object.entries(ask)) {
+    if (ws.workflow.phases.some((p) => p.id === phase)) addFeedback(st, phase, `requirement revised by ${by}`, `${what}\n${text}`);
+  }
+  addHistory(st, {
+    phase: from,
+    result: 'revised',
+    by,
+    revision: n,
+    reason: opts.message,
+    record: path.basename(record),
+    supersedes: approved.name,
+    approved_text: `${approvedIn}:${file}`,
+    recheck: {
+      documents: derived.documents,
+      tasks: derived.tasks.map((t) => t.id),
+      ...(derived.pullRequest ? { pull_request: derived.pullRequest } : {}),
+    },
+    ...(finished ? { branch } : {}),
+  });
+  enterPhase(ws, st, first);
+  saveState(ws, st);
+  G.commit(
+    ws.root,
+    `chore(${req}): requirement revised by ${by} (revision ${n})\n\nREQ-ID: ${req}\nAIWS-Approval: ${record}\n`,
+    [ws.workRel(req), file],
+    { sign: opts.sign }
+  );
+
+  const short = approvedIn.slice(0, 7);
+  log(`${req} revision ${n} opened by ${by} (${record}). The approval ${approved.name} covered the earlier text and no longer counts.`);
+  log(`  earlier text: git show ${short}:${file}`);
+  log(`  what changed: git diff ${short} HEAD -- ${file}`);
+  if (finished) log(`  reopened on the new branch ${branch} (from ${base} @ ${st.base_commit.slice(0, 7)})`);
+  log('Derived from the earlier text, to re-check. aiws keeps no link from a line of the requirement to an');
+  log('acceptance criterion, so it cannot tell which of these the change touches; all of them are listed:');
+  if (derived.documents.length) log(`  documents: ${derived.documents.join(', ')}`);
+  for (const t of derived.tasks) {
+    const extra = [t.commit && `commit ${t.commit.slice(0, 7)}`, t.tests?.length && `tests ${t.tests.join(', ')}`]
+      .filter(Boolean)
+      .join(', ');
+    log(`  task ${t.id} (done) ${t.title ?? ''}${extra ? `  (${extra})` : ''}`);
+  }
+  if (derived.pullRequest) log(`  pull request: ${derived.pullRequest}`);
+  if (finished) log('  the code merged for the earlier text');
+  log(`Next: aiws run ${req} (analysis and design run again; the new design needs \`aiws approve ${req} design\`)`);
 }
 
 /**

@@ -11,6 +11,15 @@ export function assertNotAbandoned(st) {
   }
 }
 
+/**
+ * The branch of the knowledge update that follows the merged pull request. A requirement reopened by
+ * `aiws revise` works on aiws/REQ-001-r2, so its knowledge update gets a branch of its own too.
+ */
+export function knowledgeBranch(st) {
+  const branch = st.branch ?? `aiws/${st.req_id}`;
+  return branch.endsWith('-knowledge') ? branch : `${branch}-knowledge`;
+}
+
 export function statePath(ws, req) {
   return path.join(ws.workDir(req), 'state.yaml');
 }

@@ -38,7 +38,10 @@ jobs:
       - name: Resolve requirement id
         run: |
           req="${HEAD_REF#aiws/}"
-          echo "REQ=${req%-knowledge}" >> "$GITHUB_ENV"
+          req="${req%-knowledge}"
+          # aiws/REQ-001-r2 is revision 2 of REQ-001 (`aiws revise` on a finished requirement)
+          if [ ! -f "aiws/work/$req/state.yaml" ]; then req="$(printf '%s' "$req" | sed -E 's/-r[0-9]+$//')"; fi
+          echo "REQ=$req" >> "$GITHUB_ENV"
       - name: Commit trailers
         run: node aiws/adapters/cli/bin/aiws.js check commit-trailer --req "$REQ"
       - name: Approvals
