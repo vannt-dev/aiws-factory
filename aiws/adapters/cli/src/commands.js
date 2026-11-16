@@ -328,6 +328,10 @@ REQ-ID: ${req}
   log(
     `${req} created on branch ${branch} (base ${baseBranch} @ ${baseCommit.slice(0, 7)})${profile ? ` on profile ${profile}` : ''}. Next: aiws run ${req}`
   );
+  // said now, not at the first run: the run would only stop at its first phase
+  for (const p of (ws.workflow.prerequisites ?? []).filter((f) => !fs.existsSync(ws.abs(f)))) {
+    warn(`${p} is missing: run \`aiws discover\` before \`aiws run ${req}\`, or the run stops at ${ws.workflow.phases[0].id}.`);
+  }
 }
 
 /**

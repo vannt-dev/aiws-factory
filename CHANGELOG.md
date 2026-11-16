@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- `aiws new` says at once when a prerequisite (`aiws/knowledge/system-map.md`, built by `aiws discover`) is
+  missing, instead of the first run stopping at analysis. A run blocked on missing prerequisites goes on by
+  itself once the files exist, with an `unblocked` line in the history; it no longer needs `aiws resume`.
 - `review_gate: reviewproof` in `workflow.yaml` (off by default): `aiws approve REQ-001 pr` asks for a
   reviewproof round of the pull request whose last round reviewed the head of the requirement branch and
   ended with verdict pass; otherwise it refuses and records nothing. The round goes into the history.
