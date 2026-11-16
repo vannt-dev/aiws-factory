@@ -3,6 +3,10 @@
 version: 1
 name: software-project-mvp
 base_branch: main
+# Review bên ngoài mà `aiws approve REQ pr` đòi trước khi ghi nhận merge (mặc định: không có).
+# reviewproof: vòng review cuối của pull request (ledger trong REVIEWPROOF_HOME, mặc định ~/.reviewproof)
+# phải review đúng head của nhánh REQ và có verdict pass. Cần pull_request trong runtime.yaml để aiws biết URL.
+# review_gate: reviewproof
 # Ngôn ngữ của tài liệu đầu ra (analysis, design, test spec, review, knowledge): vi hoặc en.
 # en dùng template trong aiws/templates/en/ và heading tiếng Anh (required_headings_en trong contracts).
 language: vi
