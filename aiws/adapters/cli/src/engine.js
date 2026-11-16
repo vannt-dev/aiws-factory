@@ -199,6 +199,23 @@ function pauseOnUsageLimit(ws, st, r, entry) {
 
 // ---------------------------------------------------------------- run loop
 
+/**
+ * A block for missing prerequisites (the knowledge `aiws discover` builds) is not a decision: once the files
+ * exist, the run goes on by itself, with a line in the history. Every other block stays for a person.
+ */
+function liftPrerequisitesBlock(ws, st) {
+  const mechanical = st.blocked_by === 'prerequisites' || /^missing prerequisites /.test(st.reason ?? '');
+  if (st.status !== 'blocked' || !mechanical) return st;
+  const missing = (ws.workflow.prerequisites ?? []).filter((p) => !fs.existsSync(ws.abs(p)));
+  if (missing.length) return st;
+  delete st.blocked_by;
+  addHistory(st, { phase: st.phase, result: 'unblocked', reason: 'prerequisites present' });
+  setPhase(st, st.phase, 'running');
+  commitWork(ws, st, `chore(${st.req_id}): prerequisites present, unblocked`);
+  log(`[${st.req_id}] prerequisites are present now: ${st.req_id} continues at ${st.phase}.`);
+  return st;
+}
+
 /** Runs a REQ until the next human gate, a block, or done. Returns the final state. */
 export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
   let st = loadState(ws, req);
@@ -212,6 +229,7 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
     );
   }
   Lock.takeStop(ws.root, req); // a stop request left over from an earlier run does not apply to this one
+  st = liftPrerequisitesBlock(ws, st);
   if (st.paused) {
     // the pause of an earlier run ends with this one
     delete st.paused;
@@ -462,6 +480,7 @@ function stepAgentPhase(ws, st, def) {
   if (def.id === ws.workflow.phases[0].id) {
     const missing = (ws.workflow.prerequisites ?? []).filter((p) => !fs.existsSync(ws.abs(p)));
     if (missing.length) {
+      st.blocked_by = 'prerequisites'; // mechanical: the next run lifts it once the files exist
       setPhase(st, def.id, 'blocked', `missing prerequisites ${missing.join(', ')}; run \`aiws discover\` first`);
       commitWork(ws, st, `chore(${req}): blocked on prerequisites`);
       return;
