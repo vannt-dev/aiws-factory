@@ -107,6 +107,11 @@ phase_write_scope:
 #                    NestJS/Express/Fastify/Spring; mỗi operation code chưa phục vụ = finding critical. Lệnh khác
 #                    cũng được: exit code != 0 = finding)
 #   api_contract_fe: "<sinh client/type từ contract rồi build FE>"          (tuỳ chọn, chạy ở review)
+#   api_contract_run: "npx --yes -p openapi-postman-test-generator@0 openapi-postman generate --spec aiws/work/{req}/api-contract.yaml --out aiws/work/{req}/evidence/api-run/collection.json --env aiws/work/{req}/evidence/api-run/environment.json --base-url http://localhost:3000 --safe --run --report-dir aiws/work/{req}/evidence/api-run"
+#                    (tuỳ chọn, chạy ở review: sinh Postman collection từ contract rồi chạy với BE ĐANG CHẠY ở
+#                    --base-url; request lỗi, status hay schema sai = finding critical. Báo cáo (report.html,
+#                    junit.xml, newman.json) nằm trong evidence/api-run và được commit cùng review. BE phải được bật
+#                    trước `aiws run`; `aiws check api-contract` trong CI không chạy lệnh này)
 commands: {}
 
 # Tiền tố lệnh Bash developer được chạy thêm (ngoài lệnh build/test ở trên) khi chạy headless.

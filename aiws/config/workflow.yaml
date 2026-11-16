@@ -76,6 +76,7 @@ phases:
       - {builtin: api_contract}    # mọi path/method của api-contract.yaml phải có trong OpenAPI của BE (nếu BE có)
       - {command: api_contract_be, optional: true}   # route trong code BE phục vụ mọi operation của contract (vd. openapi-drift; aiws detect đề xuất)
       - {command: api_contract_fe, optional: true}
+      - {command: api_contract_run, optional: true}  # chạy contract với BE đang chạy (vd. openapi-postman), exit != 0 = finding
     on_critical: planning          # planner thêm task sửa lỗi
     next: pr_approval
 
