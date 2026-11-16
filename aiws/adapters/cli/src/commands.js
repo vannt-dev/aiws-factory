@@ -41,6 +41,7 @@ import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 import { notify, stopEvent } from './notify.js';
 import { issueViewArgs, fetchIssue, requirementFromIssue, issueLabel, slug } from './issue.js';
 import { readDocument, requirementFromDoc } from './docreq.js';
+import { checkReviewGate } from './reviewgate.js';
 import { buildReport, renderHtml } from './report.js';
 import { buildBoard, renderBoard, boardServer, listenBoard, DEFAULT_PORT } from './board.js';
 import { pipelineSteps, pipelineText } from './pipeline.js';
@@ -632,6 +633,10 @@ function approvePr(req, opts) {
   const branchHead = G.revParse(ws.root, st.branch);
   const base = st.base_branch ?? ws.baseBranch();
   if (!branchHead) throw new AiwsError(`Branch ${st.branch} not found.`);
+  // the outside review of the head, before anything is fetched or recorded
+  const remoteHead = G.revParse(ws.root, `${ws.runtime.pull_request?.remote ?? 'origin'}/${st.branch}`);
+  const review = checkReviewGate(ws, st, { branch: st.branch, heads: [branchHead, remoteHead].filter(Boolean) });
+  if (review) log(`reviewproof: ${review.detail}`);
   if (opts.mergeCheck !== false) {
     // the pull request was merged on the host: bring the local base up to it when that is a fast-forward
     // (a base with local commits of its own is left alone, as are submodules, which are fetched below)
@@ -667,7 +672,15 @@ function approvePr(req, opts) {
   const file = recordApproval(ws, req, { gate: 'pr', decision: 'merged', by, notes: opts.message, artifacts: undefined });
   st.code_head = branchHead;
   st.branch = kBranch;
-  addHistory(st, { phase: def.id, result: 'merged', by, record: path.basename(file), head: branchHead.slice(0, 7), merge: merged });
+  addHistory(st, {
+    phase: def.id,
+    result: 'merged',
+    by,
+    record: path.basename(file),
+    head: branchHead.slice(0, 7),
+    merge: merged,
+    ...(review ? { review: review.line } : {}),
+  });
   if (def.release_lock) Lock.release(ws.root, req, { force: true });
   enterPhase(ws, st, def.on_approve);
   saveState(ws, st);

@@ -51,6 +51,9 @@ configuration that people own and refuses to run inside an AI session.
    }
    ```
 
+5. Set `review_gate: reviewproof` in `aiws/config/workflow.yaml`: `aiws approve REQ-001 pr` then refuses until the
+   last reviewproof round of the pull request reviewed the head of `aiws/REQ-001` and ended with verdict `pass`.
+
 ## 1. A lane slot for the requirement
 
 ```bash
@@ -130,7 +133,7 @@ Each gap was met in the run above. The workaround is in the steps; the last colu
 | #   | Gap                                                                                                      | Glue that would remove it                                                                                 |
 | --- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | 1   | ~~`aiws new` takes lane's local task branch as the pull request base~~                                   | Done: a branch without an upstream is not taken as the base; `aiws new --base BRANCH`                     |
-| 2   | Two review records that do not know each other: `05-review.md` (no tests run) and the reviewproof ledger | `review_gate: reviewproof` in aiws: `approve pr` asks for a reviewproof verdict `pass` at the merged head |
+| 2   | ~~Two review records that do not know each other: `05-review.md` (no tests run) and the reviewproof ledger~~ | Done: `review_gate: reviewproof` in `workflow.yaml`; `approve pr` asks for verdict `pass` at the head |
 | 3   | `approve pr` cannot update `main` from a lane slot, and the failed fetch is silent                       | compare with `origin/<base>` when the local base cannot be updated, and say so                            |
 | 4   | `lane new --pr` fails while the dev slot holds the branch                                                | lane checks the pull request's head out detached when another lane holds its branch                       |
 | 5   | reviewproof coverage counts the aiws run records                                                         | `aiws init` writes the `skip` list above; reviewproof groups skipped files by pattern in the note         |
