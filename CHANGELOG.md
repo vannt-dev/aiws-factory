@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.14.0] - 2026-11-15
+## [0.14.0] - 2026-11-16
 
 - `aiws revise REQ-001 -m REASON` (human-only): change the text of a requirement whose design was approved,
   or that is finished. Edit `requirements/REQ-001-*.md`, then run it: the revision is recorded (who, when,
