@@ -29,13 +29,15 @@ Setup
                                        knowledge commit), and skips the AI run when nothing changed
 
 Requirement lifecycle
-  aiws new REQ-001 [--worktree PATH] [--profile NAME] [--from-issue N|URL]
+  aiws new REQ-001 [--worktree PATH] [--profile NAME] [--from-issue N|URL | --from-doc FILE]
                                        create aiws/work/REQ-001 and branch aiws/REQ-001; --profile runs it on
                                        aiws/config/workflow.NAME.yaml ("small": one design step, no separate
                                        test designer); --from-issue first writes requirements/REQ-001-*.md from
                                        a GitHub issue (12, owner/repo#12 or its URL; read with gh: title,
                                        a link back, labels, body) and commits it on the current branch;
-                                       --from-issue is human-only: it refuses inside an AI session
+                                       --from-doc writes it from a Word/PDF/Excel/PowerPoint/HTML document
+                                       read with document-reader (installed separately; Python 3);
+                                       both are human-only: they refuse inside an AI session
   aiws run REQ-001 [--once] [--wait[=MIN]]
                                        run phases until the next human gate / block / done; exit 75 when the
                                        AI usage limit paused it (run it again once the limit resets, or let
@@ -66,7 +68,7 @@ Human-only (refuse to run inside an AI session; confirm interactively or pass --
                                        file:line, unresolved threads only) to the planner, after -m if given
   aiws answer  REQ-001 -m ANSWER       answer blocking questions / a developer question (design unchanged)
   aiws redesign REQ-001 -m REASON      developer question needs a design change -> back to design
-  aiws revise  REQ-001 -m REASON [--sign]
+  aiws revise  REQ-001 -m REASON [--sign] [--from-doc FILE]
                                        the text of a requirement changed after its design was approved, or
                                        after it was finished: edit requirements/REQ-001-*.md, then run this.
                                        The revision is recorded (who, when, why, the commit of the earlier
@@ -111,6 +113,7 @@ const VALUE_FLAGS = new Set([
   '--profile',
   '--from',
   '--from-issue',
+  '--from-doc',
   '--port',
 ]);
 
@@ -167,7 +170,7 @@ export async function main(argv) {
       C.detect({ write: Boolean(flags.write), force: Boolean(flags.force) });
       return 0;
     case 'new':
-      C.newReq(a1, { worktree: flags.worktree, profile: flags.profile, fromIssue: flags['from-issue'] });
+      C.newReq(a1, { worktree: flags.worktree, profile: flags.profile, fromIssue: flags['from-issue'], fromDoc: flags['from-doc'] });
       return 0;
     case 'run':
       await C.run(a1, { once: Boolean(flags.once), wait: flags.wait, menu: !flags['no-menu'] });
@@ -209,7 +212,7 @@ export async function main(argv) {
       await C.redesign(a1, human);
       return 0;
     case 'revise':
-      await C.revise(a1, human);
+      await C.revise(a1, { ...human, fromDoc: flags['from-doc'] });
       return 0;
     case 'resume':
       await C.resume(a1, { ...human, budget: flags.budget });

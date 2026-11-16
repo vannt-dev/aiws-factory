@@ -79,6 +79,11 @@ claude:
 # Mở pull request nháp khi tới gate PR: orchestrator push nhánh lên `remote` rồi chạy `command`
 # ({branch}, {base}, {title}, {body_file} được điền). URL cuối cùng lệnh in ra được ghi vào state.
 # Lỗi (push hay lệnh) chỉ được báo; gate giữ nguyên và người tự mở pull request như trước.
+# Đọc requirement từ Word/PDF/Excel (`aiws new --from-doc`, `aiws revise --from-doc`) bằng document-reader
+# (https://github.com/vannt-dev/document-reader-skill-ai). Mặc định tìm ở ~/.agents|.claude|.gemini/skills/document-reader
+# và dùng python3/python trên PATH.
+# document_reader: {path: ~/tools/document-reader-skill, python: ~/tools/document-reader-skill/venv/bin/python}
+
 # pull_request:
 #   remote: origin
 #   command: 'gh pr create --draft --base "{base}" --head "{branch}" --title "{title}" --body-file "{body_file}"'
