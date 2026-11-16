@@ -18,6 +18,7 @@ Setup
   aiws detect [--write] [--force]      recognise the stack of each source-* dir (any language) and propose
                                        sides + build/test commands (and the optional api_contract_be for
                                        NestJS/Express/Fastify/Spring); --write merges them into policies.yaml
+                                       (--write is human-only, see below)
   aiws sync <claude|codex|opencode|antigravity>
                                        generate what the tool reads of a project from aiws/: its agents, the skills
                                        and the guard hook (claude: CLAUDE.md + .claude/; codex: .codex/, no hook;
@@ -85,6 +86,8 @@ Human-only (refuse to run inside an AI session; confirm interactively or pass --
   aiws abandon REQ-001 -m REASON       drop a requirement that will not be finished: recorded with the reason,
                                        its source lock released, its branch and work kept; nothing runs it again
   aiws unlock                          release a stale source lock
+  aiws detect --write [--force]        merge the detected sides and commands into policies.yaml (configuration
+                                       people own; no confirmation asked, but refused inside an AI session)
 
 Checks (for CI and debugging)
   aiws trace REQ-001                   AC -> TC -> task -> commit -> test matrix (exit 1 on gaps)

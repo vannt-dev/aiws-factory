@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- `aiws --help` lists `aiws detect --write` under Human-only (it refuses inside an AI session). `aiws sync
+  claude` says when the guard hook it writes will call an `aiws` of another version from PATH, or none, as
+  `aiws run` already did before starting the agents.
 - `review_gate: reviewproof` in `workflow.yaml` (off by default): `aiws approve REQ-001 pr` asks for a
   reviewproof round of the pull request whose last round reviewed the head of the requirement branch and
   ended with verdict pass; otherwise it refuses and records nothing. The round goes into the history.

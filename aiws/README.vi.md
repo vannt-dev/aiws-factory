@@ -123,7 +123,7 @@ Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lện
 | Sửa design sau khi đã duyệt | tự quay về `design_approval` | duyệt lại |
 | AI hết giới hạn sử dụng | giữ nguyên phase, vẫn `running` | không cần duyệt gì: chạy lại `aiws run REQ-001` khi giới hạn được đặt lại, hoặc `aiws run REQ-001 --wait` để tự chạy lại mỗi 15 phút |
 
-Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `revise`, `resume`, `abandon`, `unlock`) **từ chối chạy trong phiên AI** và đòi gõ lại mã REQ để xác nhận. Trong script CI thì truyền `--yes`.
+Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `revise`, `resume`, `abandon`, `unlock`) **từ chối chạy trong phiên AI** và đòi gõ lại mã REQ để xác nhận. Trong script CI thì truyền `--yes`. `aiws detect --write` (và `aiws new --from-issue` / `--from-doc`) cũng từ chối chạy trong phiên AI: chúng ghi cấu hình hoặc requirement, là phần của người. Chạy từng lệnh một trong terminal: gọi từ script thì rất dễ bỏ sót dòng hỏi xác nhận.
 
 **Quyết định bằng menu.** Khi `aiws run` dừng ở một gate trong terminal của bạn, nó hiện những gì đang chờ và một menu: duyệt, từ chối (gõ điều cần đổi), trả lời câu hỏi, mở report, hoặc để sau. Chọn bằng phím mũi tên hoặc số rồi Enter; chọn là xác nhận, nên không phải gõ lại mã REQ. `aiws gate REQ-001` mở lại menu đó sau, còn `aiws run --no-menu` thì bỏ qua menu. Ở gate design, menu cho xem chi phí đến lúc đó, các finding còn mở của design review và mục "Quyết định cần duyệt" của design; ở gate PR là các task đã xong, finding còn mở của review và pull request, và khi đã có pull request thì menu còn cho yêu cầu sửa bằng chính các comment review của nó (`--from-pr`, bên dưới). Menu cần terminal và từ chối chạy trong phiên AI, như các lệnh.
 

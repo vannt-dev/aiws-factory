@@ -140,5 +140,5 @@ Each gap was met in the run above. The workaround is in the steps; the last colu
 | 6   | A missing `aiws discover` is found at `run`, and its block needs `aiws resume`                           | `aiws new` warns at once; `aiws run` clears a prerequisites block once the files exist                    |
 | 7   | The knowledge update needs a second pull request after the requirement is `done`                         | aiws opens it through `pull_request`, as it does the first one                                            |
 | 8   | lane leaves its unused task branches (`REQ-001`, `review-pr1`) in the main clone                         | `lane done` deletes a task branch that has no commits                                                     |
-| 9   | `detect --write` refuses in an AI session but is not listed under "Human-only" in `aiws --help`          | list it there                                                                                             |
-| 10  | The guard hook runs the `aiws` first on `PATH`, which can be another version than the one running        | pin the guard to the CLI that wrote it, or warn on a version mismatch                                     |
+| 9   | ~~`detect --write` refuses in an AI session but is not listed under "Human-only" in `aiws --help`~~ | Done: listed under Human-only in `aiws --help` and the README |
+| 10  | ~~The guard hook runs the `aiws` first on `PATH`, which can be another version than the one running~~ | Done: `aiws sync claude` and `aiws run` say when the `aiws` of PATH is another version |
