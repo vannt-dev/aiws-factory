@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `commands.api_contract_run` (optional, review phase): run the requirement's `api-contract.yaml` against the
   running backend, for example with openapi-postman-test-generator (example in `policies.yaml`). A failed
   request, status or schema is a critical finding; the reports are committed under `evidence/api-run/`.
+- `aiws new REQ-001 --from-doc spec.docx` (human-only): write the requirement from a Word, PDF, Excel,
+  PowerPoint, HTML, text or CSV document read with document-reader (installed separately), commit it and
+  start the requirement. `aiws revise REQ-001 --from-doc spec-v2.docx -m "why"` writes the edited document
+  into the same requirement file and revises it. `runtime.yaml -> document_reader` points at the reader.
 
 ## [0.14.0] - 2026-11-16
 

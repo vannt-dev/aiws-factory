@@ -70,7 +70,7 @@ export function issueLabel(issue) {
 }
 
 /** The title as a file name: ASCII letters and digits joined by `-`, at most 50 characters, cut between words. */
-function slug(title) {
+export function slug(title) {
   const s = String(title)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')

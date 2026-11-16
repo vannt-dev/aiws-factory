@@ -57,7 +57,7 @@ aiws detect --write      # recognise the stack of each source-* folder
 aiws sync claude         # generate CLAUDE.md and .claude/
 aiws sync opencode       # or codex, antigravity: the same agents, skills and guard for that tool
 aiws discover            # build aiws/knowledge/
-aiws new REQ-001 && aiws run REQ-001   # requirements/REQ-001-*.md first, or: aiws new REQ-001 --from-issue 12
+aiws new REQ-001 && aiws run REQ-001   # requirements/REQ-001-*.md first, or: aiws new REQ-001 --from-issue 12 | --from-doc spec.docx
 aiws revise REQ-001 -m "why"   # human-only: the requirement text changed after approval or after it was finished; recorded, approved again
 aiws abandon REQ-001 -m "no longer needed"   # human-only: drop a requirement that will not be finished (status abandoned)
 aiws board --serve       # read-only page over every requirement of every worktree, live on http://127.0.0.1:4319 (aiws board: an HTML file to share)
