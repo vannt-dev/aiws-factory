@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `review_gate: reviewproof` in `workflow.yaml` (off by default): `aiws approve REQ-001 pr` asks for a
   reviewproof round of the pull request whose last round reviewed the head of the requirement branch and
   ended with verdict pass; otherwise it refuses and records nothing. The round goes into the history.
+- `aiws new` no longer takes a local branch that tracks no remote (the task branch of a worktree slot, for
+  example lane's) as the base of the pull request: it uses `base_branch` of `workflow.yaml` and says so.
+  `aiws new REQ-001 --base BRANCH` names the base. A workspace without a remote keeps the current branch.
 - Token-efficient rules for the agents, on by default: every run prompt and every agent file `aiws sync`
   writes (`CLAUDE.md`, `.claude/agents`, `.codex`, `.opencode`, `.agents`) carry five short rules adapted
   from token-efficient-work (locate before reading, no re-read after a successful edit, checks in proportion
