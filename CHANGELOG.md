@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Token-efficient rules for the agents, on by default: every run prompt and every agent file `aiws sync`
+  writes (`CLAUDE.md`, `.claude/agents`, `.codex`, `.opencode`, `.agents`) carry five short rules adapted
+  from token-efficient-work (locate before reading, no re-read after a successful edit, checks in proportion
+  to risk, reuse facts, short reports). `token_efficient: false` in `runtime.yaml` leaves them out.
+
 ## [0.14.0] - 2026-11-16
 
 - `aiws revise REQ-001 -m REASON` (human-only): change the text of a requirement whose design was approved,

@@ -3,6 +3,7 @@ import { fill, osCommand } from './util.js';
 import { writeScope, matcher } from './scope.js';
 import { feedbackFor } from './state.js';
 import { adapterName, getAdapter } from './adapters/index.js';
+import { tokenRules } from './tokenrules.js';
 
 /**
  * Builds the full prompt for one agent step from core definitions:
@@ -114,6 +115,10 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
     const s = ws.skill(name);
     if (s) parts.push(`## Skill: ${name}\n\n${s.text.replace(/^---[\s\S]*?---\s*/, '').trim()}`);
   }
+
+  // in English whatever the document language, as the other headings of the prompt are
+  const rules = tokenRules(ws, { lang: 'en', level: 2 });
+  if (rules) parts.push(rules);
 
   parts.push(
     ['## When you finish', 'Reply with a short report: files written, key decisions, and anything a reviewer must know.'].join('\n')

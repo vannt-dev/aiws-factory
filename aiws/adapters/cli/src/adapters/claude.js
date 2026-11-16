@@ -3,6 +3,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { AiwsError, writeText, fill, runShell, warn } from '../util.js';
+import { tokenRules } from '../tokenrules.js';
 import { commandPrefixes } from '../stacks.js';
 import { isHumanOnlyEntry } from '../gate.js';
 
@@ -106,7 +107,8 @@ export function sync(ws) {
   const written = [];
   const claudeDir = path.join(root, '.claude');
 
-  writeText(path.join(root, 'CLAUDE.md'), '@AGENTS.md\n');
+  const rules = tokenRules(ws);
+  writeText(path.join(root, 'CLAUDE.md'), rules ? `@AGENTS.md\n\n${rules}\n` : '@AGENTS.md\n');
   written.push('CLAUDE.md');
 
   const agentsDir = path.join(claudeDir, 'agents');
@@ -135,7 +137,10 @@ export function sync(ws) {
         'A write outside the scope of the phase is blocked or reverted.\n\n# Language\nWrite every document, finding and report in English.'
       : '\n\n# Enforcement\nMọi thay đổi file bị kiểm tra bởi hook `aiws guard` và `aiws check diff-scope`. ' +
         'Ghi ngoài phạm vi của phase sẽ bị chặn hoặc bị revert.';
-    writeText(path.join(agentsDir, `${id}.md`), `${fm.join('\n')}\n${GENERATED_NOTE}\n\n${a.body.trim()}${skillNote}${scopeNote}\n`);
+    writeText(
+      path.join(agentsDir, `${id}.md`),
+      `${fm.join('\n')}\n${GENERATED_NOTE}\n\n${a.body.trim()}${skillNote}${scopeNote}${rules ? `\n\n${rules}` : ''}\n`
+    );
     written.push(`.claude/agents/${id}.md`);
   }
 

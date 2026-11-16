@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { AiwsError, writeText } from '../util.js';
+import { tokenRules } from '../tokenrules.js';
 
 /** Where a project's skills live for Codex, OpenCode and Antigravity alike. */
 export const SKILLS_DIR = '.agents/skills';
@@ -30,7 +31,8 @@ export function instructions(ws, agent, { guarded = true } = {}) {
       ? 'Every file change is checked by `aiws check diff-scope`. A write outside the scope of the phase is reverted.'
       : 'Mọi thay đổi file bị kiểm tra bởi `aiws check diff-scope`. Ghi ngoài phạm vi của phase sẽ bị revert.';
   const language = en ? '\n\n# Language\nWrite every document, finding and report in English.' : '';
-  return `${agent.body.trim()}${skillNote}\n\n# Enforcement\n${checked}${language}\n`;
+  const rules = tokenRules(ws);
+  return `${agent.body.trim()}${skillNote}\n\n# Enforcement\n${checked}${language}${rules ? `\n\n${rules}` : ''}\n`;
 }
 
 /** Copies every skill of aiws/ to where the tools read a project's skills; returns what was written. */
