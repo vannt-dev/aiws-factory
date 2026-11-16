@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- With `review_gate: reviewproof`, `aiws sync` adds the aiws run records (`aiws/work/*/evidence/**`,
+  `aiws/work/_discover/**`) to the `skip` list of `.reviewproof.json`, keeping reviewproof's defaults and
+  every key already there, so a review round does not count prompts and run logs as unread files.
 - `aiws approve REQ-001 pr` in a worktree whose base branch is checked out elsewhere (the main clone of a
   worktree slot): git refused to update the local base and the merge check failed against the old one, without
   saying why. It now says so, checks the merge against `origin/<base>` and starts the knowledge branch from it.
