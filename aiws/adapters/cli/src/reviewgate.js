@@ -102,3 +102,38 @@ export function checkReviewGate(ws, st, { branch, heads, env = process.env }) {
     detail: `round ${round.n}, verdict pass at ${short(round.head)}${posted}`,
   };
 }
+
+// reviewproof's own skip list: a .reviewproof.json is used whole, so writing `skip` must keep these
+const REVIEWPROOF_DEFAULT_SKIP = ['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', '**/*.snap'];
+// what aiws commits with every requirement and nobody reviews line by line: prompts, run logs, reports
+export const AIWS_SKIP = ['aiws/work/*/evidence/**', 'aiws/work/_discover/**'];
+
+/**
+ * With review_gate reviewproof, makes sure .reviewproof.json at the workspace root leaves the aiws run
+ * records out of review coverage: adds the missing AIWS_SKIP patterns, keeps every other key and entry.
+ * Returns what happened, for the sync output.
+ */
+export function syncReviewproofSkip(ws) {
+  if (reviewGateOf(ws) !== 'reviewproof') return null;
+  const file = path.join(ws.root, '.reviewproof.json');
+  let cfg = {};
+  if (fs.existsSync(file)) {
+    try {
+      cfg = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch {
+      return {
+        file: '.reviewproof.json',
+        note: '.reviewproof.json is not valid JSON: left as it is (add the aiws skip patterns yourself)',
+      };
+    }
+    if (typeof cfg !== 'object' || cfg === null || Array.isArray(cfg)) {
+      return { file: '.reviewproof.json', note: '.reviewproof.json does not hold a JSON object: left as it is' };
+    }
+  }
+  const skip = Array.isArray(cfg.skip) ? [...cfg.skip] : [...REVIEWPROOF_DEFAULT_SKIP];
+  const missing = AIWS_SKIP.filter((p) => !skip.includes(p));
+  if (Array.isArray(cfg.skip) && !missing.length) return { file: '.reviewproof.json', note: 'up to date' };
+  cfg.skip = [...skip, ...missing];
+  fs.writeFileSync(file, `${JSON.stringify(cfg, null, 2)}\n`);
+  return { file: '.reviewproof.json', note: 'aiws run records left out of reviewproof coverage' };
+}
