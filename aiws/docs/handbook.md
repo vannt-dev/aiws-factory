@@ -184,6 +184,8 @@ The budget cannot be raised ahead of time at this gate, because the requirement 
 
 Keep in mind what the review can and cannot tell you. The reviewer reads code and documents; it does not click through your application. Where code has no automated test, the design lists manual steps, and somebody has to run them.
 
+To run the requirement in a [lane](https://github.com/vannt-dev/lane) slot and review the pull request with [reviewproof](https://github.com/vannt-dev/reviewproof) (tests run at the head, every changed file read, one note), follow [the recipe](recipes/lane-reviewproof.md).
+
 ## 7. When the run stops
 
 `aiws status REQ-001` always gives the reason. These are the stops you are likely to meet. The operations guide has the complete table in [section 3](https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.md#3-lifecycle-of-a-requirement).
