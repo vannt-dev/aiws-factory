@@ -93,9 +93,9 @@ and the note shows the result. Point the gate at the same command as `commands` 
 ## 4. Merge, confirm, knowledge
 
 1. Mark the pull request ready and merge it, with a merge commit.
-2. Update `main` **in the main clone**: `git -C <main clone> pull --ff-only`. `aiws approve REQ-001 pr` tries to
-   update `main` itself, but from a lane slot git refuses to fetch into a branch that another worktree has checked
-   out, and the merge check then compares with the old `main`.
+2. `aiws approve REQ-001 pr` tries to update `main`. From a lane slot git refuses to fetch into a branch that the
+   main clone has checked out, so aiws says so, checks the merge against `origin/main` and starts the knowledge
+   branch from it. Update `main` in the main clone afterwards: `git -C <main clone> pull --ff-only`.
 3. `aiws approve REQ-001 pr` in the dev slot (yours), then `aiws run REQ-001` for the knowledge update.
 4. Push `aiws/REQ-001-knowledge`, open its pull request and merge it.
 5. `lane done <dev slot>` and `lane done <review slot>`. lane keeps both slots, with their dependencies, for the
@@ -123,7 +123,7 @@ Each gap was met in the run above. The workaround is in the steps; the last colu
 | --- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | 1   | ~~`aiws new` takes lane's local task branch as the pull request base~~                                   | Done: a branch without an upstream is not taken as the base; `aiws new --base BRANCH`                     |
 | 2   | ~~Two review records that do not know each other: `05-review.md` (no tests run) and the reviewproof ledger~~ | Done: `review_gate: reviewproof` in `workflow.yaml`; `approve pr` asks for verdict `pass` at the head |
-| 3   | `approve pr` cannot update `main` from a lane slot, and the failed fetch is silent                       | compare with `origin/<base>` when the local base cannot be updated, and say so                            |
+| 3   | ~~`approve pr` cannot update `main` from a lane slot, and the failed fetch is silent~~                   | Done: it says so and checks the merge against `origin/<base>`                                             |
 | 4   | `lane new --pr` fails while the dev slot holds the branch                                                | lane checks the pull request's head out detached when another lane holds its branch                       |
 | 5   | ~~reviewproof coverage counts the aiws run records~~ | Done: `aiws sync` writes the `skip` list with `review_gate: reviewproof`; still open: reviewproof could group skipped files by pattern in its note |
 | 6   | A missing `aiws discover` is found at `run`, and its block needs `aiws resume`                           | `aiws new` warns at once; `aiws run` clears a prerequisites block once the files exist                    |
