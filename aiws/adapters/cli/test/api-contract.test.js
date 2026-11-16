@@ -280,3 +280,47 @@ test('a malformed contract is sent back to the architect before the design gate'
   assert.match(prompt, /PUT \/users\/\{id\}\/nickname has no responses/);
   assert.match(prompt, /path parameter \{id\} is not declared/);
 });
+
+test('commands.api_contract_run: the review runs the contract against the backend, its exit code is the verdict', () => {
+  const root = makeWorkspace({ discover: true });
+  const dir = tempDir('aiws-apirun-');
+  const script = path.join(dir, 'fake-run.cjs');
+  // stands for openapi-postman: writes its report under the requirement's evidence, fails until the backend is fixed
+  fs.writeFileSync(
+    script,
+    `const fs = require('fs'); const path = require('path');\n` +
+      `const out = process.argv[2]; fs.mkdirSync(out, { recursive: true });\n` +
+      `const fixed = fs.existsSync(${JSON.stringify(path.join(dir, 'fixed'))});\n` +
+      `fs.writeFileSync(path.join(out, 'report.txt'), fixed ? 'all passed' : 'GET /users/1: 500');\n` +
+      `if (!fixed) { console.log('Completed 1 requests and 4 assertions with 1 failure(s)'); process.exit(1); }\n`
+  );
+  const pol = YAML.parse(readFile(root, 'aiws/config/policies.yaml'));
+  pol.commands.api_contract_run = `node "${script}" aiws/work/{req}/evidence/api-run`;
+  writeFile(root, 'aiws/config/policies.yaml', YAML.stringify(pol));
+  git(root, ['commit', '-qam', 'api contract run']);
+  ok(root, ['new', 'REQ-001']);
+  ok(root, ['run', 'REQ-001']);
+  ok(root, ['approve', 'REQ-001', 'design', '--yes']);
+
+  // needs a running backend: `aiws check api-contract` (CI) leaves it out
+  ok(root, ['check', 'api-contract', '--req', 'REQ-001']);
+  assert.ok(!fs.existsSync(path.join(root, 'aiws/work/REQ-001/evidence/api-run')));
+
+  let st;
+  for (let i = 0; i < 12; i++) {
+    ok(root, ['run', 'REQ-001', '--once']);
+    st = state(root);
+    if (st.history.some((h) => h.phase === 'review' && h.result === 'critical')) break;
+  }
+  assert.equal(st.phase, 'planning', st.reason);
+  const fb = st.feedback.find((f) => f.phase === 'planning');
+  assert.match(fb.text, /check 'api_contract_run' failed \(exit 1\)/);
+  assert.match(fb.text, /1 failure\(s\)/);
+
+  fs.writeFileSync(path.join(dir, 'fixed'), '');
+  ok(root, ['run', 'REQ-001']);
+  st = state(root);
+  assert.equal(st.phase, 'pr_approval', st.reason);
+  assert.equal(readFile(root, 'aiws/work/REQ-001/evidence/api-run/report.txt'), 'all passed');
+  assert.deepEqual(git(root, ['status', '--porcelain']).trim(), '', 'the report is committed with the review');
+});

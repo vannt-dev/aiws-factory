@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   writes (`CLAUDE.md`, `.claude/agents`, `.codex`, `.opencode`, `.agents`) carry five short rules adapted
   from token-efficient-work (locate before reading, no re-read after a successful edit, checks in proportion
   to risk, reuse facts, short reports). `token_efficient: false` in `runtime.yaml` leaves them out.
+- `commands.api_contract_run` (optional, review phase): run the requirement's `api-contract.yaml` against the
+  running backend, for example with openapi-postman-test-generator (example in `policies.yaml`). A failed
+  request, status or schema is a critical finding; the reports are committed under `evidence/api-run/`.
 
 ## [0.14.0] - 2026-11-16
 
