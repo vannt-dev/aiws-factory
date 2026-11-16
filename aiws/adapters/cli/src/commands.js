@@ -637,30 +637,53 @@ function approvePr(req, opts) {
   const remoteHead = G.revParse(ws.root, `${ws.runtime.pull_request?.remote ?? 'origin'}/${st.branch}`);
   const review = checkReviewGate(ws, st, { branch: st.branch, heads: [branchHead, remoteHead].filter(Boolean) });
   if (review) log(`reviewproof: ${review.detail}`);
+  // the ref the merge is checked on and the knowledge branch starts from: the local base, or its remote copy
+  let baseRef = base;
+  let notUpdated = null;
   if (opts.mergeCheck !== false) {
     // the pull request was merged on the host: bring the local base up to it when that is a fast-forward
     // (a base with local commits of its own is left alone, as are submodules, which are fetched below)
     const remote = ws.runtime.pull_request?.remote ?? 'origin';
     if (G.git(ws.root, ['remote', 'get-url', remote], { allowFail: true }).status === 0) {
-      G.git(ws.root, ['fetch', '-q', remote, `${base}:${base}`], { allowFail: true });
+      const fetched = G.git(ws.root, ['fetch', '-q', remote, `${base}:${base}`], { allowFail: true });
+      if (fetched.status !== 0) {
+        // git refuses to fetch into a branch another worktree has checked out (the main clone, when this
+        // runs in a worktree slot), and into one with commits of its own. The remote copy still says whether
+        // the pull request was merged.
+        notUpdated = (fetched.stderr || fetched.stdout).trim().split('\n')[0] || `git fetch exited ${fetched.status}`;
+        G.git(ws.root, ['fetch', '-q', remote, base], { allowFail: true });
+        const remoteBase = `${remote}/${base}`;
+        if (
+          G.revParse(ws.root, remoteBase) &&
+          !mergedInto(ws.root, branchHead, base, st.base_commit) &&
+          mergedInto(ws.root, branchHead, remoteBase, st.base_commit)
+        ) {
+          baseRef = remoteBase;
+          warn(
+            `could not update the local ${base} (${notUpdated}): checked the merge against ${remoteBase} instead, ` +
+              `and the knowledge branch starts from it. Update ${base} where it is checked out (git pull --ff-only).`
+          );
+        }
+      }
     }
   }
-  const merged = opts.mergeCheck === false ? 'not checked' : mergedInto(ws.root, branchHead, base, st.base_commit);
+  const merged = opts.mergeCheck === false ? 'not checked' : mergedInto(ws.root, branchHead, baseRef, st.base_commit);
   if (!merged) {
     throw new AiwsError(
       `${st.branch} is not merged into ${base} yet: it is not an ancestor of ${base}, and the files it changed differ on ${base}. ` +
-        `Merge the PR first (or pass --no-merge-check); a local ${base} with commits of its own is not updated.`
+        `Merge the PR first (or pass --no-merge-check); a local ${base} with commits of its own is not updated.` +
+        (notUpdated ? ` The local ${base} could not be updated: ${notUpdated}` : '')
     );
   }
   const subMerges = opts.mergeCheck === false ? {} : submodulesMerged(ws, st);
   const dirty = G.dirtyFiles(ws.root);
   if (dirty.length) throw new AiwsError(`Working tree is not clean:\n  ${dirty.join('\n  ')}`);
-  for (const sub of Object.keys(st.submodules ?? {})) ensureGitlinkCommit(ws, sub, base);
+  for (const sub of Object.keys(st.submodules ?? {})) ensureGitlinkCommit(ws, sub, baseRef);
 
   // The knowledge update happens on its own branch cut from the merged base. The base itself is never
   // checked out here, so this also works when it is checked out in another worktree.
   const kBranch = knowledgeBranch(st);
-  G.git(ws.root, ['switch', '-q', '-c', kBranch, base]);
+  G.git(ws.root, ['switch', '-q', '-c', kBranch, baseRef]);
   // `git switch` moves the gitlinks but not the submodules: check out what the merged base records
   for (const sub of Object.keys(st.submodules ?? {})) checkoutGitlink(ws, sub);
   ({ ws, st } = openForHuman(req));

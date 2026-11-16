@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- `aiws approve REQ-001 pr` in a worktree whose base branch is checked out elsewhere (the main clone of a
+  worktree slot): git refused to update the local base and the merge check failed against the old one, without
+  saying why. It now says so, checks the merge against `origin/<base>` and starts the knowledge branch from it.
 - `review_gate: reviewproof` in `workflow.yaml` (off by default): `aiws approve REQ-001 pr` asks for a
   reviewproof round of the pull request whose last round reviewed the head of the requirement branch and
   ended with verdict pass; otherwise it refuses and records nothing. The round goes into the history.
