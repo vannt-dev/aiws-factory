@@ -184,6 +184,8 @@ Lần chạy dừng với `phase=pr_approval status=waiting_human`. Từ đây l
 
 Hãy nhớ review nói được gì và không nói được gì. Reviewer đọc code và tài liệu; nó không bấm thử ứng dụng của bạn. Ở chỗ code không có test tự động, design liệt kê các bước chạy tay, và phải có người chạy chúng.
 
+Muốn chạy requirement trong một slot của [lane](https://github.com/vannt-dev/lane) và review pull request bằng [reviewproof](https://github.com/vannt-dev/reviewproof) (test chạy tại head, đọc đủ mọi file đổi, một note), xem [recipe](recipes/lane-reviewproof.md) (tiếng Anh).
+
 ## 7. Khi lần chạy dừng lại
 
 `aiws status REQ-001` luôn cho biết lý do. Dưới đây là những lần dừng bạn dễ gặp. Bảng đầy đủ nằm ở [mục 3](https://github.com/vannt-dev/aiws-factory/blob/main/aiws/README.vi.md#3-vòng-đời-một-requirement) của hướng dẫn vận hành.
