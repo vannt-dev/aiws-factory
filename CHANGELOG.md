@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `aiws --help` lists `aiws detect --write` under Human-only (it refuses inside an AI session). `aiws sync
   claude` says when the guard hook it writes will call an `aiws` of another version from PATH, or none, as
   `aiws run` already did before starting the agents.
+- `aiws new` says at once when a prerequisite (`aiws/knowledge/system-map.md`, built by `aiws discover`) is
+  missing, instead of the first run stopping at analysis. A run blocked on missing prerequisites goes on by
+  itself once the files exist, with an `unblocked` line in the history; it no longer needs `aiws resume`.
 - With `review_gate: reviewproof`, `aiws sync` adds the aiws run records (`aiws/work/*/evidence/**`,
   `aiws/work/_discover/**`) to the `skip` list of `.reviewproof.json`, keeping reviewproof's defaults and
   every key already there, so a review round does not count prompts and run logs as unread files.

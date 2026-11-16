@@ -29,9 +29,8 @@ configuration that people own and refuses to run inside an AI session.
 1. `aiws detect --write`, then `aiws sync claude`. Set `pull_request` in `aiws/config/runtime.yaml` so aiws opens
    the draft pull request itself.
 2. `aiws discover`, committed on `main` (or `aiws discover --branch` and a pull request). Do it before any lane
-   slot exists: a slot made earlier does not have `aiws/knowledge/`, and `aiws run` stops at analysis with
-   `missing prerequisites ... run aiws discover first`. Getting out of that block needs `aiws resume`, which is
-   yours.
+   slot exists: a slot made earlier does not have `aiws/knowledge/`. `aiws new` says so at once; `aiws run` stops at
+   analysis until the knowledge is there, and goes on by itself once `aiws discover` has built it (no `aiws resume`).
 3. Write the requirement in an editor and commit it on `main`. On Windows PowerShell 5.1, do not write it from a
    `.ps1` script saved as UTF-8 without a BOM: PowerShell reads such a script as ANSI and `—` or `…` in the text
    becomes `â€”` or `â€¦`.
@@ -126,7 +125,7 @@ Each gap was met in the run above. The workaround is in the steps; the last colu
 | 3   | ~~`approve pr` cannot update `main` from a lane slot, and the failed fetch is silent~~                   | Done: it says so and checks the merge against `origin/<base>`                                             |
 | 4   | `lane new --pr` fails while the dev slot holds the branch                                                | lane checks the pull request's head out detached when another lane holds its branch                       |
 | 5   | ~~reviewproof coverage counts the aiws run records~~ | Done: `aiws sync` writes the `skip` list with `review_gate: reviewproof`; still open: reviewproof could group skipped files by pattern in its note |
-| 6   | A missing `aiws discover` is found at `run`, and its block needs `aiws resume`                           | `aiws new` warns at once; `aiws run` clears a prerequisites block once the files exist                    |
+| 6   | ~~A missing `aiws discover` is found at `run`, and its block needs `aiws resume`~~ | Done: `aiws new` warns at once; `aiws run` lifts the block once the files exist |
 | 7   | The knowledge update needs a second pull request after the requirement is `done`                         | aiws opens it through `pull_request`, as it does the first one                                            |
 | 8   | lane leaves its unused task branches (`REQ-001`, `review-pr1`) in the main clone                         | `lane done` deletes a task branch that has no commits                                                     |
 | 9   | ~~`detect --write` refuses in an AI session but is not listed under "Human-only" in `aiws --help`~~ | Done: listed under Human-only in `aiws --help` and the README |

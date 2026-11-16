@@ -123,6 +123,7 @@ When the orchestrator stops, `aiws status REQ-001` tells you why and what to run
 | Design review found a `[critical]` issue | back to `design` automatically | nothing: the architect and test designer fix it and the reviewer checks again. After 3 rounds (`max_rounds`) with blocking findings left, the run stops at the design gate with them listed, and you decide |
 | The design changed after approval | back to `design_approval` automatically | approve again |
 | The AI usage limit is reached | same phase, still `running` | nothing to approve: `aiws run REQ-001` again once the limit resets, or `aiws run REQ-001 --wait` to have it retried every 15 minutes |
+| `aiws discover` has not run yet (`aiws new` says so) | `analysis / blocked` | `aiws discover`, then `aiws run REQ-001`: the block lifts by itself once the knowledge exists, no `aiws resume` |
 
 Human-only commands (`approve`, `reject`, `answer`, `redesign`, `revise`, `resume`, `abandon`, `unlock`) **refuse to run inside an AI session** and ask you to retype the requirement id. Pass `--yes` in CI scripts. `aiws detect --write` (and `aiws new --from-issue` / `--from-doc`) also refuse inside an AI session: they write configuration or requirements, which people own. Run them one at a time in a terminal: called from a script, the confirmation prompt is easy to miss.
 

@@ -122,6 +122,7 @@ Khi orchestrator dừng lại, `aiws status REQ-001` cho biết lý do và lện
 | Design review có `[critical]` | tự quay lại `design` | không cần làm gì: architect và test designer sửa, reviewer kiểm lại. Sau 3 vòng (`max_rounds`) vẫn còn finding chặn thì lần chạy dừng ở gate duyệt design, liệt kê các finding đó, và bạn quyết |
 | Sửa design sau khi đã duyệt | tự quay về `design_approval` | duyệt lại |
 | AI hết giới hạn sử dụng | giữ nguyên phase, vẫn `running` | không cần duyệt gì: chạy lại `aiws run REQ-001` khi giới hạn được đặt lại, hoặc `aiws run REQ-001 --wait` để tự chạy lại mỗi 15 phút |
+| Chưa chạy `aiws discover` (`aiws new` đã báo) | `analysis / blocked` | `aiws discover`, rồi `aiws run REQ-001`: block tự gỡ khi knowledge đã có, không cần `aiws resume` |
 
 Lệnh của người (`approve`, `reject`, `answer`, `redesign`, `revise`, `resume`, `abandon`, `unlock`) **từ chối chạy trong phiên AI** và đòi gõ lại mã REQ để xác nhận. Trong script CI thì truyền `--yes`. `aiws detect --write` (và `aiws new --from-issue` / `--from-doc`) cũng từ chối chạy trong phiên AI: chúng ghi cấu hình hoặc requirement, là phần của người. Chạy từng lệnh một trong terminal: gọi từ script thì rất dễ bỏ sót dòng hỏi xác nhận.
 
