@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- `aiws approve REQ-001 pr` in a worktree whose base branch is checked out elsewhere (the main clone of a
+  worktree slot): git refused to update the local base and the merge check failed against the old one, without
+  saying why. It now says so, checks the merge against `origin/<base>` and starts the knowledge branch from it.
 - `aiws new` no longer takes a local branch that tracks no remote (the task branch of a worktree slot, for
   example lane's) as the base of the pull request: it uses `base_branch` of `workflow.yaml` and says so.
   `aiws new REQ-001 --base BRANCH` names the base. A workspace without a remote keeps the current branch.
