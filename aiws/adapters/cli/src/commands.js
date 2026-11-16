@@ -39,7 +39,8 @@ import { getAdapter, preflightAdapters } from './adapters/index.js';
 import * as DS from './diffscope.js';
 import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 import { notify, stopEvent } from './notify.js';
-import { issueViewArgs, fetchIssue, requirementFromIssue, issueLabel } from './issue.js';
+import { issueViewArgs, fetchIssue, requirementFromIssue, issueLabel, slug } from './issue.js';
+import { readDocument, requirementFromDoc } from './docreq.js';
 import { buildReport, renderHtml } from './report.js';
 import { buildBoard, renderBoard, boardServer, listenBoard, DEFAULT_PORT } from './board.js';
 import { pipelineSteps, pipelineText } from './pipeline.js';
@@ -233,21 +234,23 @@ function chooseBase(ws, base) {
   return fallback;
 }
 
-export function newReq(req, { worktree, profile, fromIssue, base } = {}) {
+export function newReq(req, { worktree, profile, fromIssue, fromDoc, base } = {}) {
   assertReqId(req);
-  if (fromIssue !== undefined && inAiSession()) {
+  if (fromIssue !== undefined && fromDoc !== undefined) throw new AiwsError('Use --from-doc or --from-issue, not both.');
+  const from = fromIssue !== undefined ? '--from-issue' : fromDoc !== undefined ? '--from-doc' : null;
+  if (from && inAiSession()) {
     // requirements/ is written by people only; the same session check as the human-only gate commands
-    throw new AiwsError('--from-issue writes requirements/, which only a person may do: run it yourself.', 3);
+    throw new AiwsError(`${from} writes requirements/, which only a person may do: run it yourself.`, 3);
   }
   let ws = Workspace.open();
   if (profile) ws.useProfile(String(profile)); // fails here, before any branch exists, when the profile is unknown
   if (!G.isRepo(ws.root) || !G.hasCommits(ws.root)) throw new AiwsError('The workspace must be a git repository with at least one commit.');
   let requirement = findRequirement(ws, req);
-  if (fromIssue !== undefined) {
+  if (from) {
     if (requirement) {
-      throw new AiwsError(`${requirement} already exists: drop --from-issue to start ${req} from it, or pick another id.`);
+      throw new AiwsError(`${requirement} already exists: drop ${from} to start ${req} from it, or pick another id.`);
     }
-    issueViewArgs(fromIssue); // refuses a bad reference before gh runs
+    if (fromIssue !== undefined) issueViewArgs(fromIssue); // refuses a bad reference before gh runs
   } else if (!requirement) {
     throw new AiwsError(`No requirement file requirements/${req}-*.md found. Write the requirement first, or use --from-issue.`);
   }
@@ -258,6 +261,7 @@ export function newReq(req, { worktree, profile, fromIssue, base } = {}) {
   if (fs.existsSync(statePath(ws, req))) throw new AiwsError(`${req} already exists.`);
 
   const issue = fromIssue !== undefined ? fetchIssue(fromIssue, { gh: ws.runtime.pull_request?.gh ?? 'gh', cwd: ws.root }) : null;
+  const document = fromDoc !== undefined ? readDocument(ws, String(fromDoc)) : null;
   const subs = submodulesToBranch(ws, branch, { worktree });
   if (issue) {
     // committed on the current branch, like a requirement written by hand, before the requirement branch starts
@@ -267,6 +271,21 @@ export function newReq(req, { worktree, profile, fromIssue, base } = {}) {
     G.commit(ws.root, `docs(${req}): requirement from issue ${issueLabel(issue)}\n\nREQ-ID: ${req}\n`, [file]);
     requirement = file;
     log(`${file} written from ${issue.url} and committed on ${G.currentBranch(ws.root)}.`);
+  }
+  if (document) {
+    const { file, text } = requirementFromDoc(req, document, { slugOf: slug });
+    fs.mkdirSync(path.dirname(ws.abs(file)), { recursive: true });
+    fs.writeFileSync(ws.abs(file), text);
+    G.commit(
+      ws.root,
+      `docs(${req}): requirement from ${document.name}
+
+REQ-ID: ${req}
+`,
+      [file]
+    );
+    requirement = file;
+    log(`${file} written from ${document.name} and committed on ${G.currentBranch(ws.root)}.`);
   }
 
   const baseBranch = chooseBase(ws, base);
@@ -287,6 +306,7 @@ export function newReq(req, { worktree, profile, fromIssue, base } = {}) {
     title: titleOf(ws, requirement, req),
     requirement,
     ...(issue ? { issue: issue.url } : {}),
+    ...(document ? { source_doc: { file: document.name, sha256: document.sha256 } } : {}),
     branch,
     base_branch: baseBranch,
     base_commit: baseCommit,
@@ -895,6 +915,12 @@ export async function revise(req, opts = {}) {
   if (stray.length) {
     throw new AiwsError(`Working tree has changes other than ${file}:\n  ${stray.join('\n  ')}\nCommit, stash or discard them first.`);
   }
+  const document = opts.fromDoc !== undefined ? readDocument(ws, String(opts.fromDoc)) : null;
+  if (document) {
+    // the edited document is the new text; the rest of the revision is the same as for a file edited by hand
+    fs.writeFileSync(ws.abs(file), requirementFromDoc(req, document, { file }).text);
+    log(`${file} written from ${document.name}.`);
+  }
 
   // the text the approval covered: the requirement file as of the commit that added the approval record
   const recordRel = ws.workRel(req, `approvals/${approved.name}`);
@@ -927,6 +953,7 @@ export async function revise(req, opts = {}) {
     extra: { revision: n, supersedes: approved.name, requirement: { file, approved_in: approvedIn } },
   });
   st.revision = n;
+  if (document) st.source_doc = { file: document.name, sha256: document.sha256 };
   for (const t of st.tasks) {
     if (t.status === 'running') t.status = 'pending';
     else if (t.status === 'done') t.before_revision = n;
