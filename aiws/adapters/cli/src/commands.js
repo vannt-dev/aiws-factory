@@ -41,7 +41,7 @@ import { writeScope, orchestratorPaths, classify, matcher } from './scope.js';
 import { notify, stopEvent } from './notify.js';
 import { issueViewArgs, fetchIssue, requirementFromIssue, issueLabel, slug } from './issue.js';
 import { readDocument, requirementFromDoc } from './docreq.js';
-import { checkReviewGate } from './reviewgate.js';
+import { checkReviewGate, syncReviewproofSkip } from './reviewgate.js';
 import { buildReport, renderHtml } from './report.js';
 import { buildBoard, renderBoard, boardServer, listenBoard, DEFAULT_PORT } from './board.js';
 import { pipelineSteps, pipelineText } from './pipeline.js';
@@ -183,6 +183,8 @@ export function sync(target = 'claude') {
   const written = getAdapter(target).sync(ws);
   log(`Generated for ${target}:`);
   for (const f of written) log(`  ${f}`);
+  const rp = syncReviewproofSkip(ws);
+  if (rp) log(`  ${rp.file} (${rp.note})`);
   if (target === 'codex') {
     log('Codex has no guard hook: its sandbox and `aiws check diff-scope` are what checks a run.');
   }

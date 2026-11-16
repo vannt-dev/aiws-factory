@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- With `review_gate: reviewproof`, `aiws sync` adds the aiws run records (`aiws/work/*/evidence/**`,
+  `aiws/work/_discover/**`) to the `skip` list of `.reviewproof.json`, keeping reviewproof's defaults and
+  every key already there, so a review round does not count prompts and run logs as unread files.
 - `review_gate: reviewproof` in `workflow.yaml` (off by default): `aiws approve REQ-001 pr` asks for a
   reviewproof round of the pull request whose last round reviewed the head of the requirement branch and
   ended with verdict pass; otherwise it refuses and records nothing. The round goes into the history.
