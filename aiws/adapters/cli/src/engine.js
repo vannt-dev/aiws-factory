@@ -249,6 +249,8 @@ export function runReq(ws, req, { once = false, maxSteps = 500 } = {}) {
   if (gate?.gate === 'pr' && gate.via === 'git_host' && ws.runtime.pull_request && !st.pr_url) {
     openDraftPr(ws, st);
   }
+  const knowledgePrOpen = st.history?.some((h) => h.result === 'knowledge_pr');
+  if (st.status === 'done' && ws.runtime.pull_request && !knowledgePrOpen) openKnowledgePr(ws, st);
   return loadState(ws, req);
 }
 
@@ -363,6 +365,59 @@ function openDraftPr(ws, st) {
   // the branch on the host carries the state that records the pull request, so the merged branch is this one
   G.git(ws.root, ['push', remote, st.branch], { allowFail: true });
   log(`  draft pull request opened${url ? `: ${url}` : ''}`);
+}
+
+/**
+ * `runtime.yaml -> pull_request`, once the requirement is done: the knowledge update sits on its own branch,
+ * cut from the merged base, and the next requirement needs it on the base. That branch is pushed and gets a
+ * pull request of its own through the same command. A failure is reported; the requirement stays done and
+ * its reason says what to do by hand.
+ */
+function openKnowledgePr(ws, st) {
+  const req = st.req_id;
+  const cfg = ws.runtime.pull_request;
+  const command = osCommand(cfg.command);
+  const kBranch = knowledgeBranch(st);
+  if (!command || G.currentBranch(ws.root) !== kBranch) return;
+  const remote = cfg.remote ?? 'origin';
+  const base = st.base_branch ?? ws.baseBranch();
+  const bodyRel = ws.workRel(req, 'knowledge-pr-body.md');
+  writeText(ws.abs(bodyRel), knowledgePrBody(st, base));
+  commitWork(ws, st, `chore(${req}): knowledge pull request description`);
+
+  const failed = (what) => {
+    warn(`knowledge pull request not opened: ${what}. Push ${kBranch} and open it yourself.`);
+    addHistory(st, { phase: st.phase, result: 'knowledge_pr_failed', reason: what.slice(0, 300) });
+    commitWork(ws, st, `chore(${req}): knowledge pull request not opened`);
+  };
+  const push = G.git(ws.root, ['push', '-u', remote, kBranch], { allowFail: true });
+  if (push.status !== 0) return failed(`git push ${remote} ${kBranch} failed:\n${commandOutput(push)}`);
+  const title = `docs(${req}): knowledge base after the requirement`;
+  const line = fill(command, { branch: kBranch, base, title, body_file: bodyRel, req });
+  const res = runShell(line, { cwd: ws.root, env: cleanEnv({}), timeout: 2 * 60 * 1000 });
+  if (res.status !== 0) return failed(`the command exited ${res.status}: ${(res.stderr || res.stdout).trim()}`);
+  const url = (res.stdout.match(/https?:\/\/\S+/g) ?? []).at(-1) ?? null;
+  if (url) st.knowledge_pr_url = url;
+  st.reason =
+    `knowledge pull request opened${url ? `: ${url}` : ''}; merge it into ${base}, so the next requirement ` +
+    'starts from it';
+  addHistory(st, { phase: st.phase, result: 'knowledge_pr', url });
+  commitWork(ws, st, `chore(${req}): knowledge pull request opened`);
+  // the branch on the host carries the state that records the pull request
+  G.git(ws.root, ['push', remote, kBranch], { allowFail: true });
+  log(`  knowledge pull request opened${url ? `: ${url}` : ''}`);
+}
+
+function knowledgePrBody(st, base) {
+  return [
+    `Knowledge base update after requirement ${st.req_id}${st.title ? `: ${st.title}` : ''}.`,
+    '',
+    `- \`aiws/knowledge/\`: what ${st.req_id} changed in the code, written after its pull request was merged.`,
+    `- \`aiws/work/${st.req_id}/\`: the state of the requirement, now done.`,
+    '',
+    `Merge it into \`${base}\` before the next requirement, which starts from the knowledge base.`,
+    '',
+  ].join('\n');
 }
 
 /**

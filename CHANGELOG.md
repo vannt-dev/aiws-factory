@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- With `pull_request` in `runtime.yaml`, the knowledge update gets its pull request too: once the
+  requirement is `done`, aiws pushes `aiws/REQ-001-knowledge` and runs the same command for it (title
+  `docs(REQ-001): knowledge base after the requirement`), records `knowledge_pr_url` and says to merge it
+  before the next requirement. A failure leaves the requirement done, with the old "push it and merge it" reason.
 - `aiws --help` lists `aiws detect --write` under Human-only (it refuses inside an AI session). `aiws sync
   claude` says when the guard hook it writes will call an `aiws` of another version from PATH, or none, as
   `aiws run` already did before starting the agents.

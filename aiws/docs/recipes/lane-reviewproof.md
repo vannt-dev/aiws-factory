@@ -96,7 +96,8 @@ and the note shows the result. Point the gate at the same command as `commands` 
    main clone has checked out, so aiws says so, checks the merge against `origin/main` and starts the knowledge
    branch from it. Update `main` in the main clone afterwards: `git -C <main clone> pull --ff-only`.
 3. `aiws approve REQ-001 pr` in the dev slot (yours), then `aiws run REQ-001` for the knowledge update.
-4. Push `aiws/REQ-001-knowledge`, open its pull request and merge it.
+4. Merge the knowledge pull request: with `pull_request` set, that run pushed `aiws/REQ-001-knowledge` and
+   opened it (without it, push the branch and open it yourself).
 5. `lane done <dev slot>` and `lane done <review slot>`. lane keeps both slots, with their dependencies, for the
    next requirement.
 
@@ -123,10 +124,10 @@ Each gap was met in the run above. The workaround is in the steps; the last colu
 | 1   | ~~`aiws new` takes lane's local task branch as the pull request base~~                                   | Done: a branch without an upstream is not taken as the base; `aiws new --base BRANCH`                     |
 | 2   | ~~Two review records that do not know each other: `05-review.md` (no tests run) and the reviewproof ledger~~ | Done: `review_gate: reviewproof` in `workflow.yaml`; `approve pr` asks for verdict `pass` at the head |
 | 3   | ~~`approve pr` cannot update `main` from a lane slot, and the failed fetch is silent~~                   | Done: it says so and checks the merge against `origin/<base>`                                             |
-| 4   | `lane new --pr` fails while the dev slot holds the branch                                                | lane checks the pull request's head out detached when another lane holds its branch                       |
+| 4   | ~~`lane new --pr` fails while the dev slot holds the branch~~ | Done: lane checks the pull request's head out detached when another lane holds its branch |
 | 5   | ~~reviewproof coverage counts the aiws run records~~ | Done: `aiws sync` writes the `skip` list with `review_gate: reviewproof`; still open: reviewproof could group skipped files by pattern in its note |
 | 6   | ~~A missing `aiws discover` is found at `run`, and its block needs `aiws resume`~~ | Done: `aiws new` warns at once; `aiws run` lifts the block once the files exist |
-| 7   | The knowledge update needs a second pull request after the requirement is `done`                         | aiws opens it through `pull_request`, as it does the first one                                            |
+| 7   | ~~The knowledge update needs a second pull request after the requirement is `done`~~ | Done: aiws opens it through `pull_request`, as it does the first one |
 | 8   | lane leaves its unused task branches (`REQ-001`, `review-pr1`) in the main clone                         | `lane done` deletes a task branch that has no commits                                                     |
 | 9   | ~~`detect --write` refuses in an AI session but is not listed under "Human-only" in `aiws --help`~~ | Done: listed under Human-only in `aiws --help` and the README |
 | 10  | ~~The guard hook runs the `aiws` first on `PATH`, which can be another version than the one running~~ | Done: `aiws sync claude` and `aiws run` say when the `aiws` of PATH is another version |
