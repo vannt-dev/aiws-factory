@@ -57,15 +57,33 @@ export function preflight(ws) {
         'or set `claude.guard_command` in aiws/config/runtime.yaml.'
     );
   }
-  // the hook runs the `aiws` of PATH; an older one may not know the rules this release enforces
-  const theirs = onPath.stdout.trim();
+  const note = pathVersionNote(onPath.stdout.trim(), 'this run is');
+  if (note) warn(note);
+}
+
+/**
+ * The guard hook runs the `aiws` of PATH; an older one may not know the rules this release enforces.
+ * Says so when that version is not this CLI's (`who`: "this run is", "this is"), else null.
+ */
+function pathVersionNote(theirs, who) {
   const ours = cliVersion();
-  if (theirs && ours && theirs !== ours) {
-    warn(
-      `The guard hook runs aiws ${theirs} from PATH, while this run is aiws ${ours}. Install ${ours} globally, ` +
-        'or set `claude.guard_command` in aiws/config/runtime.yaml to this CLI.'
-    );
+  if (!theirs || !ours || theirs === ours) return null;
+  return (
+    `The guard hook runs aiws ${theirs} from PATH, while ${who} aiws ${ours}. Install ${ours} globally, ` +
+    'or set `claude.guard_command` in aiws/config/runtime.yaml to this CLI.'
+  );
+}
+
+/** At `aiws sync claude`: the same check as before a run, for a hook that Claude Code will call on its own. */
+function syncVersionNote(ws) {
+  if (ws.runtime.claude?.guard_command || hasLocalCli(ws)) return;
+  const onPath = runShell('aiws --version', { cwd: ws.root });
+  if (onPath.status !== 0) {
+    warn('The guard hook calls `aiws` from PATH, and there is none: run `npm i -g aiws-factory` (or `npm link` in the CLI folder).');
+    return;
   }
+  const note = pathVersionNote(onPath.stdout.trim(), 'this is');
+  if (note) warn(note);
 }
 
 /** The version of this CLI, from its package.json. */
@@ -153,6 +171,7 @@ export function sync(ws) {
 
   writeText(path.join(claudeDir, 'settings.json'), JSON.stringify(settings(ws), null, 2) + '\n');
   written.push('.claude/settings.json');
+  syncVersionNote(ws);
   return written;
 }
 
