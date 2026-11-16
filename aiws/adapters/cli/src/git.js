@@ -31,6 +31,26 @@ export function branchExists(root, name) {
   return git(root, ['rev-parse', '--verify', '-q', `refs/heads/${name}`], { allowFail: true }).status === 0;
 }
 
+/** True when `name` exists as a local branch or as a remote-tracking branch of `remote`. */
+export function branchKnown(root, name, remote = 'origin') {
+  if (branchExists(root, name)) return true;
+  return git(root, ['rev-parse', '--verify', '-q', `refs/remotes/${remote}/${name}`], { allowFail: true }).status === 0;
+}
+
+/** The upstream of a local branch (e.g. origin/main), or null when it tracks nothing. */
+export function upstreamOf(root, branch) {
+  const res = git(root, ['rev-parse', '--abbrev-ref', '-q', `${branch}@{upstream}`], { allowFail: true });
+  return res.status === 0 ? res.stdout.trim() || null : null;
+}
+
+/** The names of the configured remotes. */
+export function remotes(root) {
+  return git(root, ['remote'], { allowFail: true })
+    .stdout.split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 // ---------------------------------------------------------------- submodules
 //
 // A submodule is one path (a "gitlink") to the workspace repository, but its files are what the agents edit

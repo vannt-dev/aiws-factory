@@ -29,8 +29,11 @@ Setup
                                        knowledge commit), and skips the AI run when nothing changed
 
 Requirement lifecycle
-  aiws new REQ-001 [--worktree PATH] [--profile NAME] [--from-issue N|URL]
-                                       create aiws/work/REQ-001 and branch aiws/REQ-001; --profile runs it on
+  aiws new REQ-001 [--worktree PATH] [--profile NAME] [--from-issue N|URL] [--base BRANCH]
+                                       create aiws/work/REQ-001 and branch aiws/REQ-001; its pull request goes
+                                       into the current branch, or into base_branch of workflow.yaml when the
+                                       current one is a local branch without an upstream (a worktree slot's
+                                       task branch), or into --base BRANCH; --profile runs it on
                                        aiws/config/workflow.NAME.yaml ("small": one design step, no separate
                                        test designer); --from-issue first writes requirements/REQ-001-*.md from
                                        a GitHub issue (12, owner/repo#12 or its URL; read with gh: title,
@@ -167,7 +170,7 @@ export async function main(argv) {
       C.detect({ write: Boolean(flags.write), force: Boolean(flags.force) });
       return 0;
     case 'new':
-      C.newReq(a1, { worktree: flags.worktree, profile: flags.profile, fromIssue: flags['from-issue'] });
+      C.newReq(a1, { worktree: flags.worktree, profile: flags.profile, fromIssue: flags['from-issue'], base: flags.base });
       return 0;
     case 'run':
       await C.run(a1, { once: Boolean(flags.once), wait: flags.wait, menu: !flags['no-menu'] });

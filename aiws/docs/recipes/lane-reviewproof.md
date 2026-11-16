@@ -56,14 +56,12 @@ configuration that people own and refuses to run inside an AI session.
 ```bash
 lane new my-workspace REQ-001
 cd <the slot lane prints>
-git switch --detach origin/main     # before aiws new: see below
 aiws new REQ-001
 ```
 
-`aiws new` makes `aiws/REQ-001` from the branch it is on and records that branch as the base of the pull request.
-In a lane slot that is lane's task branch (`REQ-001`), which exists only locally, so the pull request would target
-it instead of `main`. On a detached head `aiws new` records no base and the pull request targets the workflow's
-base branch, `main`.
+`aiws new` makes `aiws/REQ-001` from the slot's head. lane's task branch (`REQ-001`) tracks no remote, so
+`aiws new` does not take it as the base of the pull request: it says so and uses `base_branch` of
+`aiws/config/workflow.yaml` (`main`). `aiws new REQ-001 --base <branch>` names another base.
 
 ## 2. The run and the design gate
 
@@ -131,7 +129,7 @@ Each gap was met in the run above. The workaround is in the steps; the last colu
 
 | #   | Gap                                                                                                      | Glue that would remove it                                                                                 |
 | --- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| 1   | `aiws new` takes lane's local task branch as the pull request base                                       | `aiws new --base main`, or a branch without upstream is never a base; or `lane new --detach`              |
+| 1   | ~~`aiws new` takes lane's local task branch as the pull request base~~                                   | Done: a branch without an upstream is not taken as the base; `aiws new --base BRANCH`                     |
 | 2   | Two review records that do not know each other: `05-review.md` (no tests run) and the reviewproof ledger | `review_gate: reviewproof` in aiws: `approve pr` asks for a reviewproof verdict `pass` at the merged head |
 | 3   | `approve pr` cannot update `main` from a lane slot, and the failed fetch is silent                       | compare with `origin/<base>` when the local base cannot be updated, and say so                            |
 | 4   | `lane new --pr` fails while the dev slot holds the branch                                                | lane checks the pull request's head out detached when another lane holds its branch                       |

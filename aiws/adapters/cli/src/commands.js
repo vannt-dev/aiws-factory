@@ -200,7 +200,40 @@ function titleOf(ws, rel, req) {
   return h ? h.replace(new RegExp(`^${req}\\s*[-:—]?\\s*`), '') : req;
 }
 
-export function newReq(req, { worktree, profile, fromIssue } = {}) {
+/**
+ * The branch the requirement's pull request will go into. --base names it. Otherwise the current branch,
+ * unless it is a local branch that tracks nothing while the workspace has a remote: that is a task branch
+ * (a worktree tool such as lane checks one out per slot), and a pull request into it would never reach the
+ * remote, so the workflow's base branch is taken instead. A workspace without a remote keeps the current
+ * branch, as before.
+ */
+function chooseBase(ws, base) {
+  const remote = ws.runtime.pull_request?.remote ?? 'origin';
+  if (base !== undefined) {
+    const name = String(base);
+    if (base === true || !name) throw new AiwsError('--base needs a branch name.');
+    if (!G.branchKnown(ws.root, name, remote)) {
+      throw new AiwsError(`--base ${name}: no branch ${name} here or on ${remote}. Fetch it first, or pick another.`);
+    }
+    return name;
+  }
+  const current = G.currentBranch(ws.root);
+  const fallback = ws.baseBranch();
+  if (!current || current === fallback || !G.remotes(ws.root).length || G.upstreamOf(ws.root, current)) return current;
+  if (!G.branchKnown(ws.root, fallback, remote)) {
+    throw new AiwsError(
+      `${current} has no upstream, so it is not taken as the base of the pull request, and ${fallback} ` +
+        `(base_branch of workflow.yaml) does not exist here either: pass --base BRANCH.`
+    );
+  }
+  log(
+    `${current} has no upstream (a local task branch, e.g. a worktree slot): the base is ${fallback}. ` +
+      `Pass --base BRANCH to choose another.`
+  );
+  return fallback;
+}
+
+export function newReq(req, { worktree, profile, fromIssue, base } = {}) {
   assertReqId(req);
   if (fromIssue !== undefined && inAiSession()) {
     // requirements/ is written by people only; the same session check as the human-only gate commands
@@ -236,7 +269,7 @@ export function newReq(req, { worktree, profile, fromIssue } = {}) {
     log(`${file} written from ${issue.url} and committed on ${G.currentBranch(ws.root)}.`);
   }
 
-  const baseBranch = G.currentBranch(ws.root);
+  const baseBranch = chooseBase(ws, base);
   const baseCommit = G.head(ws.root);
   if (worktree) {
     const wt = path.resolve(worktree);
