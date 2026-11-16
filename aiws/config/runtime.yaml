@@ -2,6 +2,10 @@
 # review cho codex (xem mục codex bên dưới).
 default_adapter: claude
 
+# Năm quy tắc tiết kiệm token (từ token-efficient-work) trong prompt của mỗi lượt chạy và trong file agent
+# mà `aiws sync` sinh ra (CLAUDE.md, .claude/agents, .codex, .opencode, .agents). Bật mặc định; false để tắt.
+# token_efficient: true
+
 phases: {}
 #  review: {adapter: codex}
 

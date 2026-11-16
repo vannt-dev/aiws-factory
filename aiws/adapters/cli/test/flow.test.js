@@ -553,7 +553,8 @@ test('init copies the kit into a fresh project and sync claude generates .claude
     assert.ok(fs.existsSync(path.join(dir, p)), p);
   }
   ok(dir, ['sync', 'claude']);
-  assert.equal(readFile(dir, 'CLAUDE.md').trim(), '@AGENTS.md');
+  // AGENTS.md first, then the token-efficient rules (runtime.yaml token_efficient)
+  assert.match(readFile(dir, 'CLAUDE.md'), /^@AGENTS\.md\n\n# Làm việc tiết kiệm token\n/);
   const settings = JSON.parse(readFile(dir, '.claude/settings.json'));
   assert.ok(settings.permissions.deny.includes('Edit(./source-legacy/**)'));
   assert.ok(settings.permissions.deny.includes('Read(./**/.env)'));
