@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-16
+
 - `aiws revise REQ-001 -m REASON` (human-only): change the text of a requirement whose design was approved,
   or that is finished. Edit `requirements/REQ-001-*.md`, then run it: the revision is recorded (who, when,
   why, the commit holding the earlier text), the earlier design approval no longer counts
@@ -536,7 +538,8 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.10.0...v0.11.0
