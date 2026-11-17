@@ -31,7 +31,16 @@ function withPullRequests({ failOn } = {}) {
   rt.pull_request = { command: `node "${script}" "{branch}" "{base}" "{title}" "{body_file}"` };
   fs.writeFileSync(rtFile, YAML.stringify(rt));
   git(root, ['commit', '-qam', 'open draft pull requests']);
-  return { root, origin, calls: () => fs.readFileSync(calls, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) };
+  return {
+    root,
+    origin,
+    calls: () =>
+      fs
+        .readFileSync(calls, 'utf8')
+        .trim()
+        .split('\n')
+        .map((l) => JSON.parse(l)),
+  };
 }
 
 /** Runs REQ-001 to the PR gate, merges its pull request on the host, approves the PR gate. */

@@ -398,9 +398,7 @@ function openKnowledgePr(ws, st) {
   if (res.status !== 0) return failed(`the command exited ${res.status}: ${(res.stderr || res.stdout).trim()}`);
   const url = (res.stdout.match(/https?:\/\/\S+/g) ?? []).at(-1) ?? null;
   if (url) st.knowledge_pr_url = url;
-  st.reason =
-    `knowledge pull request opened${url ? `: ${url}` : ''}; merge it into ${base}, so the next requirement ` +
-    'starts from it';
+  st.reason = `knowledge pull request opened${url ? `: ${url}` : ''}; merge it into ${base}, so the next requirement ` + 'starts from it';
   addHistory(st, { phase: st.phase, result: 'knowledge_pr', url });
   commitWork(ws, st, `chore(${req}): knowledge pull request opened`);
   // the branch on the host carries the state that records the pull request
