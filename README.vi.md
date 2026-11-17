@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js ≥ 22](https://img.shields.io/badge/node-%E2%89%A5%2022-339933.svg)](aiws/adapters/cli/package.json)
 [![Website](https://img.shields.io/badge/website-vannt--dev.github.io-4f46e5.svg)](https://vannt-dev.github.io/aiws-factory/)
+[![Official vannt-dev build](https://vannt-dev.github.io/badges/official.svg)](https://vannt-dev.github.io/official.html)
 
 **Ngôn ngữ:** [English](README.md) · Tiếng Việt
 
@@ -21,6 +22,13 @@ Orchestrator tất định giữ trạng thái; AI chỉ được làm trong ph�
 V1 chạy trên Claude Code và không phụ thuộc ngôn ngữ của FE, BE hay legacy.
 
 **Landing page:** https://vannt-dev.github.io/aiws-factory/
+
+## Cách hoạt động
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vannt-dev/aiws-factory/main/docs/diagrams/overview-dark.svg">
+  <img alt="Một requirement, viết trong requirements/ hoặc lấy từ một GitHub issue, cùng knowledge base mà aiws discover dựng từ các repository source-* đi vào aiws run, lệnh này viết phần phân tích, design và test spec cùng một lượt AI review design rồi dừng để người duyệt design; lần aiws run tiếp theo code từng task kèm unit test, review và commit, với draft pull request trong mọi repository có thay đổi, và sau khi người merge chúng thì knowledge base được cập nhật." src="https://raw.githubusercontent.com/vannt-dev/aiws-factory/main/docs/diagrams/overview-light.svg">
+</picture>
 
 ## Cấu trúc workspace
 
