@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-17
+
 - With `pull_request` in `runtime.yaml`, the knowledge update gets its pull request too: once the
   requirement is `done`, aiws pushes `aiws/REQ-001-knowledge` and runs the same command for it (title
   `docs(REQ-001): knowledge base after the requirement`), records `knowledge_pr_url` and says to merge it
@@ -572,7 +574,8 @@ workspace (a Java backend, a JavaScript frontend and a PHP legacy system).
 - Landing page on GitHub Pages, MIT license, contribution guidelines, code of conduct,
   security policy, CI on Windows, Linux and macOS, Dependabot, issue and PR templates.
 
-[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/vannt-dev/aiws-factory/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/vannt-dev/aiws-factory/compare/v0.11.0...v0.12.0
