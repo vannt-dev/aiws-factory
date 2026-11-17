@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-11-17
+
 - Antigravity 1.4 renamed its file tools (`read_file`, `write_file`, `edit_file`, the file in `Path`), so the
   guard hook that `aiws sync antigravity` wrote no longer saw any file read or write: an agent could read
   `.env` and write outside its phase. The hook now gets every tool call, the guard reads the new names and the
