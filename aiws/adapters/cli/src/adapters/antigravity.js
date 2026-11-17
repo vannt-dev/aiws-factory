@@ -5,8 +5,11 @@ import { generatedNote, hasLocalCli, instructions, interactiveOnly, localCliFrom
 const TARGET = 'antigravity';
 /** The name of this workspace's entry in `.agents/hooks.json`; the other entries are somebody else's. */
 export const HOOK_NAME = 'aiws-guard';
-/** The tools of Antigravity that run a command or read or write a file. */
-const GUARDED_TOOLS = ['run_command', 'view_file', 'write_to_file', 'replace_file_content', 'multi_replace_file_content'];
+/**
+ * Every tool goes to the guard, which lets through what touches no file. A list of names would let a renamed tool
+ * pass unseen: Antigravity 1.4 renamed `view_file`, `write_to_file` and `replace_file_content`.
+ */
+const MATCH_ALL = '.*';
 
 /**
  * Generates what Antigravity reads of a project, from aiws/: one agent an agent under
@@ -44,7 +47,7 @@ export function sync(ws) {
     // no file yet, or one that is not JSON: written anew
   }
   hooks[HOOK_NAME] = {
-    PreToolUse: [{ matcher: GUARDED_TOOLS.join('|'), hooks: [{ type: 'command', command: guardCommand(ws), timeout: 30 }] }],
+    PreToolUse: [{ matcher: MATCH_ALL, hooks: [{ type: 'command', command: guardCommand(ws), timeout: 30 }] }],
   };
   writeText(file, JSON.stringify(hooks, null, 2) + '\n');
   written.push('.agents/hooks.json');

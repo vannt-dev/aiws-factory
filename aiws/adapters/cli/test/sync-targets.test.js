@@ -124,9 +124,8 @@ test('sync antigravity: one agent a folder, the skills, and a hook that keeps th
   const hooks = JSON.parse(readFile(root, '.agents/hooks.json'));
   assert.deepEqual(Object.keys(hooks).sort(), ['aiws-guard', 'someone-else']);
   const [entry] = hooks['aiws-guard'].PreToolUse;
-  for (const tool of ['run_command', 'view_file', 'write_to_file', 'replace_file_content', 'multi_replace_file_content']) {
-    assert.ok(entry.matcher.split('|').includes(tool), tool);
-  }
+  // every tool: Antigravity renamed its file tools once (1.4), and a renamed tool must not slip past the guard
+  assert.equal(entry.matcher, '.*');
   // Antigravity starts a hook in `.agents/`; this workspace has no CLI of its own, so the one on PATH
   assert.deepEqual(entry.hooks, [{ type: 'command', command: 'aiws guard --from antigravity', timeout: 30 }]);
 
@@ -177,6 +176,32 @@ test('guard --from antigravity: reads the call as Antigravity sends it and answe
   assert.equal(hook(call('view_file', { AbsolutePath: abs('README.md') }), analysis), null);
   assert.equal(hook(call('run_command', { CommandLine: 'aiws approve REQ-001 --gate design', Cwd: root }), analysis).decision, 'deny');
   assert.equal(hook(call('some_other_tool', { Whatever: 1 }), analysis), null);
+
+  // as Antigravity 1.4.6 sends them: file tools renamed, the path in `Path`, plus hookEventName and cwd
+  const call146 = (name, args) => ({
+    hookEventName: 'PreToolUse',
+    cwd: root,
+    stepIdx: 2,
+    toolCall: { name, args, id: 'call_1' },
+  });
+  assert.equal(hook(call146('write_file', { Path: abs('aiws/work/REQ-001/01-analysis.md'), Content: 'x' }), analysis), null);
+  assert.match(
+    hook(call146('write_file', { Path: abs('requirements/hack.md'), Content: 'x' }), analysis).reason,
+    /requirements\/hack\.md is protected/
+  );
+  assert.equal(
+    hook(call146('edit_file', { Path: abs('source-be/src/users.js'), Target: 'a', Replacement: 'b' }), analysis).decision,
+    'deny'
+  );
+  assert.equal(hook(call146('read_file', { Path: abs('source-be/.env') }), analysis).decision, 'deny');
+  assert.equal(hook(call146('read_file', { Path: abs('README.md') }), analysis), null);
+  assert.equal(hook(call146('run_command', { CommandLine: 'Get-Content .env', WaitMsBeforeAsync: 5000 }), analysis).decision, 'deny');
+  // the listing and search tools only read
+  assert.equal(hook(call146('list_dir', { DirectoryPath: abs('source-be') }), analysis), null);
+  assert.equal(hook(call146('grep_search', { SearchPath: abs('source-be'), Query: 'x' }), analysis), null);
+  // a file tool this guard does not know yet is taken as a write, so the next rename fails closed
+  assert.equal(hook(call146('rewrite_file', { Path: abs('source-be/src/users.js') }), analysis).decision, 'deny');
+  assert.equal(hook(call146('search_web', { Query: 'x' }), analysis), null);
 
   // input that is no tool call: refused inside a phase, let through in a session that works on no requirement
   assert.equal(hook('not json', analysis).decision, 'deny');

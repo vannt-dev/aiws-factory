@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Antigravity 1.4 renamed its file tools (`read_file`, `write_file`, `edit_file`, the file in `Path`), so the
+  guard hook that `aiws sync antigravity` wrote no longer saw any file read or write: an agent could read
+  `.env` and write outside its phase. The hook now gets every tool call, the guard reads the new names and the
+  old ones, and a tool it does not know that names a file is taken as a write. Run `aiws sync antigravity`
+  again to rewrite `.agents/hooks.json`. Checked with `agy` 1.4.6.
+
 ## [0.15.0] - 2026-11-17
 
 - With `pull_request` in `runtime.yaml`, the knowledge update gets its pull request too: once the

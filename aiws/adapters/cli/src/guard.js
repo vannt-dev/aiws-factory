@@ -16,14 +16,24 @@ const SHELL_TOOLS = new Set(['Bash', 'PowerShell']);
  * No agent working on a requirement writes there, whatever the workspace's policies.yaml lists.
  */
 const TOOL_PATHS = ['.claude/**', '.opencode/**', '.agents/**', '.codex/**'];
-/** Antigravity's tools, as the tools this guard knows. */
+/** Antigravity's tools, as the tools this guard knows: the names of 1.4 and later, then those of 1.2. */
 const ANTIGRAVITY_TOOLS = {
   run_command: 'Bash',
+  read_file: 'Read',
+  write_file: 'Write',
+  edit_file: 'Edit',
   view_file: 'Read',
   write_to_file: 'Write',
   replace_file_content: 'Edit',
   multi_replace_file_content: 'MultiEdit',
+  list_dir: 'Read',
+  grep_search: 'Read',
+  find_by_name: 'Read',
+  view_file_outline: 'Read',
+  view_code_item: 'Read',
 };
+/** Where an Antigravity file tool names its file: `Path` since 1.4, `TargetFile` (writes) or `AbsolutePath` (reads) before. */
+const ANTIGRAVITY_PATH_ARGS = ['Path', 'TargetFile', 'AbsolutePath'];
 
 /**
  * Works out which REQ / phase / task the current session acts for.
@@ -267,16 +277,18 @@ export async function runHook(ws, { bash = false, from = 'claude' } = {}) {
 
 /**
  * The tool call as Antigravity hands it to a hook, `{ toolCall: { name, args } }`, in the words `decide` reads;
- * null when it is no tool call. A file tool names its target `TargetFile` (writes) or `AbsolutePath` (reads).
+ * null when it is no tool call. A tool this guard does not know that names a file is taken as a write, so that a
+ * renamed write tool is refused out of scope instead of let through.
  */
 export function fromAntigravity(payload) {
   const call = payload?.toolCall;
   if (!call || typeof call !== 'object' || typeof call.name !== 'string') return null;
   const args = call.args && typeof call.args === 'object' ? call.args : {};
   const tool = ANTIGRAVITY_TOOLS[call.name];
-  if (!tool) return { tool_name: call.name, tool_input: {} };
   if (tool === 'Bash') return { tool_name: 'Bash', tool_input: { command: String(args.CommandLine ?? '') } };
-  return { tool_name: tool, tool_input: { file_path: args.TargetFile ?? args.AbsolutePath } };
+  const file = ANTIGRAVITY_PATH_ARGS.map((k) => args[k]).find((v) => typeof v === 'string' && v !== '');
+  if (!tool) return { tool_name: file ? 'Write' : call.name, tool_input: file ? { file_path: file } : {} };
+  return { tool_name: tool, tool_input: { file_path: file ?? args.DirectoryPath ?? args.SearchPath } };
 }
 
 /**
