@@ -68,13 +68,26 @@ const REQUESTS = {
   edit: (args) => ({ tool_name: "Edit", tool_input: { file_path: args.filePath ?? args.path } }),
   write: (args) => ({ tool_name: "Write", tool_input: { file_path: args.filePath ?? args.path } }),
   multiedit: (args) => ({ tool_name: "MultiEdit", tool_input: { file_path: args.filePath ?? args.path } }),
+  // the listing and search tools only read the folder they name
+  list: (args) => ({ tool_name: "Read", tool_input: { file_path: args.path } }),
+  glob: (args) => ({ tool_name: "Read", tool_input: { file_path: args.path } }),
+  grep: (args) => ({ tool_name: "Read", tool_input: { file_path: args.path } }),
+  // the edit tool OpenCode gives GPT models: every file the patch names is checked
+  apply_patch: (args) => ({ tool_name: "ApplyPatch", tool_input: { patch: String(args.patchText ?? args.patch ?? "") } }),
+  patch: (args) => ({ tool_name: "ApplyPatch", tool_input: { patch: String(args.patchText ?? args.patch ?? "") } }),
+};
+// A tool this plugin does not know that names a file is taken as a write, so a renamed write tool is refused out
+// of scope instead of let through; one that names no file touches none this guard checks.
+const unknownTool = (args) => {
+  const file = args.filePath ?? args.path;
+  return typeof file === "string" && file ? { tool_name: "Write", tool_input: { file_path: file } } : null;
 };
 
 export const AiwsGuard = async () => ({
   "tool.execute.before": async (input, output) => {
-    const translate = REQUESTS[input?.tool];
-    if (!translate) return;
-    const request = translate(output?.args ?? {});
+    const args = output?.args ?? {};
+    const request = REQUESTS[input?.tool] ? REQUESTS[input.tool](args) : unknownTool(args);
+    if (!request) return;
     const result = spawnSync(COMMAND + (request.tool_name === "Bash" ? " --bash" : ""), {
       cwd: ROOT,
       input: JSON.stringify({ cwd: ROOT, ...request }),

@@ -139,7 +139,17 @@ test('parse reads the events of codex exec --json, and modelFor follows phase, a
     session_id: null,
     model: 'gpt-5',
     tokens: { input_tokens: 10, output_tokens: 2 },
+    tool_calls: 0,
   });
+  // a tool call counts once, whether Codex reports it started and completed or only completed
+  const tools = [
+    JSON.stringify({ type: 'item.started', item: { id: 'i1', type: 'command_execution' } }),
+    JSON.stringify({ type: 'item.completed', item: { id: 'i1', type: 'command_execution' } }),
+    JSON.stringify({ type: 'item.completed', item: { id: 'i2', type: 'file_change' } }),
+    JSON.stringify({ type: 'item.completed', item: { type: 'mcp_tool_call' } }),
+    JSON.stringify({ type: 'item.completed', item: { id: 'i3', type: 'reasoning' } }),
+  ].join('\n');
+  assert.equal(parse(tools).tool_calls, 3);
   assert.equal(parse(raw, 'from the file\n').result, 'from the file');
   assert.equal(parse(JSON.stringify({ type: 'error', message: 'boom' })).is_error, true);
   assert.equal(parse('').result, '');

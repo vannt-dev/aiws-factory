@@ -69,11 +69,32 @@ function safeState(ws, req) {
   }
 }
 
+/** The files an apply_patch text adds, updates, deletes or moves to, in the order it names them. */
+export function patchFiles(text) {
+  const files = [];
+  for (const line of String(text ?? '').split(/\r?\n/)) {
+    const m = /^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+?)\s*$/.exec(line);
+    if (m) files.push(m[1]);
+  }
+  return files;
+}
+
 /** Decides one tool call. Returns {allow: true} or {allow: false, reason}. */
 export function decide(ws, input, env = process.env) {
   const tool = input.tool_name;
   const ti = input.tool_input ?? {};
   const pol = ws.policies;
+
+  // an apply_patch edit (Codex, OpenCode with GPT models): every file it names must be writable
+  if (tool === 'ApplyPatch') {
+    const files = patchFiles(ti.patch);
+    if (files.length === 0) return deny('a patch that names no file cannot be checked');
+    for (const file of files) {
+      const d = decide(ws, { ...input, tool_name: 'Write', tool_input: { file_path: file } }, env);
+      if (!d.allow) return d;
+    }
+    return { allow: true };
+  }
 
   if (SHELL_TOOLS.has(tool)) {
     const shellCtx = resolveContext(ws, env);
@@ -257,7 +278,9 @@ export function stripLiteralText(command) {
 /** Hook entry point: reads the tool call JSON from stdin, exits 2 with a reason to block. */
 export async function runHook(ws, { bash = false, from = 'claude' } = {}) {
   const raw = await readStdin();
+  markCanary();
   if (from === 'antigravity') return antigravityHook(ws, raw);
+  if (from === 'codex') return codexHook(ws, raw);
   let input;
   try {
     input = JSON.parse(raw || '{}');
@@ -314,6 +337,61 @@ function antigravityHook(ws, raw) {
     return d.allow ? 0 : refuse(d.reason);
   } catch (e) {
     return undecided(e.message);
+  }
+}
+
+/**
+ * The tool call as Codex hands a PreToolUse hook to it, in the words `decide` reads; null when it is no tool call.
+ * Codex reports shell commands as `Bash` and file edits as `apply_patch`, the patch text in `tool_input.command`.
+ * Other tools (MCP) name no file this guard can check and are let through.
+ */
+export function fromCodex(payload) {
+  if (!payload || typeof payload !== 'object' || typeof payload.tool_name !== 'string') return null;
+  const ti = payload.tool_input && typeof payload.tool_input === 'object' ? payload.tool_input : {};
+  const cwd = typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : undefined;
+  const command = Array.isArray(ti.command) ? ti.command.join(' ') : String(ti.command ?? '');
+  if (payload.tool_name === 'apply_patch') return { cwd, tool_name: 'ApplyPatch', tool_input: { patch: command } };
+  if (payload.tool_name === 'Bash') return { cwd, tool_name: 'Bash', tool_input: { command } };
+  return { cwd, tool_name: payload.tool_name, tool_input: {} };
+}
+
+/**
+ * Codex reads a PreToolUse decision from stdout, `hookSpecificOutput.permissionDecision: "deny"`, with exit 0.
+ * As under Antigravity, what cannot be decided is refused inside an orchestrated run only.
+ */
+function codexHook(ws, raw) {
+  const refuse = (reason) => {
+    const out = { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason };
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: out }) + '\n');
+    return 0;
+  };
+  const undecided = (msg) => (process.env.AIWS_PHASE ? refuse(`AIWS guard error: ${msg}`) : 0);
+  let input;
+  try {
+    input = fromCodex(JSON.parse(raw || '{}'));
+  } catch {
+    return undecided('could not parse hook input');
+  }
+  if (!input) return undecided('hook input is not a tool call');
+  try {
+    const d = decide(ws, { ...input, cwd: input.cwd ?? ws.root });
+    return d.allow ? 0 : refuse(d.reason);
+  } catch (e) {
+    return undecided(e.message);
+  }
+}
+
+/**
+ * `aiws run` gives a tool whose hooks it cannot see run a file to count hook calls in (`AIWS_HOOK_CANARY`): a run
+ * that used tools while the file stayed empty ran without the guard.
+ */
+function markCanary() {
+  const file = process.env.AIWS_HOOK_CANARY;
+  if (!file) return;
+  try {
+    fs.appendFileSync(file, '1\n');
+  } catch {
+    // the run checks the count; a canary that cannot be written reads as a hook that did not run
   }
 }
 

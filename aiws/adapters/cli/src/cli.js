@@ -21,7 +21,7 @@ Setup
                                        (--write is human-only, see below)
   aiws sync <claude|codex|opencode|antigravity>
                                        generate what the tool reads of a project from aiws/: its agents, the skills
-                                       and the guard hook (claude: CLAUDE.md + .claude/; codex: .codex/, no hook;
+                                       and the guard hook (claude: CLAUDE.md + .claude/; codex: .codex/, hook with codex.guard_hook;
                                        opencode: .opencode/; antigravity: .agents/). Default: claude
   aiws discover [--branch[=NAME]] [--since[=REV]]
                                        build aiws/knowledge/ from source-* (run once, and after big changes);
@@ -97,7 +97,7 @@ Checks (for CI and debugging)
   aiws check api-contract --req R      lint api-contract.yaml and compare it with the backend's OpenAPI document,
                                        and with its code when commands.api_contract_be is set (as the review does)
   aiws check build                     run every <side>_build and <side>_test command of policies.yaml
-  aiws guard [--bash] [--from antigravity]
+  aiws guard [--bash] [--from antigravity|codex]
                                        the PreToolUse hook the tools call (reads the tool call as JSON on stdin)
 `;
 

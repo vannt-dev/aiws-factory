@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `.env` and write outside its phase. The hook now gets every tool call, the guard reads the new names and the
   old ones, and a tool it does not know that names a file is taken as a write. Run `aiws sync antigravity`
   again to rewrite `.agents/hooks.json`. Checked with `agy` 1.4.6.
+- Codex can run a phase with a shell (implementation) behind the aiws guard: with `codex.guard_hook: true` in
+  `runtime.yaml`, `aiws sync codex` adds a PreToolUse entry to `.codex/hooks.json` (the entries of others stay)
+  that runs `aiws guard --from codex` on every shell command and every `apply_patch`, checking each file a patch
+  adds, updates, deletes or moves to. `aiws run` starts Codex with `--dangerously-bypass-hook-trust`, since aiws
+  wrote that hook, and fails a run that used tools while the hook never ran. Off by default: without it a phase
+  with a shell is refused on Codex, as before. Not yet tried against a live Codex run.
+- The OpenCode plugin checks `apply_patch` the same way, reads `list`, `glob` and `grep` as reads, and takes a
+  tool it does not know that names a file as a write.
 
 ## [0.15.0] - 2026-11-17
 

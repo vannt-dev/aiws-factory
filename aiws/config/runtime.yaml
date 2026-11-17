@@ -50,10 +50,15 @@ claude:
   extra_args: []
 
 # Codex CLI (`codex exec`, headless) cho các phase không cần shell: review, analysis, design. Sandbox của Codex
-# (read-only khi contract không ghi, workspace-write khi có) và diff-scope giữ phạm vi; không có hook guard,
+# (read-only khi contract không ghi, workspace-write khi có) và diff-scope giữ phạm vi; mặc định không có hook guard,
 # nên phase có `bash` (implementation) bị từ chối. Codex báo token chứ không báo USD: cost_usd để trống.
+# guard_hook: true -> `aiws sync codex` ghi hook PreToolUse vào .codex/hooks.json (gọi `aiws guard --from codex`
+# cho mọi lệnh shell và mọi apply_patch), và phase có `bash` được chạy trên Codex. Lần chạy nào có lệnh shell hoặc
+# sửa file mà hook không được gọi lần nào thì bị đánh fail. Codex chỉ đọc file qua shell, nên read_deny dựa vào
+# phần kiểm tra lệnh. Cần Codex CLI có hooks (0.124+).
 # codex:
 #   command: codex
+#   guard_hook: false            # true: hook guard của aiws, cho phép phase có shell (xem trên)
 #   timeout_minutes: 30
 #   models:                      # model_hint -> model của Codex
 #     strong-reasoning: gpt-5-codex
