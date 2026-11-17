@@ -78,6 +78,10 @@ console.log(JSON.stringify(outcome));
     approve: ['bash', { command: 'aiws approve REQ-001 --gate design' }],
     build: ['bash', { command: 'git status' }],
     other: ['webfetch', { url: 'https://example.com' }],
+    patchIn: ['apply_patch', { patchText: '*** Begin Patch\n*** Add File: aiws/work/REQ-001/01-analysis.md\n+x\n*** End Patch' }],
+    patchOut: ['apply_patch', { patchText: '*** Begin Patch\n*** Update File: source-be/src/users.js\n@@\n-a\n+b\n*** End Patch' }],
+    list: ['list', { path: abs('source-be') }],
+    renamedWrite: ['write_file', { filePath: abs('source-be/src/users.js') }],
   };
   const run = (env) => {
     // the test's own CLI stands for the one on PATH
@@ -95,6 +99,10 @@ console.log(JSON.stringify(outcome));
   assert.match(analysis.secret, /AIWS/);
   assert.match(analysis.approve, /AIWS/);
   assert.equal(analysis.other, null, 'a tool the guard has no rule for is not its business');
+  assert.equal(analysis.patchIn, null);
+  assert.match(analysis.patchOut, /outside the write scope of phase 'analysis'/);
+  assert.equal(analysis.list, null, 'listing a folder only reads');
+  assert.match(analysis.renamedWrite, /outside the write scope/, 'an unknown tool that names a file is taken as a write');
   // a session that works on no requirement: off the requirement's branch, which the guard reads as well
   git(root, ['checkout', '-q', 'main']);
   const plain = run({});

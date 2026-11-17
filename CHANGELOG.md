@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Codex can run a phase with a shell (implementation) behind the aiws guard: with `codex.guard_hook: true` in
+  `runtime.yaml`, `aiws sync codex` adds a PreToolUse entry to `.codex/hooks.json` (the entries of others stay)
+  that runs `aiws guard --from codex` on every shell command and every `apply_patch`, checking each file a patch
+  adds, updates, deletes or moves to. `aiws run` starts Codex with `--dangerously-bypass-hook-trust`, since aiws
+  wrote that hook, and fails a run that used tools while the hook never ran. Off by default: without it a phase
+  with a shell is refused on Codex, as before. Not yet tried against a live Codex run.
+- The OpenCode plugin checks `apply_patch` the same way, reads `list`, `glob` and `grep` as reads, and takes a
+  tool it does not know that names a file as a write.
+
 ## [0.15.1] - 2026-11-17
 
 - Antigravity 1.4 renamed its file tools (`read_file`, `write_file`, `edit_file`, the file in `Path`), so the
