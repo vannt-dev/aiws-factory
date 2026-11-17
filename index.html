@@ -650,7 +650,7 @@ AIWS-Run: run-0005</pre>
       'gs.6': '<b>Bản phát hành mới</b>: <code>aiws upgrade</code> đưa bộ kit của workspace lên bản mà CLI đang mang. File bạn đã sửa được giữ nguyên.',
       'gs.7': '<b>Requirement thay đổi</b>: sửa file của nó rồi chạy <code>aiws revise REQ-001 -m LÝ_DO</code>; lần sửa được ghi lại, analysis và design chạy lại và lại phải qua cổng duyệt design. Requirement đã xong được mở lại trên nhánh mới.',
       'gs.8': '<b>Từ tài liệu</b>: <code>aiws new REQ-001 --from-doc spec.docx</code> viết requirement từ file Word, PDF, Excel, PowerPoint, HTML, text hoặc CSV, đọc bằng document-reader (cài riêng).',
-      'gs.9': '<b>Cổng review</b>: khi có <code>review_gate: reviewproof</code> trong <code>workflow.yaml</code>, <code>aiws approve REQ-001 pr</code> cần một vòng reviewproof đạt (pass) trên commit đầu của nhánh requirement.',
+      'gs.9': '<b>Cổng review</b>: khi có <code>review_gate: reviewproof</code> trong <code>workflow.yaml</code>, <code>aiws approve REQ-001 pr</code> cần một vòng reviewproof đạt (pass) trên head của nhánh requirement.',
       'gs.10': '<b>Pull request cho knowledge</b>: khi có <code>pull_request</code> trong <code>runtime.yaml</code>, aiws cũng đẩy bản cập nhật knowledge của requirement đã xong và mở pull request cho nó.',
       'gs.11': '<b>Nhánh đích</b>: <code>aiws new REQ-001 --base BRANCH</code> chỉ định nhánh mà pull request nhắm vào. Nhánh local không có remote, như nhánh task của một worktree slot, sẽ dùng <code>base_branch</code> trong <code>workflow.yaml</code>.',
       'in.k': 'Tóm tắt',
