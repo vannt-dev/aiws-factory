@@ -121,7 +121,7 @@ test('submodule: the draft pull request opens in the submodule repository first,
   const st = toPrGate(root);
   const made = JSON.parse(fs.readFileSync(calls, 'utf8'));
   assert.equal(made.length, 2);
-  assert.equal(fs.realpathSync(made[0].cwd), fs.realpathSync(path.join(root, 'source-be')));
+  assert.equal(fs.realpathSync.native(made[0].cwd), fs.realpathSync.native(path.join(root, 'source-be')));
   assert.deepEqual(made[0].args.slice(0, 2), ['aiws/REQ-001', 'main']);
   // the submodule's own description: its commits, not the workspace's, and no workspace paths
   const subT1 = git(path.join(root, 'source-be'), ['log', '-1', '--format=%h', '--grep=Task: T1', '-F']);
@@ -129,7 +129,7 @@ test('submodule: the draft pull request opens in the submodule repository first,
   assert.match(made[0].body, /pull request of the workspace/);
   assert.doesNotMatch(made[0].body, /aiws\/work\//);
   assert.match(made[1].body, /## Submodules[\s\S]*source-be/);
-  assert.equal(fs.realpathSync(made[1].cwd), fs.realpathSync(root));
+  assert.equal(fs.realpathSync.native(made[1].cwd), fs.realpathSync.native(root));
   const after = state(root);
   assert.equal(after.submodules['source-be'].pr_url, 'https://example.test/pull/1');
   assert.equal(after.pr_url, 'https://example.test/pull/2');
