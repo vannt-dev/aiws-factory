@@ -390,7 +390,7 @@ test('the board lists the requirements of the other worktrees, each once, with w
   assert.equal(row['REQ-002'].state, 'waiting');
   assert.equal(row['REQ-002'].worktree.branch, 'aiws/REQ-002');
   assert.equal(row['REQ-002'].worktree.here, false);
-  assert.equal(fs.realpathSync(row['REQ-002'].worktree.path), fs.realpathSync(wt));
+  assert.equal(fs.realpathSync.native(row['REQ-002'].worktree.path), fs.realpathSync.native(wt));
   assert.equal(row['REQ-002'].cost_usd, 1);
   assert.equal(row['REQ-003'].state, 'done');
   assert.equal(row['REQ-003'].worktree.here, false);
