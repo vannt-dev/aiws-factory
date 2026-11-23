@@ -100,11 +100,11 @@ test('sync codex writes the guard hook into .codex/hooks.json only with codex.gu
   const other = { matcher: 'Bash', hooks: [{ type: 'command', command: 'my-own-check' }] };
   writeFile(root, '.codex/hooks.json', JSON.stringify({ description: 'mine', hooks: { PreToolUse: [other], Stop: [other] } }));
 
-  ok(root, ['sync', 'codex']);
+  assert.match(ok(root, ['sync', 'codex']).out, /Codex has no guard hook/);
   assert.deepEqual(JSON.parse(readFile(root, '.codex/hooks.json')).hooks.PreToolUse, [other], 'off by default: nothing added');
 
   setCodex(root, { guard_hook: true });
-  ok(root, ['sync', 'codex']);
+  assert.match(ok(root, ['sync', 'codex']).out, /runs the aiws guard hook/);
   ok(root, ['sync', 'codex']); // twice: still one entry of its own
   const doc = JSON.parse(readFile(root, '.codex/hooks.json'));
   assert.equal(doc.description, 'mine');
