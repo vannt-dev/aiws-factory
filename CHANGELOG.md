@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-23
+
 - Codex can run a phase with a shell (implementation) behind the aiws guard: with `codex.guard_hook: true` in
   `runtime.yaml`, `aiws sync codex` adds a PreToolUse entry to `.codex/hooks.json` (the entries of others stay)
   that runs `aiws guard --from codex` on every shell command and every `apply_patch`, checking each file a patch
