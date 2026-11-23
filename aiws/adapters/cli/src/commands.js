@@ -186,7 +186,11 @@ export function sync(target = 'claude') {
   const rp = syncReviewproofSkip(ws);
   if (rp) log(`  ${rp.file} (${rp.note})`);
   if (target === 'codex') {
-    log('Codex has no guard hook: its sandbox and `aiws check diff-scope` are what checks a run.');
+    log(
+      ws.runtime.codex?.guard_hook
+        ? 'Codex runs the aiws guard hook (.codex/hooks.json) on every shell command and apply_patch.'
+        : 'Codex has no guard hook: its sandbox and `aiws check diff-scope` are what checks a run.'
+    );
   }
 }
 

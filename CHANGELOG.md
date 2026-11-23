@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that runs `aiws guard --from codex` on every shell command and every `apply_patch`, checking each file a patch
   adds, updates, deletes or moves to. `aiws run` starts Codex with `--dangerously-bypass-hook-trust`, since aiws
   wrote that hook, and fails a run that used tools while the hook never ran. Off by default: without it a phase
-  with a shell is refused on Codex, as before. Not yet tried against a live Codex run.
+  with a shell is refused on Codex, as before. Tried against a live Codex run (codex-cli 0.164.0 on
+  Windows): the hook sees shell commands and `apply_patch` with absolute paths, and a run whose hooks Codex did not
+  trust is failed. `aiws sync codex` now says the hook is on instead of "Codex has no guard hook".
 - The OpenCode plugin checks `apply_patch` the same way, reads `list`, `glob` and `grep` as reads, and takes a
   tool it does not know that names a file as a write.
 
