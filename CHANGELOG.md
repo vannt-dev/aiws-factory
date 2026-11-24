@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-24
+
+- `aiws drift [REQ...]`: for each finished requirement (all of them when none is named), one read-only agent
+  run compares the claims in its design, test spec and API contract with today's code and writes
+  `aiws/work/<REQ>/drift/<date>.md`: each claim the code no longer matches, with file:line evidence, and a
+  summary line. Exit 0 when nothing drifted, 1 when something did, 2 when a requirement could not be checked,
+  75 at an AI usage limit. `--dry-run` prints the prompt. The run cannot write: Claude gets only Read, Grep and
+  Glob, Codex runs in its read-only sandbox, the guard hook denies writes, and any change is reverted and fails
+  the run. Workspaces made before this release get the drift agent and contract with `aiws upgrade`.
+
 ## [0.16.0] - 2026-11-23
 
 - Codex can run a phase with a shell (implementation) behind the aiws guard: with `codex.guard_hook: true` in
