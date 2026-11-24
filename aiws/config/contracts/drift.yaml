@@ -1,0 +1,18 @@
+# `aiws drift [REQ...]`: a fresh agent compares the design of a finished requirement with today's code.
+# Read-only: no write or shell tool, the guard hook denies every write and diff-scope reverts any change.
+# The agent answers in its final message; the orchestrator writes aiws/work/{req}/drift/<date>.md from it.
+phase: drift
+agent: drift-checker
+skills: []
+tools: [read]
+read_only: true
+reads:
+  - aiws/knowledge/system-map.md
+  - aiws/knowledge/conventions.md
+answer:
+  - 'Reply with the findings only, no preamble. One line per claim of the design that the code no longer matches:'
+  - '`- [drift] <document and claim id> — <what the design says> — <file:line> — <what the code does today>`'
+  - 'Every finding gives at least one file:line in the code (not in aiws/work/) as evidence. A claim you could not verify is not a finding; name it in the summary.'
+  - 'End with one line `Summary: <how many of how many claims no longer match the code>`, or `Summary: no drift (<N> claims checked)` when every claim still holds.'
+  - 'Keep `[drift]` and `Summary:` in English, whatever the language of the rest.'
+max_attempts: 2

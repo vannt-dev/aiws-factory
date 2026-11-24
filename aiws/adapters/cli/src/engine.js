@@ -90,12 +90,14 @@ export function executeAgent(ws, counter, { req, phase, agentId, contract, task 
     AIWS_ATTEMPT: String(attempt),
     AIWS_RUN: runId,
     AIWS_ROOT: ws.root,
+    // a read-only contract (`aiws drift`): the guard hook denies every write of the run
+    AIWS_READ_ONLY: contract.read_only ? '1' : undefined,
   });
   const name = adapterName(ws, phase);
   const startedAt = nowIso();
   const res = getAdapter(name).runAgent(ws, { prompt, env, contract, agent, task, attempt });
 
-  const allowed = writeScope(ws.policies, phase, { req, task });
+  const allowed = contract.read_only ? [] : writeScope(ws.policies, phase, { req, task });
   const scope = DS.enforce(ws.root, snap, {
     allowed,
     protectedPaths: ws.policies.protected_paths,
@@ -132,13 +134,13 @@ export function executeAgent(ws, counter, { req, phase, agentId, contract, task 
   if (scope.violations.length) {
     errors.push({
       kind: 'invalid',
-      message: `wrote outside the allowed scope; these changes were reverted: ${scope.violations.join(', ')}. Allowed: ${allowed.join(', ')}`,
+      message: `wrote outside the allowed scope; these changes were reverted: ${scope.violations.join(', ')}. Allowed: ${allowed.join(', ') || '(nothing: a read-only run)'}`,
     });
   }
   return { runId, res, scope, evidence, errors, usageLimit: res.usageLimit ? String(res.usageLimit) : null };
 }
 
-function writeEvidence(ws, req, evidence) {
+export function writeEvidence(ws, req, evidence) {
   writeText(path.join(ws.workDir(req), 'evidence', 'runs', `${evidence.run_id}.json`), JSON.stringify(evidence, null, 2) + '\n');
 }
 

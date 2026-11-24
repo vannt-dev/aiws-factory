@@ -37,15 +37,27 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
   const reads = (contract.reads ?? []).map((r) => fill(r, vars).replace(/#.*$/, ''));
   if (reads.length) parts.push(['## Inputs to read', ...reads.map((r) => `- ${r}`)].join('\n'));
 
-  parts.push(
-    [
-      '## Write scope (enforced)',
-      'You may create or modify ONLY these paths:',
-      ...scope.map((s) => `- ${s}`),
-      'Any other change is detected by `aiws check diff-scope`, automatically reverted, and the run is marked FAILED.',
-      'Do not run git commands that change history or branches; the orchestrator commits for you.',
-    ].join('\n')
-  );
+  if (contract.read_only) {
+    // `aiws drift`: the run looks and answers; the orchestrator writes what comes of it
+    parts.push(
+      [
+        '## Read-only run (enforced)',
+        'Do not create, modify or delete any file. The guard hook denies every write in this run, and any change',
+        'is detected by `aiws check diff-scope`, automatically reverted, and the run is marked FAILED.',
+        'Do not run git commands. Your answer is your output: the orchestrator writes the report from it.',
+      ].join('\n')
+    );
+  } else {
+    parts.push(
+      [
+        '## Write scope (enforced)',
+        'You may create or modify ONLY these paths:',
+        ...scope.map((s) => `- ${s}`),
+        'Any other change is detected by `aiws check diff-scope`, automatically reverted, and the run is marked FAILED.',
+        'Do not run git commands that change history or branches; the orchestrator commits for you.',
+      ].join('\n')
+    );
+  }
 
   const commands = shellCommands(ws, phase, contract, task);
   if (commands.length) {
@@ -120,9 +132,11 @@ export function buildPrompt(ws, st, { phase, agentId, contract, task = null, fai
   const rules = tokenRules(ws, { lang: 'en', level: 2 });
   if (rules) parts.push(rules);
 
-  parts.push(
-    ['## When you finish', 'Reply with a short report: files written, key decisions, and anything a reviewer must know.'].join('\n')
-  );
+  // a contract whose answer is its output says how to give it (`answer`); every other run reports what it wrote
+  const finish = contract.answer?.length
+    ? contract.answer
+    : ['Reply with a short report: files written, key decisions, and anything a reviewer must know.'];
+  parts.push(['## When you finish', ...finish].join('\n'));
 
   return parts.join('\n\n') + '\n';
 }

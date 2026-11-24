@@ -215,6 +215,8 @@ function rel(p) {
  * the allowed prefixes are derived from the project's real build/test commands, whatever the language.
  */
 export function allowedTools(ws, contract) {
+  // a read-only contract (`aiws drift`) gets the read tools and nothing else, whatever else it names
+  if (contract.read_only) return mapTools(['read']);
   const tools = mapTools(contract.tools ?? ['read']).filter((t) => t !== 'Bash');
   const wantsBash = (contract.tools ?? []).includes('bash');
   if (wantsBash) {
@@ -280,7 +282,8 @@ function mcpFor(mcp, phase) {
 export function claudeArgs(ws, { contract, agent, phase }) {
   const cfg = ws.runtime.claude ?? {};
   const args = ['-p', '--output-format', 'json', '--permission-mode', cfg.permission_mode ?? 'dontAsk'];
-  const mcp = mcpFor(cfg.mcp, phase);
+  // no MCP tool in a read-only run: a server's tools are not known to only read
+  const mcp = contract.read_only ? { servers: {}, tools: [] } : mcpFor(cfg.mcp, phase);
   const tools = [...allowedTools(ws, contract), ...mcp.tools];
   args.push('--allowedTools', tools.join(','));
   if (cfg.lean !== false) {
