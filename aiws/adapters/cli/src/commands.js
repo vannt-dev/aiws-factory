@@ -48,6 +48,7 @@ import { pipelineSteps, pipelineText } from './pipeline.js';
 import { gateMenu, interactive } from './gatemenu.js';
 import { checkApiContract, runContractCommand } from './apicontract.js';
 import { pullRequestFeedback } from './prfeedback.js';
+import { runDrift, EXIT_DRIFT_ERROR } from './drift.js';
 import {
   MANIFEST_REL,
   NEW_SUFFIX,
@@ -584,6 +585,22 @@ export function stats() {
 export function estimate() {
   const ws = Workspace.open();
   log(estimateText(estimateFromHistory(ws)));
+}
+
+/**
+ * `aiws drift [REQ...] [--dry-run]`: compares the design of finished requirements with today's code in a
+ * read-only agent run (see drift.js). Returns the exit code: 1 when drift is found, 2 when a check failed.
+ */
+export function drift(reqs, { dryRun = false } = {}) {
+  try {
+    const ws = Workspace.open();
+    ws.warnKitVersion();
+    return runDrift(ws, reqs, { dryRun });
+  } catch (err) {
+    // exit 1 says "drift found" to CI; a check that could not run says 2
+    if (err instanceof AiwsError && err.exitCode === 1) err.exitCode = EXIT_DRIFT_ERROR;
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------- human gates

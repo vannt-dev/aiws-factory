@@ -106,6 +106,10 @@ export function decide(ws, input, env = process.env) {
   }
 
   const target = ti.file_path ?? ti.notebook_path ?? ti.path;
+  // `aiws drift` and any other read-only contract: nothing is written, whatever the phase scope says
+  if (env.AIWS_READ_ONLY === '1' && WRITE_TOOLS.has(tool)) {
+    return deny(`${env.AIWS_PHASE ?? 'this'} is a read-only run; no file may be written${target ? ` (${target})` : ''}`);
+  }
   if (!target) return { allow: true };
   const rel = toRepoRel(ws.root, path.resolve(input.cwd ?? ws.root, target));
 

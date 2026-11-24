@@ -61,7 +61,7 @@ export function runAgent(ws, { prompt, env, contract, agent }) {
   if (guarded && !hookSynced(ws)) {
     return refuse('codex adapter: codex.guard_hook is on but .codex/hooks.json has no aiws guard hook: run `aiws sync codex`.');
   }
-  const writes = tools.some((t) => t === 'write' || t === 'edit');
+  const writes = !contract.read_only && tools.some((t) => t === 'write' || t === 'edit');
   const lastMessage = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'aiws-codex-')), 'last-message.txt');
   // the guard counts its calls here: a run that used tools while this stays empty ran without the guard
   const canary = path.join(path.dirname(lastMessage), 'hook-calls.txt');

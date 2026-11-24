@@ -51,6 +51,13 @@ Requirement lifecycle
   aiws stats                           every requirement with its AI runs, time and cost; cost per phase across them
   aiws estimate                        cost and time of the finished requirements, as an order of magnitude for the next
   aiws prompt REQ-001 PHASE [--task T] print the prompt an agent would receive
+  aiws drift [REQ-001 ...] [--dry-run]
+                                       for finished requirements (all of them when none is named): a fresh,
+                                       read-only agent run compares the claims of the design documents with
+                                       today's code and writes aiws/work/REQ-001/drift/<date>.md, each claim the
+                                       code no longer matches with file:line evidence; exit 1 when drift is
+                                       found, 2 when a requirement could not be checked (for CI); --dry-run
+                                       prints the prompt and runs nothing
   aiws report REQ-001 [--out FILE]     one HTML page: status, trace, tasks, approvals, runs, cost, documents
                                        (default aiws/work/REQ-001/report.html)
   aiws board [--out FILE]              one read-only HTML page over every requirement: state, what waits for you
@@ -202,6 +209,8 @@ export async function main(argv) {
     case 'prompt':
       C.prompt(a1, a2, { task: flags.task });
       return 0;
+    case 'drift':
+      return C.drift(pos.slice(1), { dryRun: Boolean(flags['dry-run']) });
     case 'report':
       C.report(a1, { out: flags.out });
       return 0;
